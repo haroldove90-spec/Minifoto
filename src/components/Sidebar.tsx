@@ -13,7 +13,8 @@ import {
   ChevronRight,
   LogOut,
   Users,
-  Home
+  Home,
+  User
 } from 'lucide-react';
 
 export type ActiveTab = 
@@ -25,7 +26,8 @@ export type ActiveTab =
   | 'schools'
   | 'reports'
   | 'config'
-  | 'history';
+  | 'history'
+  | 'profile';
 
 interface SidebarProps {
   currentRole: Role;
@@ -54,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           { id: 'deliveries' as ActiveTab, label: 'Entrega y Liquidación', icon: PackageCheck, color: 'text-emerald-400' },
           { id: 'reports' as ActiveTab, label: 'Reportes y Métricas', icon: BarChart3, color: 'text-amber-400' },
           { id: 'config' as ActiveTab, label: 'Configuración & Pagos', icon: Sliders, color: 'text-slate-400' },
+          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-teal-300' },
           { id: 'home' as ActiveTab, label: 'Resumen General', icon: Home, color: 'text-teal-400' },
         ];
       case 'cashier':
@@ -63,6 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           { id: 'deliveries' as ActiveTab, label: 'Entregas & Liquidación', icon: PackageCheck, color: 'text-emerald-600' },
           { id: 'schools' as ActiveTab, label: 'Alumnos y Paquetes', icon: GraduationCap, color: 'text-[#004C59]' },
           { id: 'history' as ActiveTab, label: 'Historial de Ventas', icon: Receipt, color: 'text-slate-600' },
+          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-teal-300' },
         ];
       case 'field':
         return [
@@ -70,10 +74,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           { id: 'field_collector' as ActiveTab, label: 'Cobro en Campo (Escuelas)', icon: Smartphone, color: 'text-[#004C59]' },
           { id: 'schools' as ActiveTab, label: 'Directorio de Alumnos', icon: Users, color: 'text-teal-600' },
           { id: 'history' as ActiveTab, label: 'Recibos Emitidos', icon: Receipt, color: 'text-[#F97800]' },
+          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-teal-300' },
         ];
       case 'client':
         return [
           { id: 'catalogs' as ActiveTab, label: 'Catálogo de Productos', icon: Layers, color: 'text-[#F97800]' },
+          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-teal-300' },
         ];
     }
   };

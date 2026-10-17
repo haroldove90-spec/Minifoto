@@ -14,8 +14,11 @@ import {
   INITIAL_STUDENTS, 
   INITIAL_GATEWAYS, 
   INITIAL_SUPABASE, 
-  INITIAL_BRAND 
+  INITIAL_BRAND,
+  INITIAL_CATEGORIES,
+  INITIAL_USER_PROFILES
 } from './initialData';
+import { CategoryItem, UserProfile } from '../types';
 
 const KEYS = {
   SAMPLE_CLEARED: 'pos_photo_sample_data_cleared_v1',
@@ -29,6 +32,8 @@ const KEYS = {
   ROLE: 'pos_photo_active_role_v1',
   OPERATOR: 'pos_photo_operator_name_v1',
   DELETED_PRODUCT_IDS: 'pos_photo_deleted_product_ids_v1',
+  CATEGORIES: 'pos_photo_categories_v1',
+  USER_PROFILES: 'pos_photo_user_profiles_v1',
 };
 
 // Check if sample data has been permanently cleared
@@ -268,3 +273,53 @@ export const restoreSampleDataSystem = () => {
   localStorage.setItem(KEYS.STUDENTS, JSON.stringify(INITIAL_STUDENTS));
   localStorage.setItem(KEYS.SALES, JSON.stringify([]));
 };
+
+// ==========================================
+// CATEGORIES STORAGE
+// ==========================================
+export const getStoredCategories = (): CategoryItem[] => {
+  const data = localStorage.getItem(KEYS.CATEGORIES);
+  if (data) {
+    try {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {}
+  }
+  localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(INITIAL_CATEGORIES));
+  return INITIAL_CATEGORIES;
+};
+
+export const saveStoredCategories = (categories: CategoryItem[]) => {
+  localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(categories));
+};
+
+// ==========================================
+// USER PROFILE STORAGE (BY ROLE)
+// ==========================================
+export const getStoredUserProfile = (role: Role): UserProfile => {
+  const data = localStorage.getItem(`${KEYS.USER_PROFILES}_${role}`);
+  if (data) {
+    try {
+      return JSON.parse(data);
+    } catch {}
+  }
+  const defaultProfile = INITIAL_USER_PROFILES[role] || {
+    id: `user-${role}`,
+    role,
+    name: 'Usuario',
+    email: '',
+    phone: '',
+    avatarUrl: '',
+    notes: '',
+  };
+  return defaultProfile;
+};
+
+export const saveStoredUserProfile = (profile: UserProfile) => {
+  localStorage.setItem(`${KEYS.USER_PROFILES}_${profile.role}`, JSON.stringify(profile));
+  const activeRole = getStoredRole();
+  if (activeRole === profile.role) {
+    saveStoredOperator(profile.name);
+  }
+};
+

@@ -87,11 +87,35 @@ create table if not exists public.schools (
   created_at timestamptz default now()
 );
 
+-- 5. TABLA DE CATEGORÍAS DEL CATÁLOGO (DINÁMICAS)
+create table if not exists public.categories (
+  id text primary key,
+  label text not null,
+  icon text,
+  color text,
+  created_at timestamptz default now()
+);
+
+-- 6. TABLA DE PERFILES DE USUARIO (MULTI-ROL)
+create table if not exists public.user_profiles (
+  id text primary key,
+  role text not null,
+  name text not null,
+  email text,
+  phone text,
+  avatar_url text,
+  notes text,
+  address text,
+  updated_at timestamptz default now()
+);
+
 -- HABILITAR SEGURIDAD A NIVEL DE FILA (RLS)
 alter table public.products enable row level security;
 alter table public.sales enable row level security;
 alter table public.graduation_students enable row level security;
 alter table public.schools enable row level security;
+alter table public.categories enable row level security;
+alter table public.user_profiles enable row level security;
 
 -- POLÍTICAS DE ACCESO TOTAL PÚBLICO (ANON) PARA LECTURA Y ESCRITURA
 drop policy if exists "Anon full access products" on public.products;
@@ -105,6 +129,12 @@ create policy "Anon full access students" on public.graduation_students for all 
 
 drop policy if exists "Anon full access schools" on public.schools;
 create policy "Anon full access schools" on public.schools for all using (true) with check (true);
+
+drop policy if exists "Anon full access categories" on public.categories;
+create policy "Anon full access categories" on public.categories for all using (true) with check (true);
+
+drop policy if exists "Anon full access user_profiles" on public.user_profiles;
+create policy "Anon full access user_profiles" on public.user_profiles for all using (true) with check (true);
 `;
 
 // Helper to sanitize URL
@@ -504,5 +534,99 @@ export const deleteProductsBatchFromSupabase = async (ids: string[]): Promise<{ 
     return { count: ids.length };
   } catch (e: any) {
     return { count: 0, error: e.message || 'Error de red' };
+  }
+};
+
+// Save category to Supabase
+export const saveCategoryToSupabase = async (cat: { id: string; label: string; icon?: string; color?: string }): Promise<boolean> => {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('categories').upsert({
+      id: cat.id,
+      label: cat.label,
+      icon: cat.icon || null,
+      color: cat.color || null,
+    }, { onConflict: 'id' });
+    if (error) return false;
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Delete category from Supabase
+export const deleteCategoryFromSupabase = async (id: string): Promise<boolean> => {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) return false;
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Fetch categories from Supabase
+export const fetchCategoriesFromSupabase = async (): Promise<{ id: string; label: string; icon?: string; color?: string }[] | null> => {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.from('categories').select('*').order('created_at', { ascending: true });
+    if (error || !data) return null;
+    return data.map((row: any) => ({
+      id: row.id,
+      label: row.label,
+      icon: row.icon || undefined,
+      color: row.color || undefined,
+    }));
+  } catch {
+    return null;
+  }
+};
+
+// Save user profile to Supabase
+export const saveUserProfileToSupabase = async (profile: { id: string; role: string; name: string; email?: string; phone?: string; avatarUrl?: string; notes?: string; address?: string }): Promise<boolean> => {
+  try {
+    const supabase = getSupabaseClient();
+    const payload = {
+      id: profile.id,
+      role: profile.role,
+      name: profile.name,
+      email: profile.email || null,
+      phone: profile.phone || null,
+      avatar_url: profile.avatarUrl || null,
+      notes: profile.notes || null,
+      address: profile.address || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('user_profiles').upsert(payload, { onConflict: 'id' });
+    if (error) {
+      console.warn('Supabase profile upsert warning:', error.message);
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Fetch user profile from Supabase
+export const fetchUserProfileFromSupabase = async (role: string): Promise<any | null> => {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.from('user_profiles').select('*').eq('role', role).maybeSingle();
+    if (error || !data) return null;
+    return {
+      id: data.id,
+      role: data.role,
+      name: data.name,
+      email: data.email || '',
+      phone: data.phone || '',
+      avatarUrl: data.avatar_url || '',
+      notes: data.notes || '',
+      address: data.address || '',
+      updatedAt: data.updated_at,
+    };
+  } catch {
+    return null;
   }
 };

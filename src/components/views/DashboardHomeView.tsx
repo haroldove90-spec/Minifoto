@@ -11,7 +11,8 @@ import {
   ArrowRight,
   TrendingUp,
   Clock,
-  Sparkles
+  Sparkles,
+  User
 } from 'lucide-react';
 import { ActiveTab } from '../Sidebar';
 
@@ -291,6 +292,30 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({
                 </div>
               </>
             )}
+
+            {/* Mi Perfil (Activo en todos los roles) */}
+            <div 
+              onClick={() => onSelectTab('profile')}
+              className="p-5 bg-white hover:bg-teal-50 rounded-2xl border-2 border-[#004C59] hover:border-teal-700 shadow-sm hover:shadow-md transition cursor-pointer flex items-start gap-4 active:scale-98"
+            >
+              <div className="p-3 rounded-2xl bg-[#004C59] text-white shrink-0">
+                <User className="w-7 h-7" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-base text-slate-900">Mi Perfil & Datos</h3>
+                  <span className="text-[10px] font-black uppercase bg-teal-100 text-[#004C59] px-2 py-0.5 rounded-full">
+                    Todos los Roles
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Sube o cambia tu fotografía de perfil, actualiza tu nombre, teléfono WhatsApp y datos personales.
+                </p>
+                <span className="inline-flex items-center gap-1 text-xs font-black text-[#004C59] mt-2">
+                  Editar Perfil ➔
+                </span>
+              </div>
+            </div>
 
           </div>
         </div>

@@ -9,7 +9,8 @@ import {
   BarChart3, 
   Sliders, 
   Smartphone, 
-  Receipt 
+  Receipt,
+  User
 } from 'lucide-react';
 
 interface BottomBarProps {
@@ -32,6 +33,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
           { id: 'deliveries' as ActiveTab, label: 'Entregas', icon: PackageCheck },
           { id: 'reports' as ActiveTab, label: 'Reportes', icon: BarChart3 },
           { id: 'config' as ActiveTab, label: 'Ajustes', icon: Sliders },
+          { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
         ];
       case 'cashier':
         return [
@@ -39,6 +41,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
           { id: 'deliveries' as ActiveTab, label: 'Entregas', icon: PackageCheck },
           { id: 'schools' as ActiveTab, label: 'Alumnos', icon: GraduationCap },
           { id: 'history' as ActiveTab, label: 'Ventas', icon: Receipt },
+          { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
         ];
       case 'field':
         return [
@@ -46,10 +49,12 @@ export const BottomBar: React.FC<BottomBarProps> = ({
           { id: 'field_collector' as ActiveTab, label: 'Cobro Campo', icon: Smartphone },
           { id: 'schools' as ActiveTab, label: 'Alumnos', icon: GraduationCap },
           { id: 'history' as ActiveTab, label: 'Recibos', icon: Receipt },
+          { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
         ];
       case 'client':
         return [
           { id: 'catalogs' as ActiveTab, label: 'Catálogo', icon: Layers },
+          { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
         ];
     }
   };

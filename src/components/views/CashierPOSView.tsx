@@ -24,12 +24,15 @@ import {
   Delete,
   Receipt,
   Home,
-  LogOut,
   ShoppingBag,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Layers,
+  Tag,
+  LogOut
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { CATEGORY_FALLBACK_IMAGES } from '../../services/initialData';
+import { getStoredCategories } from '../../services/storage';
 
 interface CashierPOSViewProps {
   products: Product[];
@@ -79,65 +82,67 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
   // Filter only active products for POS operations
   const activeProducts = products.filter((p) => p.isActive !== false);
 
-  // Categories config with large touch color tiles and big vertical icons
-  const categoriesConfig: { id: Category; label: string; icon: React.ReactNode; color: string; border: string }[] = [
-    { 
-      id: 'foto_estudio', 
-      label: 'FOTO ESTUDIO', 
+  // Dynamic categories list from storage
+  const storedCategories = getStoredCategories();
+
+  // Known categories meta
+  const KNOWN_CATEGORIES_META: Record<string, { icon: React.ReactNode; color: string; border: string }> = {
+    foto_estudio: { 
       icon: <Camera className="w-8 h-8 sm:w-10 sm:h-10" />, 
       color: 'bg-yellow-400 hover:bg-yellow-300 text-slate-950',
       border: 'border-yellow-500' 
     },
-    { 
-      id: 'ampliaciones', 
-      label: 'AMPLIACIONES', 
+    ampliaciones: { 
       icon: <Maximize2 className="w-8 h-8 sm:w-10 sm:h-10" />, 
       color: 'bg-lime-400 hover:bg-lime-300 text-slate-950',
       border: 'border-lime-500' 
     },
-    { 
-      id: 'minilab', 
-      label: 'MINILAB', 
+    minilab: { 
       icon: <Film className="w-8 h-8 sm:w-10 sm:h-10" />, 
       color: 'bg-yellow-300 hover:bg-yellow-200 text-slate-950',
       border: 'border-yellow-400' 
     },
-    { 
-      id: 'iglesias', 
-      label: 'IGLESIAS / EVENTOS', 
+    iglesias: { 
       icon: <Church className="w-8 h-8 sm:w-10 sm:h-10" />, 
       color: 'bg-amber-400 hover:bg-amber-300 text-slate-950',
       border: 'border-amber-500' 
     },
-    { 
-      id: 'fotoacabado', 
-      label: 'FOTOACABADO', 
+    fotoacabado: { 
       icon: <Sparkles className="w-8 h-8 sm:w-10 sm:h-10" />, 
       color: 'bg-lime-300 hover:bg-lime-200 text-slate-950',
       border: 'border-lime-400' 
     },
-    { 
-      id: 'salon_seis_party', 
-      label: 'SALÓN SIX PARTY', 
+    salon_seis_party: { 
       icon: <PartyPopper className="w-8 h-8 sm:w-10 sm:h-10" />, 
       color: 'bg-emerald-400 hover:bg-emerald-300 text-slate-950',
       border: 'border-emerald-500' 
     },
-    { 
-      id: 'fuente_sodas', 
-      label: 'CAFETERÍA / FUENTE', 
+    fuente_sodas: { 
       icon: <Coffee className="w-8 h-8 sm:w-10 sm:h-10" />, 
       color: 'bg-orange-400 hover:bg-orange-300 text-slate-950',
       border: 'border-orange-500' 
     },
-    { 
-      id: 'graduaciones', 
-      label: 'GRADUACIONES 2026', 
+    graduaciones: { 
       icon: <GraduationCap className="w-8 h-8 sm:w-10 sm:h-10" />, 
       color: 'bg-teal-400 hover:bg-teal-300 text-slate-950',
       border: 'border-teal-500' 
     },
-  ];
+  };
+
+  const categoriesConfig: { id: Category; label: string; icon: React.ReactNode; color: string; border: string }[] = storedCategories.map((c) => {
+    const meta = KNOWN_CATEGORIES_META[c.id] || {
+      icon: <Tag className="w-8 h-8 sm:w-10 sm:h-10" />,
+      color: 'bg-cyan-400 hover:bg-cyan-300 text-slate-950',
+      border: 'border-cyan-500',
+    };
+    return {
+      id: c.id,
+      label: c.label.toUpperCase(),
+      icon: meta.icon,
+      color: meta.color,
+      border: meta.border,
+    };
+  });
 
   // Calculations
   const subtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -662,16 +667,23 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
                       className="rounded-2xl bg-white hover:bg-yellow-50/40 border-2 border-yellow-400 hover:border-yellow-500 shadow-sm hover:shadow-xl active:scale-95 transition-all flex flex-col overflow-hidden text-left cursor-pointer group"
                     >
                       {/* Product Photo */}
-                      <div className="relative w-full h-32 sm:h-38 bg-slate-200 overflow-hidden">
-                        <img
-                          src={displayImg}
-                          alt={prod.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = fallbackImg;
-                          }}
-                        />
+                      <div className="relative w-full h-32 sm:h-38 bg-slate-200 overflow-hidden flex items-center justify-center">
+                        {prod.imageUrl ? (
+                          <img
+                            src={prod.imageUrl}
+                            alt={prod.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 p-2">
+                            <Camera className="w-8 h-8 text-slate-300 mb-1" />
+                            <span className="text-[10px] font-semibold text-slate-400">Sin foto</span>
+                          </div>
+                        )}
 
                         {/* Extras Badge */}
                         {prod.hasExtras && (

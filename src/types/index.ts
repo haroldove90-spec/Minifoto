@@ -1,14 +1,26 @@
 export type Role = 'admin' | 'cashier' | 'field' | 'client';
 
-export type Category = 
-  | 'foto_estudio'
-  | 'iglesias'
-  | 'ampliaciones'
-  | 'minilab'
-  | 'fotoacabado'
-  | 'salon_seis_party'
-  | 'fuente_sodas'
-  | 'graduaciones';
+export type Category = string;
+
+export interface CategoryItem {
+  id: string;
+  label: string;
+  icon?: string;
+  color?: string;
+  createdAt?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  role: Role;
+  name: string;
+  email: string;
+  phone: string;
+  avatarUrl: string;
+  notes?: string;
+  address?: string;
+  updatedAt?: string;
+}
 
 export interface ProductExtra {
   id: string;

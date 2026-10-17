@@ -1,6 +1,60 @@
-import { Product, School, GraduationStudent, PaymentGatewayConfig, SupabaseConfig, BrandConfig, Category } from '../types';
+import { Product, School, GraduationStudent, PaymentGatewayConfig, SupabaseConfig, BrandConfig, Category, CategoryItem, UserProfile, Role } from '../types';
 
-export const CATEGORY_FALLBACK_IMAGES: Record<Category, string> = {
+export const INITIAL_CATEGORIES: CategoryItem[] = [
+  { id: 'foto_estudio', label: 'Foto Estudio', color: 'text-yellow-600' },
+  { id: 'ampliaciones', label: 'Ampliaciones', color: 'text-lime-600' },
+  { id: 'minilab', label: 'Minilab', color: 'text-yellow-500' },
+  { id: 'iglesias', label: 'Iglesias / Eventos', color: 'text-amber-600' },
+  { id: 'fotoacabado', label: 'Fotoacabado', color: 'text-lime-500' },
+  { id: 'salon_seis_party', label: 'Salón Six Party', color: 'text-emerald-600' },
+  { id: 'fuente_sodas', label: 'Fuente de Sodas / Cafetería', color: 'text-orange-600' },
+  { id: 'graduaciones', label: 'Graduaciones 2026', color: 'text-teal-600' },
+];
+
+export const INITIAL_USER_PROFILES: Record<Role, UserProfile> = {
+  admin: {
+    id: 'user-admin',
+    role: 'admin',
+    name: 'Uriel',
+    email: 'admin@estudiofoto.com',
+    phone: '55 1234 5678',
+    avatarUrl: '',
+    notes: 'Dueño y Administrador General del Estudio Fotográfico',
+    address: 'Sucursal Matriz Centro',
+  },
+  cashier: {
+    id: 'user-cashier',
+    role: 'cashier',
+    name: 'Cajero Mostrador',
+    email: 'caja@estudiofoto.com',
+    phone: '55 9876 5432',
+    avatarUrl: '',
+    notes: 'Cajero en Punto de Venta Principal',
+    address: 'Mostrador Sucursal Centro',
+  },
+  field: {
+    id: 'user-field',
+    role: 'field',
+    name: 'Cobrador Móvil',
+    email: 'campo@estudiofoto.com',
+    phone: '55 5555 4444',
+    avatarUrl: '',
+    notes: 'Ventas y Cobranza en Escuelas y Eventos',
+    address: 'Ruta Foránea y Escuelas',
+  },
+  client: {
+    id: 'user-client',
+    role: 'client',
+    name: 'Cliente Invitado',
+    email: 'cliente@gmail.com',
+    phone: '',
+    avatarUrl: '',
+    notes: 'Cliente registrado para catálogo digital',
+    address: '',
+  },
+};
+
+export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
   foto_estudio: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
   iglesias: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&auto=format&fit=crop&q=80',
   ampliaciones: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80',

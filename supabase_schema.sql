@@ -1,5 +1,5 @@
 -- =========================================================================
--- ESQUEMA COMPLETO SQL PARA SUPABASE
+-- ESQUEMA COMPLETO SQL PARA SUPABASE (ACTUALIZADO CON CATEGORÍAS Y PERFILES)
 -- Proyecto: minifoto@appdesignsoftware.com's Project
 -- Project ID: xqggdnoxvskotwlcuwgd
 -- URL: https://xqggdnoxvskotwlcuwgd.supabase.co
@@ -76,11 +76,35 @@ create table if not exists public.schools (
   created_at timestamptz default now()
 );
 
+-- 5. TABLA DE CATEGORÍAS DEL CATÁLOGO (DINÁMICAS)
+create table if not exists public.categories (
+  id text primary key,
+  label text not null,
+  icon text,
+  color text,
+  created_at timestamptz default now()
+);
+
+-- 6. TABLA DE PERFILES DE USUARIO (MULTI-ROL)
+create table if not exists public.user_profiles (
+  id text primary key,
+  role text not null,
+  name text not null,
+  email text,
+  phone text,
+  avatar_url text,
+  notes text,
+  address text,
+  updated_at timestamptz default now()
+);
+
 -- HABILITAR SEGURIDAD A NIVEL DE FILA (RLS)
 alter table public.products enable row level security;
 alter table public.sales enable row level security;
 alter table public.graduation_students enable row level security;
 alter table public.schools enable row level security;
+alter table public.categories enable row level security;
+alter table public.user_profiles enable row level security;
 
 -- POLÍTICAS DE ACCESO PÚBLICO (ANON) PARA LECTURA Y ESCRITURA
 drop policy if exists "Anon full access products" on public.products;
@@ -95,8 +119,15 @@ create policy "Anon full access students" on public.graduation_students for all 
 drop policy if exists "Anon full access schools" on public.schools;
 create policy "Anon full access schools" on public.schools for all using (true) with check (true);
 
+drop policy if exists "Anon full access categories" on public.categories;
+create policy "Anon full access categories" on public.categories for all using (true) with check (true);
+
+drop policy if exists "Anon full access user_profiles" on public.user_profiles;
+create policy "Anon full access user_profiles" on public.user_profiles for all using (true) with check (true);
+
 -- ÍNDICES PARA BÚSQUEDA RÁPIDA
 create index if not exists idx_products_category on public.products (category);
 create index if not exists idx_products_active on public.products (is_active);
 create index if not exists idx_sales_created_at on public.sales (created_at desc);
 create index if not exists idx_students_school on public.graduation_students (school_id, delivery_status);
+create index if not exists idx_user_profiles_role on public.user_profiles (role);

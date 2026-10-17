@@ -37,9 +37,11 @@ import {
   Square,
   AlertTriangle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FolderPlus,
+  Tag
 } from 'lucide-react';
-import { CATEGORY_FALLBACK_IMAGES, PRESET_IMAGE_GALLERY } from '../../services/initialData';
+import { CATEGORY_FALLBACK_IMAGES } from '../../services/initialData';
 import { 
   saveProductToSupabase, 
   saveProductsBatchToSupabase, 
@@ -47,9 +49,12 @@ import {
   deleteProductsBatchFromSupabase,
   testSupabaseConnection, 
   COMPLETE_SUPABASE_SQL, 
-  SUPABASE_CONFIG_DATA 
+  SUPABASE_CONFIG_DATA,
+  saveCategoryToSupabase,
+  deleteCategoryFromSupabase
 } from '../../services/supabaseClient';
-import { markProductAsDeleted } from '../../services/storage';
+import { markProductAsDeleted, getStoredCategories, saveStoredCategories } from '../../services/storage';
+import { CategoryItem } from '../../types';
 
 interface AdminCatalogsViewProps {
   products: Product[];
@@ -129,16 +134,89 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const categories: { id: Category; label: string; icon: any; color: string }[] = [
-    { id: 'foto_estudio', label: 'Foto Estudio', icon: Camera, color: 'text-yellow-600' },
-    { id: 'ampliaciones', label: 'Ampliaciones', icon: Maximize2, color: 'text-lime-600' },
-    { id: 'minilab', label: 'Minilab', icon: Film, color: 'text-yellow-500' },
-    { id: 'iglesias', label: 'Iglesias / Eventos', icon: Church, color: 'text-amber-600' },
-    { id: 'fotoacabado', label: 'Fotoacabado', icon: Sparkles, color: 'text-lime-500' },
-    { id: 'salon_seis_party', label: 'Salón Six Party', icon: PartyPopper, color: 'text-emerald-600' },
-    { id: 'fuente_sodas', label: 'Fuente de Sodas / Cafetería', icon: Coffee, color: 'text-orange-600' },
-    { id: 'graduaciones', label: 'Graduaciones 2026', icon: GraduationCap, color: 'text-teal-600' },
-  ];
+  // Dynamic categories list initialized from storage
+  const [categoriesList, setCategoriesList] = useState<CategoryItem[]>(() => getStoredCategories());
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatColor, setNewCatColor] = useState('text-teal-600');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+
+  // Helper to resolve icon for any category
+  const getCategoryIcon = (catId: string) => {
+    switch (catId) {
+      case 'foto_estudio': return Camera;
+      case 'ampliaciones': return Maximize2;
+      case 'minilab': return Film;
+      case 'iglesias': return Church;
+      case 'fotoacabado': return Sparkles;
+      case 'salon_seis_party': return PartyPopper;
+      case 'fuente_sodas': return Coffee;
+      case 'graduaciones': return GraduationCap;
+      default: return Tag;
+    }
+  };
+
+  // Add new category
+  const handleAddCategory = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = newCatName.trim();
+    if (!trimmed) {
+      alert('Por favor escribe el nombre de la categoría.');
+      return;
+    }
+
+    const id = trimmed
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_+/g, '_') || `cat_${Date.now()}`;
+
+    if (categoriesList.some((c) => c.id === id || c.label.toLowerCase() === trimmed.toLowerCase())) {
+      alert(`Ya existe una categoría llamada "${trimmed}".`);
+      return;
+    }
+
+    setIsAddingCategory(true);
+    const newCat: CategoryItem = {
+      id,
+      label: trimmed,
+      color: newCatColor,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [...categoriesList, newCat];
+    setCategoriesList(updated);
+    saveStoredCategories(updated);
+    await saveCategoryToSupabase(newCat);
+    setIsAddingCategory(false);
+    setNewCatName('');
+    showToast(`¡Categoría "${trimmed}" agregada y sincronizada con Supabase!`);
+  };
+
+  // Delete category
+  const handleDeleteCategory = async (catId: string, catLabel: string) => {
+    if (!isAdmin) return;
+    const count = products.filter((p) => p.category === catId).length;
+    const confirmMsg = count > 0
+      ? `¿Seguro que deseas eliminar definitivamente la categoría "${catLabel}"?\n\nExisten ${count} producto(s) en esta categoría. Se borrará de Supabase y del navegador.`
+      : `¿Seguro que deseas eliminar la categoría "${catLabel}"? Se borrará de Supabase y del navegador.`;
+
+    if (!confirm(confirmMsg)) return;
+
+    const updated = categoriesList.filter((c) => c.id !== catId);
+    setCategoriesList(updated);
+    saveStoredCategories(updated);
+    await deleteCategoryFromSupabase(catId);
+
+    if (selectedCategory === catId) {
+      setSelectedCategory('all');
+    }
+    if (formCategory === catId) {
+      setFormCategory(updated[0]?.id || 'foto_estudio');
+    }
+    showToast(`Categoría "${catLabel}" eliminada del sistema y Supabase.`);
+  };
 
   // Test Supabase on mount
   useEffect(() => {
@@ -164,13 +242,15 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     if (!isAdmin) return;
     setIsCreating(true);
     setEditingProduct(null);
-    const cat = selectedCategory === 'all' ? 'foto_estudio' : selectedCategory;
+    const defaultCat = categoriesList[0]?.id || 'foto_estudio';
+    const cat = selectedCategory === 'all' ? defaultCat : selectedCategory;
     setFormCategory(cat);
     setFormName('');
     setFormPrice(100);
     setFormDesc('');
     setFormUnit('pza');
-    setFormImageUrl(CATEGORY_FALLBACK_IMAGES[cat] || '');
+    // EN BLANCO: Listo para subir la foto propia del producto
+    setFormImageUrl('');
     setFormIsActive(true);
     const isStudio = cat === 'foto_estudio';
     setFormHasExtras(isStudio);
@@ -187,7 +267,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     setFormPrice(p.price);
     setFormDesc(p.description || '');
     setFormUnit(p.unit || 'pza');
-    setFormImageUrl(p.imageUrl || CATEGORY_FALLBACK_IMAGES[p.category] || '');
+    setFormImageUrl(p.imageUrl || '');
     setFormIsActive(p.isActive !== false);
     setFormHasExtras(!!p.hasExtras);
     setFormRetoquePrice(p.defaultRetoquePrice || 30);
@@ -242,7 +322,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     e.preventDefault();
     if (!isAdmin || !formName.trim()) return;
 
-    const finalImage = formImageUrl.trim() || CATEGORY_FALLBACK_IMAGES[formCategory];
+    const finalImage = formImageUrl.trim();
 
     if (isCreating) {
       const newProd: Product = {
@@ -547,15 +627,15 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 <span>{isBulkDeleteMode ? 'Terminar Selección' : 'Seleccionar para Borrar'}</span>
               </button>
 
-              {/* Botón Ver SQL Supabase */}
+              {/* Botón Gestionar Categorías */}
               <button
                 type="button"
-                onClick={() => setShowSqlModal(true)}
-                className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-2xl transition cursor-pointer"
-                title="Ver el script SQL completo de Supabase"
+                onClick={() => setShowCategoryModal(true)}
+                className="flex items-center gap-2 px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-300 text-xs font-bold rounded-2xl transition cursor-pointer shadow-xs"
+                title="Agregar o borrar categorías del catálogo"
               >
-                <Database className="w-4 h-4 text-emerald-400" />
-                <span>Ver SQL Supabase</span>
+                <FolderPlus className="w-4 h-4 text-[#004C59]" />
+                <span>Gestionar Categorías</span>
               </button>
 
               {/* Botón Sincronizar Supabase */}
@@ -810,17 +890,158 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
           </div>
         )}
 
+        {/* MODAL GESTIÓN DE CATEGORÍAS (AGREGAR Y BORRAR) */}
+        {showCategoryModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-5 animate-in fade-in">
+            <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border-2 border-slate-300 overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="p-4 sm:p-5 bg-[#004C59] text-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-yellow-400 text-slate-950 rounded-xl">
+                    <FolderPlus className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black">Gestionar Categorías del Catálogo</h3>
+                    <p className="text-[11px] text-teal-100">Agrega nuevas categorías o elimina existentes</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="p-1.5 text-white/80 hover:text-white rounded-xl hover:bg-white/10 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto space-y-6">
+                {/* Form to add a new category */}
+                <form onSubmit={handleAddCategory} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                    <Plus className="w-4 h-4 text-[#004C59]" />
+                    <span>Agregar Nueva Categoría</span>
+                  </h4>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 block">Nombre de la Categoría *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                      placeholder="Ej. Retablos y Marcos, Fotolibros, Sublimación..."
+                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 block">Color de Identificación:</label>
+                    <select
+                      value={newCatColor}
+                      onChange={(e) => setNewCatColor(e.target.value)}
+                      className="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-xl font-medium"
+                    >
+                      <option value="text-teal-600">Verde Petróleo (Teal)</option>
+                      <option value="text-yellow-600">Amarillo Dorado</option>
+                      <option value="text-amber-600">Ámbar / Naranja</option>
+                      <option value="text-lime-600">Lima Fresco</option>
+                      <option value="text-emerald-600">Esmeralda</option>
+                      <option value="text-indigo-600">Índigo / Azul</option>
+                      <option value="text-purple-600">Púrpura</option>
+                      <option value="text-rose-600">Rosa / Magenta</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isAddingCategory || !newCatName.trim()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#004C59] hover:bg-teal-900 active:scale-95 disabled:opacity-50 text-white text-xs font-black rounded-xl transition cursor-pointer shadow-md"
+                  >
+                    <Plus className="w-4 h-4 text-yellow-400" />
+                    <span>{isAddingCategory ? 'Guardando en Supabase...' : 'Guardar Nueva Categoría'}</span>
+                  </button>
+                </form>
+
+                {/* List of existing categories with delete option */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">
+                      Categorías Registradas ({categoriesList.length})
+                    </h4>
+                    <span className="text-[10px] text-slate-400">Toca el botón rojo para borrar</span>
+                  </div>
+
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {categoriesList.map((cat) => {
+                      const Icon = getCategoryIcon(cat.id);
+                      const prodsCount = products.filter((p) => p.category === cat.id).length;
+                      return (
+                        <div
+                          key={cat.id}
+                          className="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="p-2 rounded-xl bg-slate-100 shrink-0">
+                              <Icon className={`w-4 h-4 ${cat.color || 'text-teal-600'}`} />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-bold text-xs sm:text-sm text-slate-800 block truncate">
+                                {cat.label}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400 block">
+                                ID: {cat.id} • {prodsCount} producto(s)
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCategory(cat.id, cat.label)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer shrink-0"
+                            title={`Eliminar categoría "${cat.label}"`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Borrar</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-3.5 bg-slate-100 border-t border-slate-200 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* MODAL DETALLE Y SELECCIÓN DE PRODUCTO (CLIENTE Y VENDEDOR EN CAMPO) */}
         {detailModalProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-5 animate-in fade-in">
             <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border-2 border-slate-300 overflow-hidden flex flex-col max-h-[90vh]">
               {/* Image banner */}
-              <div className="relative w-full h-56 sm:h-64 bg-slate-100 shrink-0">
-                <img
-                  src={detailModalProduct.imageUrl || CATEGORY_FALLBACK_IMAGES[detailModalProduct.category]}
-                  alt={detailModalProduct.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="relative w-full h-56 sm:h-64 bg-slate-100 shrink-0 flex items-center justify-center">
+                {detailModalProduct.imageUrl ? (
+                  <img
+                    src={detailModalProduct.imageUrl}
+                    alt={detailModalProduct.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-slate-400">
+                    <Camera className="w-12 h-12 text-slate-300 mb-1" />
+                    <span className="text-xs font-semibold text-slate-400">Sin fotografía</span>
+                  </div>
+                )}
                 <button
                   onClick={() => setDetailModalProduct(null)}
                   className="absolute top-3 right-3 p-2 bg-slate-900/80 hover:bg-slate-900 text-white rounded-full transition cursor-pointer"
@@ -1091,22 +1312,53 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               </div>
 
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                {/* Preview Thumbnail */}
-                <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden bg-slate-200 border-2 border-slate-300 shrink-0 shadow-inner group">
-                  <img
-                    src={formImageUrl || CATEGORY_FALLBACK_IMAGES[formCategory]}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = CATEGORY_FALLBACK_IMAGES[formCategory];
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold text-center p-2">
-                    Vista previa de imagen
+                {/* Preview Thumbnail: Starts in blank with prompt to upload */}
+                {formImageUrl ? (
+                  <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden bg-slate-100 border-2 border-slate-300 shrink-0 shadow-md group">
+                    <img
+                      src={formImageUrl}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-1.5 p-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3 py-1 bg-white text-slate-900 text-[11px] font-bold rounded-lg shadow-sm hover:bg-slate-100 transition cursor-pointer"
+                      >
+                        Cambiar Foto
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormImageUrl('')}
+                        className="px-3 py-1 bg-rose-600 text-white text-[11px] font-bold rounded-lg shadow-sm hover:bg-rose-700 transition cursor-pointer"
+                      >
+                        Dejar en Blanco
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden bg-white border-2 border-dashed border-teal-600/40 hover:border-[#004C59] bg-teal-50/20 hover:bg-teal-50/50 shrink-0 shadow-inner flex flex-col items-center justify-center text-center p-3 cursor-pointer transition group"
+                    title="Toca aquí para seleccionar una imagen desde tu dispositivo"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-teal-100 group-hover:bg-[#004C59] group-hover:text-white text-[#004C59] flex items-center justify-center transition mb-2 shadow-xs">
+                      <Camera className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-black text-slate-700 leading-tight">
+                      En blanco
+                    </span>
+                    <span className="text-[10px] text-teal-700 font-bold mt-1">
+                      Toca para subir foto
+                    </span>
+                    <span className="text-[9px] text-slate-400 mt-0.5">
+                      Listo para tu producto
+                    </span>
+                  </div>
+                )}
 
-                {/* Upload & Source Controls */}
+                {/* Upload & Source Controls (No preset stock images) */}
                 <div className="flex-1 space-y-3 w-full">
                   {/* File Upload Button */}
                   <div>
@@ -1120,21 +1372,34 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                       onChange={handleFileUpload}
                       className="hidden"
                     />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-xs font-bold rounded-xl transition cursor-pointer"
-                    >
-                      <Upload className="w-4 h-4 text-yellow-400" />
-                      <span>Elegir Foto de mi Dispositivo</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-xs"
+                      >
+                        <Upload className="w-4 h-4 text-yellow-400" />
+                        <span>Elegir Foto de mi Dispositivo</span>
+                      </button>
+
+                      {formImageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setFormImageUrl('')}
+                          className="flex items-center gap-1 px-3 py-2 text-rose-600 hover:bg-rose-50 border border-rose-200 text-xs font-bold rounded-xl transition cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Quitar Foto</span>
+                        </button>
+                      )}
+                    </div>
                     <span className="text-[10px] text-slate-400 block mt-1">Formatos JPG, PNG, WebP (Máx 2MB)</span>
                   </div>
 
                   {/* URL Input */}
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">
-                      2. O escribe la URL directa de la imagen:
+                      2. O escribe la URL directa de la imagen (opcional):
                     </label>
                     <div className="relative">
                       <LinkIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -1145,28 +1410,6 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                         placeholder="https://ejemplo.com/mifoto.jpg"
                         className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
                       />
-                    </div>
-                  </div>
-
-                  {/* Preset Gallery Picker */}
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                      3. O selecciona una fotografía temática predefinida:
-                    </label>
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                      {PRESET_IMAGE_GALLERY.map((preset, idx) => (
-                        <button
-                          key={`${preset.label}-${idx}`}
-                          type="button"
-                          onClick={() => setFormImageUrl(preset.url)}
-                          className={`relative w-12 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-transform hover:scale-105 cursor-pointer ${
-                            formImageUrl === preset.url ? 'border-yellow-400 ring-2 ring-yellow-400' : 'border-slate-300'
-                          }`}
-                          title={preset.label}
-                        >
-                          <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
                     </div>
                   </div>
                 </div>
@@ -1188,13 +1431,23 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Categoría del Catálogo *</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700">Categoría del Catálogo *</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryModal(true)}
+                    className="text-[10px] font-bold text-teal-700 hover:text-teal-900 hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <FolderPlus className="w-3 h-3" />
+                    <span>+ Nueva / Borrar Categoría</span>
+                  </button>
+                </div>
                 <select
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value as Category)}
                   className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59] font-medium"
                 >
-                  {categories.map((c) => (
+                  {categoriesList.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.label}
                     </option>
@@ -1342,28 +1595,57 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               </span>
             </button>
 
-            {categories.map((cat) => {
-              const Icon = cat.icon;
+            {categoriesList.map((cat) => {
+              const Icon = getCategoryIcon(cat.id);
               const isSelected = selectedCategory === cat.id;
               const count = products.filter((p) => p.category === cat.id && (isAdmin || p.isActive !== false)).length;
               return (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs whitespace-nowrap transition-all shadow-xs cursor-pointer ${
-                    isSelected
-                      ? 'bg-[#004C59] text-white ring-2 ring-[#004C59]'
-                      : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : cat.color}`} />
-                  <span>{cat.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected ? 'bg-white/20' : 'bg-slate-100 text-slate-600'}`}>
-                    {count}
-                  </span>
-                </button>
+                <div key={cat.id} className="relative flex items-center shrink-0">
+                  <button
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs whitespace-nowrap transition-all shadow-xs cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#004C59] text-white ring-2 ring-[#004C59]'
+                        : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : (cat.color || 'text-teal-600')}`} />
+                    <span>{cat.label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected ? 'bg-white/20' : 'bg-slate-100 text-slate-600'}`}>
+                      {count}
+                    </span>
+                  </button>
+
+                  {/* Quick delete category button for Admin */}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCategory(cat.id, cat.label);
+                      }}
+                      className="ml-1 p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                      title={`Eliminar categoría "${cat.label}"`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               );
             })}
+
+            {/* Quick Add Category Button for Admin */}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setShowCategoryModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-black text-xs whitespace-nowrap bg-teal-50 hover:bg-teal-100 text-[#004C59] border-2 border-dashed border-teal-300 transition-all shadow-xs cursor-pointer shrink-0"
+                title="Crear una nueva categoría para tus productos"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Nueva Categoría</span>
+              </button>
+            )}
           </div>
 
           {/* Search & Status Filter Row */}
@@ -1423,7 +1705,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
         <div>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-black uppercase tracking-wider text-slate-700">
-              {selectedCategory === 'all' ? 'Todos los Productos del Catálogo' : categories.find((c) => c.id === selectedCategory)?.label}
+              {selectedCategory === 'all' ? 'Todos los Productos del Catálogo' : categoriesList.find((c) => c.id === selectedCategory)?.label || selectedCategory}
             </h2>
             <span className="text-xs font-mono text-slate-500 font-bold">
               {filteredProducts.length} productos mostrados
@@ -1489,16 +1771,26 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                     )}
 
                     {/* FOTO GRANDE DEL PRODUCTO (aspect 4/3) */}
-                    <div className="relative w-full h-40 sm:h-52 bg-slate-100 overflow-hidden shrink-0 group">
-                      <img
-                        src={displayImg}
-                        alt={prod.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = fallbackImg;
-                        }}
-                      />
+                    <div className="relative w-full h-40 sm:h-52 bg-slate-100 overflow-hidden shrink-0 group flex items-center justify-center">
+                      {prod.imageUrl ? (
+                        <img
+                          src={prod.imageUrl}
+                          alt={prod.name}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 p-2 border-b border-slate-200">
+                          <Camera className="w-8 h-8 sm:w-10 sm:h-10 text-slate-300 mb-1" />
+                          <span className="text-[10px] sm:text-xs font-semibold text-slate-400">Sin fotografía</span>
+                          {isAdmin && (
+                            <span className="text-[9px] text-[#004C59] font-bold mt-0.5">Toca para agregar foto</span>
+                          )}
+                        </div>
+                      )}
 
                       {/* Badge Activo / Desactivado (Para Admin) */}
                       {isAdmin ? (

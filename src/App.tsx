@@ -64,6 +64,7 @@ import { AdminCatalogsView } from './components/views/AdminCatalogsView';
 import { AdminSchoolsView } from './components/views/AdminSchoolsView';
 import { AdminReportsView } from './components/views/AdminReportsView';
 import { AdminConfigView } from './components/views/AdminConfigView';
+import { UserProfileView } from './components/views/UserProfileView';
 
 export default function App() {
   // Session & Role state
@@ -346,6 +347,7 @@ export default function App() {
         isSampleCleared={isSampleCleared}
         logoUrl={brand.logoUrl}
         onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onOpenProfile={() => setActiveTab('profile')}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -454,6 +456,14 @@ export default function App() {
                 setActiveSaleTicket(sale);
                 setActiveStudentTicket(null);
               }}
+            />
+          )}
+
+          {activeTab === 'profile' && (
+            <UserProfileView
+              currentRole={currentRole}
+              operatorName={operatorName}
+              onUpdateOperatorName={setOperatorName}
             />
           )}
         </main>

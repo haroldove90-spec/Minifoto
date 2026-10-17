@@ -12,8 +12,10 @@ import {
   Smartphone, 
   AlertTriangle,
   RotateCcw,
-  CheckCircle2
+  CheckCircle2,
+  User
 } from 'lucide-react';
+import { getStoredUserProfile } from '../services/storage';
 
 interface HeaderProps {
   currentRole: Role;
@@ -24,6 +26,7 @@ interface HeaderProps {
   isSampleCleared: boolean;
   logoUrl?: string;
   onToggleSidebar?: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -34,7 +37,9 @@ export const Header: React.FC<HeaderProps> = ({
   onRestoreSampleData,
   isSampleCleared,
   logoUrl = 'https://appdesignproyectos.com/photologo.png',
+  onOpenProfile,
 }) => {
+  const profile = getStoredUserProfile(currentRole);
   const isOnline = useOnlineStatus();
   const [showClearModal, setShowClearModal] = useState(false);
   const [includeCatalogs, setIncludeCatalogs] = useState(false);
@@ -126,8 +131,29 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Actions: Install PWA + Clear Sample Data + Logout */}
+          {/* Actions: Mi Perfil + Install PWA + Clear Sample Data + Logout */}
           <div className="flex items-center gap-1.5 sm:gap-2.5">
+            {/* Mi Perfil Button */}
+            {onOpenProfile && (
+              <button
+                onClick={onOpenProfile}
+                type="button"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-[#004C59] bg-teal-50 hover:bg-teal-100 active:scale-95 rounded-lg border border-teal-200 transition-all cursor-pointer shadow-xs"
+                title="Ver y editar Mi Perfil (foto y datos)"
+              >
+                {profile.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt={operatorName}
+                    className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-cover border border-[#004C59]"
+                  />
+                ) : (
+                  <User className="w-3.5 h-3.5 text-[#004C59]" />
+                )}
+                <span className="hidden sm:inline">Mi Perfil</span>
+              </button>
+            )}
+
             {/* Quick PWA Install Button */}
             <PWAInstallButton variant="header" />
 
