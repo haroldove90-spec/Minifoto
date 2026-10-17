@@ -475,3 +475,34 @@ export const fetchSchoolsFromSupabase = async (): Promise<School[] | null> => {
     return null;
   }
 };
+
+// Delete single product from Supabase
+export const deleteProductFromSupabase = async (id: string): Promise<boolean> => {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) {
+      console.warn('Supabase product delete warning:', error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('Error deleting product from Supabase:', e);
+    return false;
+  }
+};
+
+// Batch delete products from Supabase
+export const deleteProductsBatchFromSupabase = async (ids: string[]): Promise<{ count: number; error?: string }> => {
+  try {
+    if (!ids || ids.length === 0) return { count: 0 };
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('products').delete().in('id', ids);
+    if (error) {
+      return { count: 0, error: error.message };
+    }
+    return { count: ids.length };
+  } catch (e: any) {
+    return { count: 0, error: e.message || 'Error de red' };
+  }
+};

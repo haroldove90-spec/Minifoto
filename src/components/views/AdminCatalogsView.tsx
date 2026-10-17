@@ -32,16 +32,24 @@ import {
   ShoppingCart,
   Send,
   Share2,
-  Info
+  Info,
+  CheckSquare,
+  Square,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { CATEGORY_FALLBACK_IMAGES, PRESET_IMAGE_GALLERY } from '../../services/initialData';
 import { 
   saveProductToSupabase, 
   saveProductsBatchToSupabase, 
+  deleteProductFromSupabase,
+  deleteProductsBatchFromSupabase,
   testSupabaseConnection, 
   COMPLETE_SUPABASE_SQL, 
   SUPABASE_CONFIG_DATA 
 } from '../../services/supabaseClient';
+import { markProductAsDeleted } from '../../services/storage';
 
 interface AdminCatalogsViewProps {
   products: Product[];
@@ -82,6 +90,11 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
+  // Bulk Delete state for Admin
+  const [isBulkDeleteMode, setIsBulkDeleteMode] = useState(false);
+  const [selectedForDelete, setSelectedForDelete] = useState<string[]>([]);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+
   // Selected items state for Client & Field roles
   const [selectedItems, setSelectedItems] = useState<Record<string, SelectedItem>>({});
   const [detailModalProduct, setDetailModalProduct] = useState<Product | null>(null);
@@ -100,6 +113,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
   });
   const [showSqlModal, setShowSqlModal] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
+  const [showSetupInstructions, setShowSetupInstructions] = useState(true);
 
   // Form state for create / edit (Admin only)
   const [formName, setFormName] = useState('');
@@ -143,7 +157,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
 
   const showToast = (msg: string) => {
     setNotification(msg);
-    setTimeout(() => setNotification(null), 3500);
+    setTimeout(() => setNotification(null), 4000);
   };
 
   const startCreate = () => {
@@ -276,13 +290,71 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     cancelForm();
   };
 
-  const handleDelete = (id: string, name: string) => {
+  // SINGLE PRODUCT DELETE: Permanently remove from state, mark in localStorage, and delete from Supabase
+  const handleDelete = async (id: string, name: string) => {
     if (!isAdmin) return;
-    if (confirm(`¿Seguro que deseas eliminar definitivamente "${name}" del catálogo?`)) {
+    if (confirm(`¿Seguro que deseas eliminar definitivamente "${name}" del catálogo? Se borrará de Supabase y no volverá a cargarse.`)) {
+      // 1. Mark as permanently deleted in localStorage so browser never resurrects it
+      markProductAsDeleted(id);
+
+      // 2. Delete from Supabase
+      deleteProductFromSupabase(id);
+
+      // 3. Update local state
       const updated = products.filter((p) => p.id !== id);
       onSaveProducts(updated);
-      showToast(`Producto "${name}" eliminado`);
+
+      // If it was selected for bulk delete, remove it
+      setSelectedForDelete((prev) => prev.filter((item) => item !== id));
+
+      showToast(`Producto "${name}" eliminado permanentemente del sistema y Supabase`);
     }
+  };
+
+  // BULK PRODUCT SELECTION & DELETE (One or Multiple Products)
+  const toggleSelectForDelete = (productId: string) => {
+    setSelectedForDelete((prev) => 
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+  };
+
+  const handleSelectAllForDelete = () => {
+    const currentFilteredIds = filteredProducts.map((p) => p.id);
+    const allSelected = currentFilteredIds.every((id) => selectedForDelete.includes(id));
+    if (allSelected) {
+      setSelectedForDelete((prev) => prev.filter((id) => !currentFilteredIds.includes(id)));
+    } else {
+      setSelectedForDelete((prev) => Array.from(new Set([...prev, ...currentFilteredIds])));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedForDelete.length === 0) return;
+
+    const count = selectedForDelete.length;
+    const confirmMessage = count === 1
+      ? '¿Confirmas eliminar definitivamente este producto? Se borrará de Supabase y del navegador, y NO volverá a cargarse.'
+      : `¿Confirmas eliminar definitivamente los ${count} productos seleccionados? Se borrarán de Supabase y del navegador, y NO volverán a cargarse.`;
+
+    if (!confirm(confirmMessage)) return;
+
+    setIsDeletingBulk(true);
+
+    // 1. Register IDs in permanent deleted list so browser NEVER restores them
+    markProductAsDeleted(selectedForDelete);
+
+    // 2. Delete all from Supabase
+    await deleteProductsBatchFromSupabase(selectedForDelete);
+
+    // 3. Remove from local state
+    const remaining = products.filter((p) => !selectedForDelete.includes(p.id));
+    onSaveProducts(remaining);
+
+    setIsDeletingBulk(false);
+    setSelectedForDelete([]);
+    setIsBulkDeleteMode(false);
+
+    showToast(`✓ ${count} producto(s) borrados definitivamente del navegador y Supabase`);
   };
 
   // Batch sync all local products to Supabase
@@ -367,14 +439,6 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     showToast('Producto removido de la selección');
   };
 
-  const handleQuickToggleSelect = (prod: Product) => {
-    if (selectedItems[prod.id]) {
-      handleRemoveSelection(prod.id);
-    } else {
-      openProductDetailModal(prod);
-    }
-  };
-
   // Selected totals
   const selectedList = Object.values(selectedItems);
   const totalSelectedCount = selectedList.reduce((acc, item) => acc + item.quantity, 0);
@@ -448,22 +512,41 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               </div>
               <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 leading-tight">
                 {isAdmin 
-                  ? 'Gestión de Catálogo y Subida de Fotos' 
+                  ? 'Gestión de Catálogo, Fotos y Base de Datos' 
                   : isField 
                   ? 'Catálogo Fotográfico para Venta en Campo' 
                   : 'Catálogo de Fotografías y Paquetes'}
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 max-w-2xl">
                 {isAdmin
-                  ? 'Sube las fotos de tus productos, asigna precios y categorías. Los cambios se sincronizan en Supabase y se visualizan en el POS y Catálogo Digital.'
+                  ? 'Sube fotos, asigna precios, activa/desactiva productos o selecciona varios para borrarlos definitivamente del navegador y Supabase.'
                   : 'Explora las fotografías y servicios disponibles en alta calidad. Toca cualquier producto para seleccionarlo o ver sus detalles y cotización.'}
               </p>
             </div>
           </div>
 
-          {/* ADMIN CONTROLS: Solo el admin puede subir fotos o gestionar productos */}
+          {/* ADMIN CONTROLS: Solo el admin puede subir fotos, seleccionar para borrar o gestionar */}
           {isAdmin && (
             <div className="flex flex-wrap items-center gap-2.5">
+              {/* Botón Seleccionar Varios para Borrar */}
+              <button
+                type="button"
+                onClick={() => {
+                  const nextState = !isBulkDeleteMode;
+                  setIsBulkDeleteMode(nextState);
+                  if (!nextState) setSelectedForDelete([]);
+                }}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-black transition cursor-pointer ${
+                  isBulkDeleteMode
+                    ? 'bg-rose-600 text-white shadow-md'
+                    : 'bg-white hover:bg-rose-50 text-rose-700 border-2 border-rose-200'
+                }`}
+                title="Seleccionar uno o varios productos para eliminarlos permanentemente"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isBulkDeleteMode ? 'Terminar Selección' : 'Seleccionar para Borrar'}</span>
+              </button>
+
               {/* Botón Ver SQL Supabase */}
               <button
                 type="button"
@@ -510,6 +593,141 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
             </button>
           )}
         </div>
+
+        {/* =========================================================================
+            BARRA DE ACCIÓN CUANDO ESTÁ ACTIVO EL MODO DE BORRADO MÚLTIPLE (ADMIN)
+            ========================================================================= */}
+        {isAdmin && (isBulkDeleteMode || selectedForDelete.length > 0) && (
+          <div className="bg-rose-50 border-2 border-rose-300 p-4 rounded-3xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 animate-in slide-in-from-top">
+            <div className="flex items-center gap-3.5">
+              <div className="p-3 bg-rose-600 text-white rounded-2xl shrink-0 shadow-sm">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-rose-900 block uppercase tracking-wide">
+                  Modo de Borrado Múltiple Activo
+                </span>
+                <span className="text-xs text-rose-700 font-medium">
+                  Has marcado <strong>{selectedForDelete.length}</strong> de {filteredProducts.length} producto(s). Los productos eliminados <strong>no volverán a cargarse en el navegador</strong> y se borrarán de Supabase.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+              <button
+                type="button"
+                onClick={handleSelectAllForDelete}
+                className="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-2xl border border-slate-300 transition cursor-pointer shadow-xs"
+              >
+                {filteredProducts.length > 0 && filteredProducts.every((p) => selectedForDelete.includes(p.id)) 
+                  ? 'Deseleccionar Todos' 
+                  : 'Seleccionar Todos'}
+              </button>
+
+              <button
+                type="button"
+                disabled={selectedForDelete.length === 0 || isDeletingBulk}
+                onClick={handleDeleteSelected}
+                className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs sm:text-sm font-black rounded-2xl shadow-md transition cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingBulk ? 'Borrando...' : `Eliminar (${selectedForDelete.length}) Seleccionados`}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsBulkDeleteMode(false);
+                  setSelectedForDelete([]);
+                }}
+                className="p-2 text-rose-600 hover:text-rose-800 hover:bg-rose-100 rounded-xl"
+                title="Cerrar modo de borrado"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            ALERTA VISUAL Y GUÍA: POR QUÉ LAS TABLAS NO APARECEN EN EL TABLE EDITOR
+            ========================================================================= */}
+        {isAdmin && !supabaseStatus.tablesExist && (
+          <div className="bg-linear-to-r from-amber-50 via-yellow-50 to-orange-50 border-2 border-amber-400 rounded-3xl p-5 sm:p-6 shadow-md text-slate-900 animate-in fade-in">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-amber-500 text-slate-950 rounded-2xl shrink-0 mt-0.5 shadow-sm">
+                  <AlertTriangle className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-200 border border-amber-400 text-amber-950 text-[10px] font-black uppercase">
+                    <span>Acción Requerida en tu Panel de Supabase</span>
+                  </div>
+                  <h2 className="text-base sm:text-lg font-black text-slate-900">
+                    ¿Por qué el Table Editor de Supabase dice "No tables or views"?
+                  </h2>
+                  <p className="text-xs text-slate-700 leading-relaxed max-w-2xl">
+                    Tu proyecto <strong>{SUPABASE_CONFIG_DATA.projectId}</strong> está conectado, pero en Supabase las tablas no se crean solas: se crean ejecutando el script SQL una sola vez en el <strong>SQL Editor</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
+                <a
+                  href={`https://supabase.com/dashboard/project/${SUPABASE_CONFIG_DATA.projectId}/sql/new`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 bg-[#004C59] hover:bg-teal-900 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition cursor-pointer"
+                >
+                  <span>1. Abrir SQL Editor en Supabase</span>
+                  <ExternalLink className="w-4 h-4 text-yellow-400" />
+                </a>
+
+                <button
+                  type="button"
+                  onClick={handleCopySql}
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md transition cursor-pointer"
+                >
+                  {copiedSql ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  <span>{copiedSql ? '¡SQL Copiado!' : '2. Copiar Script SQL'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 3 Pasos Visuales */}
+            <div className="mt-4 pt-4 border-t border-amber-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-2xl border border-amber-200">
+                <div className="flex items-center gap-2 font-black text-[#004C59] mb-1">
+                  <span className="w-5 h-5 rounded-full bg-[#004C59] text-white flex items-center justify-center text-[10px]">1</span>
+                  <span>Abre el SQL Editor</span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-normal">
+                  En el menú oscuro de la izquierda de Supabase, haz clic en el icono <strong>&gt;_</strong> (SQL Editor) o en el botón azul de arriba.
+                </p>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-2xl border border-amber-200">
+                <div className="flex items-center gap-2 font-black text-[#004C59] mb-1">
+                  <span className="w-5 h-5 rounded-full bg-[#004C59] text-white flex items-center justify-center text-[10px]">2</span>
+                  <span>Pega el Script SQL</span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-normal">
+                  Copia el script con el botón amarillo y pégalo en el editor de consultas (New Query) de Supabase.
+                </p>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-2xl border border-amber-200">
+                <div className="flex items-center gap-2 font-black text-[#004C59] mb-1">
+                  <span className="w-5 h-5 rounded-full bg-[#004C59] text-white flex items-center justify-center text-[10px]">3</span>
+                  <span>Presiona "Run"</span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-normal">
+                  Haz clic en el botón verde <strong>Run</strong>. Al regresar al Table Editor verás las 4 tablas: <code>products</code>, <code>sales</code>, <code>graduation_students</code> y <code>schools</code>.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Supabase Status Banner (Visible for Admin) */}
         {isAdmin && (
@@ -568,10 +786,17 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 <pre className="whitespace-pre-wrap">{COMPLETE_SUPABASE_SQL}</pre>
               </div>
 
-              <div className="flex items-center justify-between gap-3 pt-2">
-                <span className="text-xs text-slate-400">
-                  Incluye tablas: <code>products</code>, <code>sales</code>, <code>graduation_students</code>, <code>schools</code> con RLS y permisos anon.
-                </span>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                <a
+                  href={`https://supabase.com/dashboard/project/${SUPABASE_CONFIG_DATA.projectId}/sql/new`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-emerald-400 hover:underline"
+                >
+                  <span>Abrir SQL Editor en Supabase</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+
                 <button
                   type="button"
                   onClick={handleCopySql}
@@ -724,7 +949,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
           </div>
         )}
 
-        {/* MODAL / DRAWER RESUMEN DE PRODUCTOS SELECCIONADOS */}
+        {/* MODAL / DRAWER RESUMEN DE PRODUCTOS SELECCIONADOS (CLIENTE Y CAMPO) */}
         {showSummaryDrawer && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-5 animate-in fade-in">
             <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border-2 border-[#004C59] overflow-hidden flex flex-col max-h-[90vh]">
@@ -1219,25 +1444,50 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 const isActive = prod.isActive !== false;
                 const fallbackImg = CATEGORY_FALLBACK_IMAGES[prod.category] || CATEGORY_FALLBACK_IMAGES.foto_estudio;
                 const displayImg = prod.imageUrl || fallbackImg;
-                const isSelectedByRole = !!selectedItems[prod.id];
+                const isSelectedByRole = !isAdmin && !!selectedItems[prod.id];
                 const selectedQty = selectedItems[prod.id]?.quantity || 0;
+                const isSelectedForDeletion = isAdmin && selectedForDelete.includes(prod.id);
 
                 return (
                   <div
                     key={prod.id}
                     onClick={() => {
-                      if (!isAdmin) {
+                      if (isAdmin) {
+                        if (isBulkDeleteMode) {
+                          toggleSelectForDelete(prod.id);
+                        }
+                      } else {
                         openProductDetailModal(prod);
                       }
                     }}
-                    className={`bg-white rounded-2xl sm:rounded-3xl border-2 transition-all duration-200 shadow-sm hover:shadow-xl flex flex-col overflow-hidden ${
-                      isSelectedByRole
+                    className={`bg-white rounded-2xl sm:rounded-3xl border-2 transition-all duration-200 shadow-sm hover:shadow-xl flex flex-col overflow-hidden relative ${
+                      isSelectedForDeletion
+                        ? 'border-rose-600 ring-2 ring-rose-500 shadow-lg bg-rose-50/30'
+                        : isSelectedByRole
                         ? 'border-emerald-500 ring-2 ring-emerald-400 shadow-md'
                         : isActive 
                         ? 'border-slate-200 hover:border-yellow-400' 
                         : 'border-rose-200 bg-slate-50/70 opacity-80'
-                    } ${!isAdmin ? 'cursor-pointer' : ''}`}
+                    } ${(!isAdmin || isBulkDeleteMode) ? 'cursor-pointer' : ''}`}
                   >
+                    {/* CHECKBOX PARA BORRAR (MODO ADMIN) */}
+                    {isAdmin && (
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSelectForDelete(prod.id);
+                        }}
+                        className="absolute top-2.5 right-2.5 z-20 cursor-pointer p-1 rounded-xl bg-white/90 backdrop-blur-xs shadow-md border border-slate-300 hover:scale-110 transition"
+                        title={isSelectedForDeletion ? 'Deseleccionar producto' : 'Seleccionar producto para borrar'}
+                      >
+                        {isSelectedForDeletion ? (
+                          <CheckSquare className="w-5 h-5 text-rose-600 fill-rose-100" />
+                        ) : (
+                          <Square className="w-5 h-5 text-slate-400 hover:text-rose-500" />
+                        )}
+                      </div>
+                    )}
+
                     {/* FOTO GRANDE DEL PRODUCTO (aspect 4/3) */}
                     <div className="relative w-full h-40 sm:h-52 bg-slate-100 overflow-hidden shrink-0 group">
                       <img
@@ -1292,7 +1542,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
 
                       {/* ACCIONES DEPENDIENDO DEL ROL */}
                       {isAdmin ? (
-                        /* Acciones de Administrador: Editar, Desactivar, Borrar */
+                        /* Acciones de Administrador: Editar, Desactivar, Borrar individual o Checkbox */
                         <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-1.5">
                           {/* Botón Activar / Desactivar */}
                           <button
@@ -1321,12 +1571,12 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                                 startEdit(prod);
                               }}
                               className="p-1.5 text-slate-600 hover:text-[#004C59] hover:bg-teal-50 rounded-xl transition cursor-pointer"
-                              title="Editar"
+                              title="Editar producto"
                             >
                               <Edit3 className="w-4 h-4" />
                             </button>
 
-                            {/* Eliminar */}
+                            {/* Eliminar Individual */}
                             <button
                               type="button"
                               onClick={(e) => {
@@ -1334,7 +1584,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                                 handleDelete(prod.id, prod.name);
                               }}
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
-                              title="Eliminar"
+                              title="Eliminar definitivamente de Supabase y navegador"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

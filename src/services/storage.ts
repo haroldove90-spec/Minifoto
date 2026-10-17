@@ -28,6 +28,7 @@ const KEYS = {
   BRAND: 'pos_photo_brand_v1',
   ROLE: 'pos_photo_active_role_v1',
   OPERATOR: 'pos_photo_operator_name_v1',
+  DELETED_PRODUCT_IDS: 'pos_photo_deleted_product_ids_v1',
 };
 
 // Check if sample data has been permanently cleared
@@ -35,15 +36,36 @@ export const isSampleDataCleared = (): boolean => {
   return localStorage.getItem(KEYS.SAMPLE_CLEARED) === 'true';
 };
 
+// Persistent record of products explicitly deleted by the user
+export const getDeletedProductIds = (): string[] => {
+  const data = localStorage.getItem(KEYS.DELETED_PRODUCT_IDS);
+  if (!data) return [];
+  try {
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+};
+
+export const markProductAsDeleted = (productIds: string | string[]) => {
+  const current = getDeletedProductIds();
+  const toAdd = Array.isArray(productIds) ? productIds : [productIds];
+  const updated = Array.from(new Set([...current, ...toAdd]));
+  localStorage.setItem(KEYS.DELETED_PRODUCT_IDS, JSON.stringify(updated));
+};
+
 export const getStoredProducts = (): Product[] => {
   const data = localStorage.getItem(KEYS.PRODUCTS);
-  if (data) {
+  const deletedIds = new Set(getDeletedProductIds());
+
+  if (data !== null) {
     try {
       const parsed: Product[] = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Enrich any stored product with image and isActive if missing
+      if (Array.isArray(parsed)) {
+        // Exclude any product ID marked as deleted
+        const filtered = parsed.filter((p) => !deletedIds.has(p.id));
         const initialMap = new Map(INITIAL_PRODUCTS.map((p) => [p.id, p]));
-        return parsed.map((p) => ({
+        return filtered.map((p) => ({
           ...p,
           imageUrl: p.imageUrl || initialMap.get(p.id)?.imageUrl || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
           isActive: p.isActive !== false,
@@ -53,12 +75,16 @@ export const getStoredProducts = (): Product[] => {
       // fallback
     }
   }
+
   // If sample data was explicitly cleared, start empty
   if (isSampleDataCleared()) {
     return [];
   }
-  localStorage.setItem(KEYS.PRODUCTS, JSON.stringify(INITIAL_PRODUCTS));
-  return INITIAL_PRODUCTS;
+
+  // Filter out any deleted products even on first load
+  const initialFiltered = INITIAL_PRODUCTS.filter((p) => !deletedIds.has(p.id));
+  localStorage.setItem(KEYS.PRODUCTS, JSON.stringify(initialFiltered));
+  return initialFiltered;
 };
 
 export const saveStoredProducts = (products: Product[]) => {
