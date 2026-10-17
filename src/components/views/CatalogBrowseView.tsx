@@ -239,29 +239,29 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
     <div className="flex-1 bg-slate-100 overflow-y-auto p-3 sm:p-5 lg:p-6 pb-28 md:pb-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-5">
         
-        {/* Banner de Cabecera del Catálogo */}
-        <div className="bg-gradient-to-r from-[#004C59] via-teal-900 to-slate-900 rounded-3xl p-5 sm:p-7 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Banner de Cabecera del Catálogo con Paleta Minifoto */}
+        <div className="bg-gradient-to-r from-[#4E2B01] via-[#381e01] to-[#202020] rounded-3xl p-5 sm:p-7 text-[#FFF3BC] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[#ECB769]/40">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400 text-slate-950 text-xs font-black">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ECB769] text-[#4E2B01] text-xs font-black">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>CATÁLOGO DIGITAL INTERACTIVO</span>
+              <span>CATÁLOGO DIGITAL MINIFOTO</span>
             </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white">
               {currentRole === 'client' ? 'Nuestros Trabajos y Servicios Fotográficos' : 'Catálogo para Vendedores en Campo y Mostrador'}
             </h1>
-            <p className="text-xs sm:text-sm text-teal-100 max-w-xl">
-              Explora todas las fotografías y conceptos. Toca cualquier producto para seleccionarlo, elegir opciones de retoque o agregarlo a tu pedido.
+            <p className="text-xs sm:text-sm text-[#FFF3BC]/80 max-w-xl font-medium">
+              Explora todas las fotografías y conceptos de Minifoto. Toca cualquier producto para seleccionarlo, elegir opciones de retoque o agregarlo a tu pedido.
             </p>
           </div>
 
           {/* Botón flotante para ver selección */}
           <button
             onClick={() => setIsOrderDrawerOpen(true)}
-            className="flex items-center justify-center gap-3 px-6 py-3.5 bg-[#F97800] hover:bg-orange-600 active:scale-95 text-white font-black text-sm sm:text-base rounded-2xl shadow-xl border-2 border-orange-400 cursor-pointer transition shrink-0"
+            className="flex items-center justify-center gap-3 px-6 py-3.5 bg-[#ECB769] hover:bg-[#faea9f] active:scale-95 text-[#4E2B01] font-black text-sm sm:text-base rounded-2xl shadow-xl border-2 border-[#4E2B01] cursor-pointer transition shrink-0"
           >
             <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6" />
             <span>Ver Mi Pedido ({totalItemsCount})</span>
-            <span className="font-mono bg-black/20 px-2 py-0.5 rounded-lg text-xs sm:text-sm">
+            <span className="font-mono bg-black/10 px-2 py-0.5 rounded-lg text-xs sm:text-sm">
               ${totalAmount.toFixed(2)}
             </span>
           </button>
@@ -274,8 +274,8 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
               onClick={() => setSelectedCategory('all')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black text-xs whitespace-nowrap transition-all shadow-xs cursor-pointer ${
                 selectedCategory === 'all'
-                  ? 'bg-[#004C59] text-white ring-2 ring-[#004C59]'
-                  : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                  ? 'bg-[#4E2B01] text-[#FFF3BC] ring-2 ring-[#ECB769]'
+                  : 'bg-white text-[#202020] hover:bg-[#FFF3BC]/30 border border-slate-200'
               }`}
             >
               <span>Todos los Productos ({activeProducts.length})</span>
@@ -291,13 +291,13 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
                   onClick={() => setSelectedCategory(cat.id)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs whitespace-nowrap transition-all shadow-xs cursor-pointer ${
                     isSelected
-                      ? 'bg-[#004C59] text-white ring-2 ring-[#004C59]'
-                      : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                      ? 'bg-[#4E2B01] text-[#FFF3BC] ring-2 ring-[#ECB769]'
+                      : 'bg-white text-[#202020] hover:bg-[#FFF3BC]/30 border border-slate-200'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : cat.color}`} />
+                  <Icon className={`w-4 h-4 ${isSelected ? 'text-[#ECB769]' : cat.color}`} />
                   <span>{cat.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected ? 'bg-white/20' : 'bg-slate-100 text-slate-600'}`}>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected ? 'bg-white/20 text-[#FFF3BC]' : 'bg-slate-100 text-slate-600'}`}>
                     {count}
                   </span>
                 </button>
@@ -313,7 +313,7 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
               placeholder="Buscar en el catálogo por nombre, medidas o descripción..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-2.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-2xl shadow-xs focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+              className="w-full pl-12 pr-4 py-2.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-2xl shadow-xs focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
             />
           </div>
         </div>
@@ -339,7 +339,7 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
                   key={prod.id}
                   onClick={() => handleCardClick(prod)}
                   className={`bg-white rounded-2xl sm:rounded-3xl border-2 transition-all duration-200 shadow-sm hover:shadow-xl hover:-translate-y-1 active:scale-98 flex flex-col overflow-hidden cursor-pointer group ${
-                    isSelected ? 'border-[#004C59] ring-2 ring-[#004C59]/30' : 'border-slate-200 hover:border-yellow-400'
+                    isSelected ? 'border-[#4E2B01] ring-2 ring-[#ECB769]' : 'border-slate-200 hover:border-[#ECB769]'
                   }`}
                 >
                   {/* FOTO GRANDE DEL PRODUCTO (aspect-4/3 o h-44 sm:h-52) */}
@@ -356,13 +356,13 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
 
                     {/* Badge de extras si aplica */}
                     {prod.hasExtras && (
-                      <span className="absolute top-2.5 left-2.5 bg-yellow-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-md shadow-md border border-yellow-500">
+                      <span className="absolute top-2.5 left-2.5 bg-[#FFF3BC] text-[#4E2B01] font-black text-[10px] px-2 py-0.5 rounded-md shadow-md border border-[#ECB769]">
                         +Extras (Retoque)
                       </span>
                     )}
 
                     {/* Precio en badge sobre foto */}
-                    <span className="absolute bottom-2.5 right-2.5 bg-slate-950/85 backdrop-blur-xs text-yellow-400 font-mono font-black text-xs sm:text-sm px-2.5 py-0.5 rounded-lg shadow-md">
+                    <span className="absolute bottom-2.5 right-2.5 bg-[#000000]/85 backdrop-blur-xs text-[#FFF3BC] font-mono font-black text-xs sm:text-sm px-2.5 py-0.5 rounded-lg shadow-md border border-[#ECB769]/40">
                       ${prod.price.toFixed(2)}
                     </span>
                   </div>
@@ -370,10 +370,10 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
                   {/* Contenido */}
                   <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 block mb-0.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#ECB769] block mb-0.5">
                         {prod.category.replace('_', ' ')}
                       </span>
-                      <h3 className="font-black text-xs sm:text-sm text-slate-900 leading-snug line-clamp-2">
+                      <h3 className="font-black text-xs sm:text-sm text-[#202020] leading-snug line-clamp-2">
                         {prod.name}
                       </h3>
                       {prod.description && (
@@ -385,14 +385,14 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
 
                     {/* Botón de Selección */}
                     <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <span className="text-sm sm:text-base font-black text-[#004C59] font-mono">
+                      <span className="text-sm sm:text-base font-black text-[#4E2B01] font-mono">
                         ${prod.price.toFixed(2)}
                       </span>
                       <button
                         type="button"
-                        className="px-3 py-1.5 bg-[#004C59] hover:bg-teal-900 text-white font-black text-xs rounded-xl transition flex items-center gap-1 shadow-xs"
+                        className="px-3 py-1.5 bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] font-black text-xs rounded-xl transition flex items-center gap-1 shadow-xs border border-[#ECB769]/50"
                       >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="w-3.5 h-3.5 text-[#ECB769]" />
                         <span>Seleccionar</span>
                       </button>
                     </div>
@@ -406,16 +406,16 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
         {/* MODAL EXTRAS (Retoque Digital / Autoadherible) */}
         {activeModalProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
-            <div className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border-2 border-[#004C59] text-slate-800">
+            <div className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border-2 border-[#4E2B01] text-[#202020]">
               <div className="flex items-center justify-between mb-3 border-b pb-2">
                 <div className="flex items-center gap-2.5">
                   <img
                     src={activeModalProduct.imageUrl || CATEGORY_FALLBACK_IMAGES[activeModalProduct.category]}
                     alt={activeModalProduct.name}
-                    className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
+                    className="w-12 h-12 rounded-xl object-cover border border-[#ECB769] shrink-0"
                   />
                   <div>
-                    <h3 className="text-sm font-black text-[#004C59] leading-tight">{activeModalProduct.name}</h3>
+                    <h3 className="text-sm font-black text-[#4E2B01] leading-tight">{activeModalProduct.name}</h3>
                     <span className="text-xs text-slate-500 font-mono font-bold">Base: ${activeModalProduct.price.toFixed(2)}</span>
                   </div>
                 </div>
@@ -428,54 +428,54 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
               </div>
 
               <div className="space-y-2 mb-4">
-                <label className="flex items-center justify-between p-3 rounded-2xl border-2 border-slate-200 hover:border-[#004C59] bg-slate-50 cursor-pointer transition">
+                <label className="flex items-center justify-between p-3 rounded-2xl border-2 border-slate-200 hover:border-[#4E2B01] bg-[#FCF9F2] cursor-pointer transition">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={extraRetoque}
                       onChange={(e) => setExtraRetoque(e.target.checked)}
-                      className="w-5 h-5 text-[#004C59] rounded"
+                      className="w-5 h-5 text-[#4E2B01] rounded accent-[#4E2B01]"
                     />
-                    <span className="text-xs sm:text-sm font-bold text-slate-800">Lleva Retoque Digital</span>
+                    <span className="text-xs sm:text-sm font-bold text-[#202020]">Lleva Retoque Digital</span>
                   </div>
-                  <span className="text-xs font-black text-[#004C59]">
+                  <span className="text-xs font-black text-[#4E2B01]">
                     +${activeModalProduct.defaultRetoquePrice || 30}
                   </span>
                 </label>
 
-                <label className="flex items-center justify-between p-3 rounded-2xl border-2 border-slate-200 hover:border-[#004C59] bg-slate-50 cursor-pointer transition">
+                <label className="flex items-center justify-between p-3 rounded-2xl border-2 border-slate-200 hover:border-[#4E2B01] bg-[#FCF9F2] cursor-pointer transition">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={extraAutoAdherible}
                       onChange={(e) => setExtraAutoAdherible(e.target.checked)}
-                      className="w-5 h-5 text-[#004C59] rounded"
+                      className="w-5 h-5 text-[#4E2B01] rounded accent-[#4E2B01]"
                     />
-                    <span className="text-xs sm:text-sm font-bold text-slate-800">Lleva Auto adherible</span>
+                    <span className="text-xs sm:text-sm font-bold text-[#202020]">Lleva Auto adherible</span>
                   </div>
-                  <span className="text-xs font-black text-[#004C59]">
+                  <span className="text-xs font-black text-[#4E2B01]">
                     +${activeModalProduct.defaultAutoAdheriblePrice || 20}
                   </span>
                 </label>
 
                 {/* Cantidad */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100">
-                  <span className="text-xs font-bold text-slate-700">Cantidad de paquetes:</span>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#FFF3BC]/30 border border-[#ECB769]/30">
+                  <span className="text-xs font-bold text-[#4E2B01]">Cantidad de paquetes:</span>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setModalQuantity(Math.max(1, modalQuantity - 1))}
-                      className="p-1 bg-white rounded-lg shadow-2xs cursor-pointer"
+                      className="p-1 bg-white rounded-lg shadow-2xs cursor-pointer border border-[#ECB769]/40"
                     >
-                      <Minus className="w-3.5 h-3.5" />
+                      <Minus className="w-3.5 h-3.5 text-[#4E2B01]" />
                     </button>
-                    <span className="font-mono font-black text-sm w-6 text-center">{modalQuantity}</span>
+                    <span className="font-mono font-black text-sm w-6 text-center text-[#4E2B01]">{modalQuantity}</span>
                     <button
                       type="button"
                       onClick={() => setModalQuantity(modalQuantity + 1)}
-                      className="p-1 bg-white rounded-lg shadow-2xs cursor-pointer"
+                      className="p-1 bg-white rounded-lg shadow-2xs cursor-pointer border border-[#ECB769]/40"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="w-3.5 h-3.5 text-[#4E2B01]" />
                     </button>
                   </div>
                 </div>
@@ -492,7 +492,7 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
                 <button
                   type="button"
                   onClick={handleConfirmModalExtras}
-                  className="flex-2 py-3 text-xs font-black bg-[#004C59] hover:bg-teal-900 text-white rounded-xl shadow-md cursor-pointer"
+                  className="flex-2 py-3 text-xs font-black bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] rounded-xl shadow-md cursor-pointer border border-[#ECB769]"
                 >
                   Agregar a Mi Selección
                 </button>
@@ -504,20 +504,20 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
         {/* FLOATING ORDER DRAWER / MODAL */}
         {isOrderDrawerOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in">
-            <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border-2 border-[#004C59] flex flex-col max-h-[90vh] overflow-hidden">
+            <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border-2 border-[#4E2B01] flex flex-col max-h-[90vh] overflow-hidden">
               
               {/* Drawer Header */}
-              <div className="p-4 sm:p-5 bg-gradient-to-r from-[#004C59] to-teal-900 text-white flex items-center justify-between shrink-0">
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-[#4E2B01] to-[#202020] text-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <ShoppingBag className="w-6 h-6 text-yellow-400" />
+                  <ShoppingBag className="w-6 h-6 text-[#ECB769]" />
                   <div>
                     <h3 className="font-black text-base sm:text-lg">Mi Selección de Productos</h3>
-                    <span className="text-xs text-teal-200">{totalItemsCount} artículos en lista</span>
+                    <span className="text-xs text-[#FFF3BC]/80">{totalItemsCount} artículos en lista</span>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsOrderDrawerOpen(false)}
-                  className="p-1.5 text-teal-200 hover:text-white rounded-xl hover:bg-white/10 cursor-pointer"
+                  className="p-1.5 text-[#FFF3BC]/70 hover:text-white rounded-xl hover:bg-white/10 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -527,8 +527,8 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
               <div className="p-4 flex-1 overflow-y-auto space-y-2.5 divide-y divide-slate-100">
                 {selectedItems.length === 0 ? (
                   <div className="py-12 text-center text-slate-400">
-                    <ShoppingBag className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p className="font-bold text-sm text-slate-600">Aún no has seleccionado productos</p>
+                    <ShoppingBag className="w-12 h-12 mx-auto mb-2 opacity-50 text-[#ECB769]" />
+                    <p className="font-bold text-sm text-[#4E2B01]">Aún no has seleccionado productos</p>
                     <p className="text-xs text-slate-400 mt-1">Explora el catálogo y presiona "Seleccionar" en cualquier fotografía.</p>
                   </div>
                 ) : (
@@ -537,7 +537,7 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
                       <div className="flex-1 min-w-0">
                         <span className="font-black text-slate-900 block truncate">{item.name}</span>
                         {(item.options.retoque || item.options.autoAdherible) && (
-                          <span className="text-[10px] text-[#004C59] font-bold block">
+                          <span className="text-[10px] text-[#4E2B01] font-bold block">
                             {item.options.retoque && '+Retoque Digital '}
                             {item.options.autoAdherible && '+Autoadherible'}
                           </span>
@@ -551,19 +551,19 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
                           onClick={() => updateQuantity(item.id, -1)}
                           className="p-1 bg-white rounded-lg shadow-2xs hover:bg-slate-200 cursor-pointer"
                         >
-                          <Minus className="w-3 h-3" />
+                          <Minus className="w-3 h-3 text-[#4E2B01]" />
                         </button>
-                        <span className="font-black text-xs font-mono w-5 text-center">{item.quantity}</span>
+                        <span className="font-black text-xs font-mono w-5 text-center text-[#4E2B01]">{item.quantity}</span>
                         <button
                           onClick={() => updateQuantity(item.id, 1)}
                           className="p-1 bg-white rounded-lg shadow-2xs hover:bg-slate-200 cursor-pointer"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3 h-3 text-[#4E2B01]" />
                         </button>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="font-mono font-black text-sm text-[#004C59] block">
+                        <span className="font-mono font-black text-sm text-[#4E2B01] block">
                           ${item.totalPrice.toFixed(2)}
                         </span>
                         <button
@@ -580,10 +580,10 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
 
               {/* Order Form */}
               {selectedItems.length > 0 && (
-                <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-3 shrink-0">
+                <div className="p-4 bg-[#FCF9F2] border-t border-[#ECB769]/30 space-y-3 shrink-0">
                   <div className="flex items-center justify-between text-base font-black">
-                    <span className="text-slate-700">Total Estimado:</span>
-                    <span className="text-2xl font-mono text-[#004C59]">${totalAmount.toFixed(2)} MXN</span>
+                    <span className="text-[#202020]">Total Estimado:</span>
+                    <span className="text-2xl font-mono text-[#4E2B01]">${totalAmount.toFixed(2)} MXN</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -592,14 +592,14 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
                       placeholder="Nombre del Cliente..."
                       value={clientName}
                       onChange={(e) => setClientName(e.target.value)}
-                      className="text-xs px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#004C59]"
+                      className="text-xs px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#4E2B01]"
                     />
                     <input
                       type="tel"
                       placeholder="Teléfono / WhatsApp..."
                       value={clientPhone}
                       onChange={(e) => setClientPhone(e.target.value)}
-                      className="text-xs px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#004C59]"
+                      className="text-xs px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#4E2B01]"
                     />
                   </div>
 
@@ -620,9 +620,9 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
                       <button
                         type="button"
                         onClick={handleVendorRegisterSale}
-                        className="flex-1 py-3 bg-[#F97800] hover:bg-orange-600 active:scale-95 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                        className="flex-1 py-3 bg-[#ECB769] hover:bg-[#faea9f] active:scale-95 text-[#4E2B01] border border-[#4E2B01] font-black text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <Receipt className="w-4 h-4" />
+                        <Receipt className="w-4 h-4 text-[#4E2B01]" />
                         <span>Cobrar y Emitir Ticket</span>
                       </button>
                     )}

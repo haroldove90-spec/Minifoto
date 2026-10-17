@@ -65,6 +65,7 @@ import { AdminSchoolsView } from './components/views/AdminSchoolsView';
 import { AdminReportsView } from './components/views/AdminReportsView';
 import { AdminConfigView } from './components/views/AdminConfigView';
 import { UserProfileView } from './components/views/UserProfileView';
+import { SplashScreen } from './components/SplashScreen';
 
 export default function App() {
   // Session & Role state
@@ -291,23 +292,23 @@ export default function App() {
   };
 
   // 1. RENDER ROLE SELECTOR ON START IF LOGGED OUT
-  // User Requirement:
-  // "Acceso por Roles en Inicio (Cuadrícula 2 Columnas Móvil / 4 Columnas Escritorio): Selector limpio con tarjetas independientes para cada rol. Sin header, sin descripciones, solo nombre del rol."
   if (!currentRole) {
     return (
-      <RoleSelector
-        onSelectRole={handleSelectRole}
-        brandLogo={brand.logoUrl}
-      />
+      <>
+        <SplashScreen minDisplayTimeMs={1200} />
+        <RoleSelector
+          onSelectRole={handleSelectRole}
+          brandLogo={brand.logoUrl}
+        />
+      </>
     );
   }
 
   // 2. FULLSCREEN KIOSK TOUCH POS (Hide Header, Sidebar, BottomBar completely)
-  // User Requirement:
-  // "Necesito que modifiques la interfaz del sistema pos.. si es necesario oculta el header, el footer, la barra de navegacion solo activa un boton para regresar al dashboard o home del cajero. basate en las imagenes que te comparto .pon botones grandes que al tocar muestran los productos variables si los hay, al final que se muestre en toda la interfaz la calculadora para poder hacer el cobro."
   if (activeTab === 'pos_cashier') {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-900 text-slate-900 overflow-hidden font-sans">
+      <div className="fixed inset-0 z-50 bg-[#FCF9F2] text-[#202020] overflow-hidden font-sans">
+        <SplashScreen minDisplayTimeMs={1200} />
         <CashierPOSView
           products={products}
           operatorName={operatorName}
@@ -335,7 +336,8 @@ export default function App() {
 
   // 3. MAIN DASHBOARD INTERFACE (Header, Sidebar, BottomBar for other modules)
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans antialiased">
+    <div className="min-h-screen flex flex-col bg-[#FCF9F2] text-[#202020] font-sans antialiased">
+      <SplashScreen minDisplayTimeMs={1200} />
       
       {/* Cabecera Institucional Unificada */}
       <Header

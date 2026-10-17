@@ -51,35 +51,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
     switch (currentRole) {
       case 'admin':
         return [
-          { id: 'catalogs' as ActiveTab, label: 'Catálogo & Fotos', icon: Layers, color: 'text-indigo-400' },
-          { id: 'schools' as ActiveTab, label: 'Gestión Escolar 2026', icon: GraduationCap, color: 'text-teal-400' },
-          { id: 'deliveries' as ActiveTab, label: 'Entrega y Liquidación', icon: PackageCheck, color: 'text-emerald-400' },
-          { id: 'reports' as ActiveTab, label: 'Reportes y Métricas', icon: BarChart3, color: 'text-amber-400' },
-          { id: 'config' as ActiveTab, label: 'Configuración & Pagos', icon: Sliders, color: 'text-slate-400' },
-          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-teal-300' },
-          { id: 'home' as ActiveTab, label: 'Resumen General', icon: Home, color: 'text-teal-400' },
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo & Fotos', icon: Layers, color: 'text-[#ECB769]' },
+          { id: 'schools' as ActiveTab, label: 'Gestión Escolar 2026', icon: GraduationCap, color: 'text-[#FFF3BC]' },
+          { id: 'deliveries' as ActiveTab, label: 'Entrega y Liquidación', icon: PackageCheck, color: 'text-[#ECB769]' },
+          { id: 'reports' as ActiveTab, label: 'Reportes y Métricas', icon: BarChart3, color: 'text-[#ECB769]' },
+          { id: 'config' as ActiveTab, label: 'Configuración & Pagos', icon: Sliders, color: 'text-slate-300' },
+          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
+          { id: 'home' as ActiveTab, label: 'Resumen General', icon: Home, color: 'text-[#ECB769]' },
         ];
       case 'cashier':
         return [
-          { id: 'home' as ActiveTab, label: 'Inicio / Menú', icon: Home, color: 'text-teal-400' },
-          { id: 'pos_cashier' as ActiveTab, label: 'Punto de Venta Touch', icon: ShoppingBag, color: 'text-[#F97800]' },
-          { id: 'deliveries' as ActiveTab, label: 'Entregas & Liquidación', icon: PackageCheck, color: 'text-emerald-600' },
-          { id: 'schools' as ActiveTab, label: 'Alumnos y Paquetes', icon: GraduationCap, color: 'text-[#004C59]' },
-          { id: 'history' as ActiveTab, label: 'Historial de Ventas', icon: Receipt, color: 'text-slate-600' },
-          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-teal-300' },
+          { id: 'home' as ActiveTab, label: 'Inicio / Menú', icon: Home, color: 'text-[#ECB769]' },
+          { id: 'pos_cashier' as ActiveTab, label: 'Punto de Venta Touch', icon: ShoppingBag, color: 'text-[#ECB769]' },
+          { id: 'deliveries' as ActiveTab, label: 'Entregas & Liquidación', icon: PackageCheck, color: 'text-[#FFF3BC]' },
+          { id: 'schools' as ActiveTab, label: 'Alumnos y Paquetes', icon: GraduationCap, color: 'text-[#ECB769]' },
+          { id: 'history' as ActiveTab, label: 'Historial de Ventas', icon: Receipt, color: 'text-slate-300' },
+          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
         ];
       case 'field':
         return [
-          { id: 'catalogs' as ActiveTab, label: 'Catálogo de Productos', icon: Layers, color: 'text-indigo-400' },
-          { id: 'field_collector' as ActiveTab, label: 'Cobro en Campo (Escuelas)', icon: Smartphone, color: 'text-[#004C59]' },
-          { id: 'schools' as ActiveTab, label: 'Directorio de Alumnos', icon: Users, color: 'text-teal-600' },
-          { id: 'history' as ActiveTab, label: 'Recibos Emitidos', icon: Receipt, color: 'text-[#F97800]' },
-          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-teal-300' },
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo de Productos', icon: Layers, color: 'text-[#ECB769]' },
+          { id: 'field_collector' as ActiveTab, label: 'Cobro en Campo (Escuelas)', icon: Smartphone, color: 'text-[#FFF3BC]' },
+          { id: 'schools' as ActiveTab, label: 'Directorio de Alumnos', icon: Users, color: 'text-[#ECB769]' },
+          { id: 'history' as ActiveTab, label: 'Recibos Emitidos', icon: Receipt, color: 'text-[#ECB769]' },
+          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
         ];
       case 'client':
         return [
-          { id: 'catalogs' as ActiveTab, label: 'Catálogo de Productos', icon: Layers, color: 'text-[#F97800]' },
-          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-teal-300' },
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo de Productos', icon: Layers, color: 'text-[#ECB769]' },
+          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
         ];
     }
   };
@@ -88,24 +88,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`hidden md:flex flex-col bg-slate-900 text-slate-200 border-r border-slate-800 transition-all duration-300 select-none ${
+      className={`hidden md:flex flex-col bg-[#202020] text-slate-200 border-r border-[#333333] transition-all duration-300 select-none ${
         collapsed ? 'w-20' : 'w-64'
       }`}
     >
       {/* Collapse Toggle Header */}
-      <div className="p-3.5 border-b border-slate-800 flex items-center justify-between">
+      <div className="p-3.5 border-b border-[#333333] flex items-center justify-between">
         {!collapsed && (
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#ECB769]">
             Navegación
           </span>
         )}
         <button
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition mx-auto"
+          className="p-1.5 rounded-lg hover:bg-[#2c2c2c] text-slate-300 hover:text-white transition mx-auto cursor-pointer"
           title={collapsed ? 'Expandir panel' : 'Contraer panel'}
           aria-label={collapsed ? 'Expandir panel lateral' : 'Contraer panel lateral'}
         >
-          {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+          {collapsed ? <ChevronRight className="w-5 h-5 text-[#ECB769]" /> : <ChevronLeft className="w-5 h-5 text-[#ECB769]" />}
         </button>
       </div>
 
@@ -118,14 +118,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => onSelectTab(item.id)}
-              className={`w-full flex items-center gap-3.5 px-3 py-3 rounded-xl text-sm font-semibold transition-all ${
+              className={`w-full flex items-center gap-3.5 px-3 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-[#004C59] text-white shadow-md'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  ? 'bg-[#4E2B01] text-[#FFF3BC] border border-[#ECB769]/60 shadow-md'
+                  : 'text-slate-300 hover:bg-[#2c2c2c] hover:text-[#FFF3BC]'
               } ${collapsed ? 'justify-center' : ''}`}
               title={item.label}
             >
-              <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : item.color}`} />
+              <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#ECB769]' : item.color}`} />
               {!collapsed && <span className="truncate">{item.label}</span>}
             </button>
           );
@@ -133,10 +133,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Footer Session Section */}
-      <div className="p-3 border-t border-slate-800 space-y-2">
+      <div className="p-3 border-t border-[#333333] space-y-2">
         <button
           onClick={onLogout}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 transition ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-[#ECB769] hover:bg-[#2c2c2c] transition cursor-pointer ${
             collapsed ? 'justify-center' : ''
           }`}
           title="Cambiar de Rol / Salir"

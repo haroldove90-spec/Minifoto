@@ -36,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
   onClearSampleData,
   onRestoreSampleData,
   isSampleCleared,
-  logoUrl = 'https://appdesignproyectos.com/photologo.png',
+  logoUrl = 'https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotologo.png',
   onOpenProfile,
 }) => {
   const profile = getStoredUserProfile(currentRole);
@@ -49,23 +49,23 @@ export const Header: React.FC<HeaderProps> = ({
   const roleLabels: Record<Role, { title: string; color: string; icon: React.ReactNode }> = {
     admin: {
       title: 'Administrador (Uriel)',
-      color: 'bg-teal-700/10 text-[#004C59] border-teal-600/30',
-      icon: <ShieldCheck className="w-3.5 h-3.5" />,
+      color: 'bg-[#4E2B01]/10 text-[#4E2B01] border-[#4E2B01]/30',
+      icon: <ShieldCheck className="w-3.5 h-3.5 text-[#4E2B01]" />,
     },
     cashier: {
       title: 'Cajero de Oficina (Mostrador)',
-      color: 'bg-orange-500/10 text-[#F97800] border-orange-500/30',
-      icon: <Store className="w-3.5 h-3.5" />,
+      color: 'bg-[#ECB769]/20 text-[#4E2B01] border-[#ECB769]/50',
+      icon: <Store className="w-3.5 h-3.5 text-[#4E2B01]" />,
     },
     field: {
       title: 'Cobrador en Campo (Móvil)',
-      color: 'bg-emerald-500/10 text-emerald-800 border-emerald-500/30',
-      icon: <Smartphone className="w-3.5 h-3.5" />,
+      color: 'bg-[#FFF3BC] text-[#4E2B01] border-[#ECB769]/40',
+      icon: <Smartphone className="w-3.5 h-3.5 text-[#4E2B01]" />,
     },
     client: {
       title: 'Cliente (Catálogo Digital)',
-      color: 'bg-orange-500/10 text-[#F97800] border-orange-500/30',
-      icon: <Store className="w-3.5 h-3.5" />,
+      color: 'bg-[#202020]/10 text-[#202020] border-[#202020]/30',
+      icon: <Store className="w-3.5 h-3.5 text-[#202020]" />,
     },
   };
 
@@ -89,21 +89,22 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs transition-all">
-        <div className="max-w-7xl mx-auto px-2.5 sm:px-6 h-13 sm:h-18 flex items-center justify-between gap-1.5 sm:gap-4">
+      {/* Header con Pantone Oficial #FCF9F2 */}
+      <header className="sticky top-0 z-40 bg-[#FCF9F2] border-b border-[#ECB769]/30 shadow-xs transition-all">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
           
-          {/* Unencapsulated Full-Size Logo as requested */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Logo Minifoto Tamaño Completo - Sin encapsular */}
+          <div className="flex items-center shrink-0 py-1">
             <img
-              src={logoUrl || 'https://appdesignproyectos.com/photologo.png'}
-              alt="POS Fotografía"
-              className="h-8 sm:h-12 md:h-14 w-auto object-contain max-w-[130px] sm:max-w-[210px] md:max-w-[260px]"
+              src={logoUrl || 'https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotologo.png'}
+              alt="Minifoto"
+              className="h-10 sm:h-14 md:h-16 w-auto object-contain max-h-16 max-w-[170px] sm:max-w-[260px] md:max-w-[320px]"
             />
           </div>
 
           {/* Active Role Identification Badge */}
           <div className="flex items-center gap-2">
-            <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${roleLabels[currentRole].color}`}>
+            <div className={`hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black border shadow-xs ${roleLabels[currentRole].color}`}>
               {roleLabels[currentRole].icon}
               <span className="truncate max-w-[170px] lg:max-w-none">
                 {roleLabels[currentRole].title}
@@ -138,17 +139,17 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenProfile}
                 type="button"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-[#004C59] bg-teal-50 hover:bg-teal-100 active:scale-95 rounded-lg border border-teal-200 transition-all cursor-pointer shadow-xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#FFF3BC] bg-[#4E2B01] hover:bg-[#381f01] active:scale-95 rounded-xl border border-[#ECB769] transition-all cursor-pointer shadow-xs"
                 title="Ver y editar Mi Perfil (foto y datos)"
               >
                 {profile.avatarUrl ? (
                   <img
                     src={profile.avatarUrl}
                     alt={operatorName}
-                    className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-cover border border-[#004C59]"
+                    className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-cover border border-[#ECB769]"
                   />
                 ) : (
-                  <User className="w-3.5 h-3.5 text-[#004C59]" />
+                  <User className="w-3.5 h-3.5 text-[#ECB769]" />
                 )}
                 <span className="hidden sm:inline">Mi Perfil</span>
               </button>
@@ -161,11 +162,11 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => setShowClearModal(true)}
               type="button"
-              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 active:scale-95 rounded-lg border border-rose-200 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 active:scale-95 rounded-xl border border-rose-200 transition-colors"
               title="Borrar datos de muestra del sistema"
             >
               <Trash2 className="w-3.5 h-3.5 shrink-0 text-rose-600" />
-              <span className="hidden lg:inline">Borrar Datos Demo</span>
+              <span className="hidden lg:inline">Borrar Demo</span>
             </button>
 
             {/* If sample data was cleared, allow restoring it if desired */}
@@ -173,10 +174,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onRestoreSampleData}
                 type="button"
-                className="hidden xl:flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+                className="hidden xl:flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-[#202020] bg-[#FFF3BC] hover:bg-[#faeab0] rounded-xl border border-[#ECB769]/50 transition"
                 title="Recargar datos demo para pruebas"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3.5 h-3.5 text-[#4E2B01]" />
                 <span>Restaurar Demo</span>
               </button>
             )}
@@ -185,28 +186,28 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onLogout}
               type="button"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg transition-colors border border-slate-300"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold text-[#4E2B01] bg-white hover:bg-[#FFF3BC]/50 active:scale-95 rounded-xl transition-colors border border-[#ECB769]/60 shadow-2xs"
               title="Cerrar sesión y cambiar de rol"
             >
-              <LogOut className="w-4 h-4 text-slate-600" />
+              <LogOut className="w-4 h-4 text-[#4E2B01]" />
               <span className="hidden sm:inline">Cambiar Rol</span>
             </button>
           </div>
         </div>
 
         {/* Mobile active role subtitle banner */}
-        <div className="sm:hidden px-2.5 py-0.5 bg-slate-100 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-600">
-          <span className="font-semibold flex items-center gap-1 text-[#004C59] truncate max-w-[200px]">
+        <div className="sm:hidden px-3 py-1 bg-[#FCF9F2] border-t border-[#ECB769]/30 flex items-center justify-between text-[10px] text-[#202020]">
+          <span className="font-bold flex items-center gap-1 text-[#4E2B01] truncate max-w-[200px]">
             {roleLabels[currentRole].icon} {roleLabels[currentRole].title}
           </span>
-          <span className="text-slate-500 font-mono text-[9px] shrink-0">{operatorName}</span>
+          <span className="text-[#4E2B01] font-mono text-[9px] shrink-0 font-bold">{operatorName}</span>
         </div>
       </header>
 
       {/* Confirmation Modal: Clear Sample Data */}
       {showClearModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 text-slate-800">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border-2 border-[#4E2B01] text-slate-800">
             <div className="flex items-center gap-3 text-rose-600 mb-3">
               <div className="p-2.5 rounded-full bg-rose-100">
                 <AlertTriangle className="w-6 h-6" />
@@ -218,18 +219,18 @@ export const Header: React.FC<HeaderProps> = ({
               Esta acción borrará los alumnos de ejemplo, ventas y pedidos registrados para pruebas. Se guardará la configuración en su navegador para que <strong>los datos de muestra no vuelvan a aparecer</strong> nunca más.
             </p>
 
-            <div className="mb-5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+            <div className="mb-5 bg-[#FCF9F2] border border-[#ECB769]/40 rounded-2xl p-3.5 space-y-2">
               <label className="flex items-center gap-2.5 text-xs sm:text-sm font-medium text-slate-700 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={includeCatalogs}
                   onChange={(e) => setIncludeCatalogs(e.target.checked)}
-                  className="rounded border-slate-300 text-[#004C59] focus:ring-[#004C59] w-4 h-4"
+                  className="rounded border-slate-300 text-[#4E2B01] focus:ring-[#4E2B01] w-4 h-4"
                 />
                 <span>También vaciar catálogo de productos y precios (empezar desde cero)</span>
               </label>
               <p className="text-[11px] text-slate-500 pl-6.5">
-                (Si está desmarcado, se conservará la lista de servicios: Fotos infantiles, Ampliaciones, Six Party, etc., para que no tenga que crearlos de nuevo).
+                (Si está desmarcado, se conservará la lista de servicios para no tener que crearlos de nuevo).
               </p>
             </div>
 
@@ -257,8 +258,8 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Global Toast */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 flex items-center gap-2.5 bg-[#004C59] text-white px-4 py-3 rounded-xl shadow-xl animate-in slide-in-from-top text-xs sm:text-sm font-medium">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+        <div className="fixed top-20 right-4 z-50 flex items-center gap-2.5 bg-[#4E2B01] text-[#FFF3BC] px-4 py-3 rounded-2xl shadow-xl border border-[#ECB769] animate-in slide-in-from-top text-xs sm:text-sm font-bold">
+          <CheckCircle2 className="w-5 h-5 text-[#ECB769] shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

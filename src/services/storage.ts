@@ -189,9 +189,13 @@ export const getStoredBrandConfig = (): BrandConfig => {
   const data = localStorage.getItem(KEYS.BRAND);
   if (data) {
     try {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (parsed.logoUrl && !parsed.logoUrl.includes('appdesignproyectos.com') && parsed.primaryColor === '#4E2B01') {
+        return parsed;
+      }
     } catch {}
   }
+  localStorage.setItem(KEYS.BRAND, JSON.stringify(INITIAL_BRAND));
   return INITIAL_BRAND;
 };
 

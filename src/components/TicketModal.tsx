@@ -164,7 +164,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
           {/* Unencapsulated Full-Size Logo */}
           <div className="flex flex-col items-center mb-4 text-center">
             <img
-              src={brand.logoUrl || 'https://appdesignproyectos.com/photologo.png'}
+              src={brand.logoUrl || 'https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotologo.png'}
               alt={brand.businessName}
               className="h-14 sm:h-16 w-auto max-w-[220px] object-contain mb-2 print:max-h-16"
             />
@@ -197,7 +197,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                 </span>
 
                 <span className="text-slate-500 font-bold">Escuela:</span>
-                <span className="font-bold text-right text-[#004C59] truncate pl-1">
+                <span className="font-bold text-right text-[#4E2B01] truncate pl-1">
                   {studentTicket.schoolName}
                 </span>
 
@@ -227,7 +227,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                   <span className="font-bold">Anticipo Pagado:</span>
                   <span className="font-bold">-${studentTicket.depositAmount.toFixed(2)}</span>
                 </div>
-                <div className="border-t border-slate-300 pt-1 flex justify-between text-sm font-extrabold text-[#F97800]">
+                <div className="border-t border-slate-300 pt-1 flex justify-between text-sm font-extrabold text-[#4E2B01]">
                   <span>Resto por Liquidar:</span>
                   <span>${studentTicket.remainingAmount.toFixed(2)}</span>
                 </div>
@@ -235,7 +235,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
               <div className="text-[11px] text-slate-600 flex justify-between pt-1">
                 <span>Estatus de entrega:</span>
-                <span className="font-bold uppercase text-[#004C59]">
+                <span className="font-bold uppercase text-[#4E2B01]">
                   {studentTicket.deliveryStatus}
                 </span>
               </div>
@@ -266,7 +266,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
               {sale.schoolName && (
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-500">Escuela:</span>
-                  <span className="font-bold text-[#004C59]">{sale.schoolName}</span>
+                  <span className="font-bold text-[#4E2B01]">{sale.schoolName}</span>
                 </div>
               )}
 
@@ -289,7 +289,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
                     {/* Extras: Retoque o Autoadherible */}
                     {(item.options.retoque || item.options.autoAdherible) && (
-                      <div className="text-[11px] text-[#004C59] pl-3 flex flex-wrap gap-x-2">
+                      <div className="text-[11px] text-[#4E2B01] pl-3 flex flex-wrap gap-x-2">
                         {item.options.retoque && <span>+ Retoque (+${item.options.retoquePrice})</span>}
                         {item.options.autoAdherible && <span>+ Autoadherible (+${item.options.autoAdheriblePrice})</span>}
                       </div>
@@ -312,7 +312,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                     <span>-${sale.discount.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm sm:text-base font-extrabold text-[#004C59] border-t border-slate-300 pt-1">
+                <div className="flex justify-between text-sm sm:text-base font-extrabold text-[#4E2B01] border-t border-slate-300 pt-1">
                   <span>TOTAL:</span>
                   <span>${sale.total.toFixed(2)}</span>
                 </div>
@@ -325,7 +325,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                   <span>${sale.amountPaid.toFixed(2)}</span>
                 </div>
                 {sale.change > 0 && (
-                  <div className="flex justify-between text-[#F97800] font-bold">
+                  <div className="flex justify-between text-[#ECB769] font-bold">
                     <span>Cambio entregado:</span>
                     <span>${sale.change.toFixed(2)}</span>
                   </div>
@@ -354,9 +354,9 @@ export const TicketModal: React.FC<TicketModalProps> = ({
           <button
             onClick={handlePrint}
             type="button"
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#004C59] hover:bg-[#003842] active:scale-95 text-white font-bold text-sm rounded-xl shadow-md transition cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#4E2B01] hover:bg-[#381e01] active:scale-95 text-[#FFF3BC] font-bold text-sm rounded-xl shadow-md transition cursor-pointer"
           >
-            <Printer className="w-4 h-4 text-[#F97800]" />
+            <Printer className="w-4 h-4 text-[#ECB769]" />
             <span>{isPrinting ? 'Imprimiendo...' : 'Mandar a Imprimir Ticket'}</span>
           </button>
           <button

@@ -154,7 +154,7 @@ export const AdminReportsView: React.FC<AdminReportsViewProps> = ({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Folio o cliente..."
-                  className="w-full text-xs pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#004C59]"
+                  className="w-full text-xs pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#4E2B01]"
                 />
               </div>
             </div>
@@ -162,7 +162,7 @@ export const AdminReportsView: React.FC<AdminReportsViewProps> = ({
 
           {filteredSales.length === 0 ? (
             <div className="p-8 text-center text-slate-600">
-              <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+              <Receipt className="w-12 h-12 text-[#ECB769] mx-auto mb-2" />
               <p className="text-sm font-semibold">No se han registrado ventas aún</p>
               <p className="text-xs text-slate-600 mt-1">
                 Realiza cobros desde el punto de venta touch o módulo de entregas para verlas reflejadas aquí.
@@ -171,7 +171,7 @@ export const AdminReportsView: React.FC<AdminReportsViewProps> = ({
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-slate-100 text-slate-600 uppercase font-bold text-[10px]">
+                <thead className="bg-[#FFF3BC]/50 text-[#4E2B01] uppercase font-bold text-[10px] border-b border-[#ECB769]/40">
                   <tr>
                     <th className="p-3">Folio</th>
                     <th className="p-3">Fecha y Hora</th>
@@ -185,7 +185,7 @@ export const AdminReportsView: React.FC<AdminReportsViewProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {filteredSales.map((sale) => (
-                    <tr key={sale.id} className="hover:bg-slate-50/80 transition">
+                    <tr key={sale.id} className="hover:bg-[#FFF3BC]/20 transition">
                       <td className="p-3 font-mono font-bold text-slate-700">#{sale.folio}</td>
                       <td className="p-3 text-slate-600">{sale.date}</td>
                       <td className="p-3 text-slate-800">{sale.operatorName}</td>
@@ -199,18 +199,18 @@ export const AdminReportsView: React.FC<AdminReportsViewProps> = ({
                         </span>
                       </td>
                       <td className="p-3">
-                        <span className="uppercase font-bold text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-800">
+                        <span className="uppercase font-bold text-[10px] px-2 py-0.5 rounded bg-[#FFF3BC] text-[#4E2B01] border border-[#ECB769]/50">
                           {sale.paymentMethod}
                         </span>
                       </td>
-                      <td className="p-3 text-right font-mono font-black text-sm text-[#004C59]">
+                      <td className="p-3 text-right font-mono font-black text-sm text-[#4E2B01]">
                         ${sale.total.toFixed(2)}
                       </td>
                       <td className="p-3 text-right">
                         <button
                           type="button"
                           onClick={() => onOpenTicket(sale)}
-                          className="p-1.5 text-slate-600 hover:text-[#004C59] bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+                          className="p-1.5 text-[#4E2B01] hover:text-white bg-[#FFF3BC] hover:bg-[#4E2B01] rounded-lg transition border border-[#ECB769]/40 cursor-pointer"
                           title="Reimprimir Ticket"
                         >
                           <Printer className="w-3.5 h-3.5" />

@@ -73,18 +73,18 @@ export const BottomBar: React.FC<BottomBarProps> = ({
               onClick={() => onSelectTab(tab.id)}
               className={`flex-1 flex flex-col items-center justify-center py-1 px-0.5 transition-all active:scale-95 ${
                 isActive
-                  ? 'text-[#004C59] font-bold'
-                  : 'text-slate-500 hover:text-slate-800 font-medium'
+                  ? 'text-[#4E2B01] font-black'
+                  : 'text-slate-500 hover:text-[#4E2B01] font-medium'
               }`}
             >
               <div
                 className={`p-1 rounded-xl transition-colors ${
-                  isActive ? 'bg-[#004C59]/10 text-[#004C59]' : ''
+                  isActive ? 'bg-[#FFF3BC] text-[#4E2B01] border border-[#ECB769]/50' : ''
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5px] text-[#4E2B01]' : 'stroke-2'}`} />
               </div>
-              <span className={`text-[10px] leading-tight mt-0.5 truncate max-w-[64px] ${isActive ? 'font-bold text-[#004C59]' : ''}`}>
+              <span className={`text-[10px] leading-tight mt-0.5 truncate max-w-[64px] ${isActive ? 'font-black text-[#4E2B01]' : ''}`}>
                 {tab.label}
               </span>
             </button>

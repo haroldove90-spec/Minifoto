@@ -1,6 +1,6 @@
 {
-  "name": "POS Fotografía",
-  "description": "Sistema punto de venta profesional para estudio fotográfico, eventos, graduaciones escolares y fuente de sodas con soporte multi-rol y PWA.",
+  "name": "Minifoto",
+  "description": "Sistema de Punto de Venta profesional Minifoto para estudio fotográfico, eventos, graduaciones escolares y catálogo digital.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

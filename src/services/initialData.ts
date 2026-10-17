@@ -404,11 +404,11 @@ export const INITIAL_SUPABASE: SupabaseConfig = {
 };
 
 export const INITIAL_BRAND: BrandConfig = {
-  primaryColor: '#004C59',
-  secondaryColor: '#F97800',
-  businessName: 'FOTOGRAFÍA & VIDEO ESTUDIO',
-  logoUrl: 'https://appdesignproyectos.com/photologo.png',
-  iconUrl: 'https://appdesignproyectos.com/photoicono.png',
+  primaryColor: '#4E2B01',
+  secondaryColor: '#ECB769',
+  businessName: 'Minifoto',
+  logoUrl: 'https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotologo.png',
+  iconUrl: 'https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotoicono.png',
   phone: '555-789-0123',
   address: 'Av. Hidalgo #405, Zona Centro',
   ticketFooter: '¡Gracias por su preferencia! Conserve este ticket para cualquier aclaración o entrega de trabajos.',

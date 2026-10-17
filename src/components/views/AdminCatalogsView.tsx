@@ -568,8 +568,8 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
         
         {/* Floating Toast Notification */}
         {notification && (
-          <div className="fixed bottom-20 sm:bottom-6 right-6 z-50 bg-[#004C59] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 font-bold text-xs sm:text-sm animate-in slide-in-from-bottom border-2 border-teal-400">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <div className="fixed bottom-20 sm:bottom-6 right-6 z-50 bg-[#4E2B01] text-[#FFF3BC] px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 font-bold text-xs sm:text-sm animate-in slide-in-from-bottom border-2 border-[#ECB769]">
+            <CheckCircle2 className="w-5 h-5 text-[#ECB769] shrink-0" />
             <span>{notification}</span>
           </div>
         )}
@@ -577,11 +577,11 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
         {/* Header & Stats Banner */}
         <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="p-3.5 bg-[#004C59]/10 rounded-2xl shrink-0">
-              <Layers className="w-7 h-7 text-[#004C59]" />
+            <div className="p-3.5 bg-[#FFF3BC] text-[#4E2B01] rounded-2xl shrink-0 shadow-xs">
+              <Layers className="w-7 h-7 text-[#4E2B01]" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-[#004C59] text-[10px] font-black uppercase mb-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FFF3BC] border border-[#ECB769]/50 text-[#4E2B01] text-[10px] font-black uppercase mb-1">
                 <span>
                   {isAdmin 
                     ? 'Panel de Catálogos & Fotografías (Administrador)' 
@@ -634,7 +634,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 className="flex items-center gap-2 px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-300 text-xs font-bold rounded-2xl transition cursor-pointer shadow-xs"
                 title="Agregar o borrar categorías del catálogo"
               >
-                <FolderPlus className="w-4 h-4 text-[#004C59]" />
+                <FolderPlus className="w-4 h-4 text-[#4E2B01]" />
                 <span>Gestionar Categorías</span>
               </button>
 
@@ -654,9 +654,9 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               <button
                 type="button"
                 onClick={startCreate}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#004C59] hover:bg-teal-900 active:scale-95 text-white text-xs sm:text-sm font-black rounded-2xl shadow-md transition cursor-pointer"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#4E2B01] hover:bg-[#381e01] active:scale-95 text-[#FFF3BC] text-xs sm:text-sm font-black rounded-2xl shadow-md transition cursor-pointer"
               >
-                <Plus className="w-5 h-5 text-yellow-400" />
+                <Plus className="w-5 h-5 text-[#ECB769]" />
                 <span>+ Nuevo Producto</span>
               </button>
             </div>
@@ -666,9 +666,9 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
           {!isAdmin && totalSelectedCount > 0 && (
             <button
               onClick={() => setShowSummaryDrawer(true)}
-              className="flex items-center gap-2.5 px-5 py-3 bg-[#004C59] hover:bg-teal-900 text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg border-2 border-yellow-400 cursor-pointer transition active:scale-95 shrink-0"
+              className="flex items-center gap-2.5 px-5 py-3 bg-[#4E2B01] hover:bg-[#381e01] text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg border-2 border-[#ECB769] cursor-pointer transition active:scale-95 shrink-0"
             >
-              <ShoppingCart className="w-5 h-5 text-yellow-400" />
+              <ShoppingCart className="w-5 h-5 text-[#ECB769]" />
               <span>Ver Selección ({totalSelectedCount}) • ${totalSelectedAmount.toFixed(2)}</span>
             </button>
           )}
@@ -757,16 +757,16 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   href={`https://supabase.com/dashboard/project/${SUPABASE_CONFIG_DATA.projectId}/sql/new`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 bg-[#004C59] hover:bg-teal-900 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition cursor-pointer"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 bg-[#4E2B01] hover:bg-[#381e01] text-[#FFF3BC] font-black text-xs sm:text-sm rounded-2xl shadow-md transition cursor-pointer"
                 >
                   <span>1. Abrir SQL Editor en Supabase</span>
-                  <ExternalLink className="w-4 h-4 text-yellow-400" />
+                  <ExternalLink className="w-4 h-4 text-[#ECB769]" />
                 </a>
 
                 <button
                   type="button"
                   onClick={handleCopySql}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md transition cursor-pointer"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 bg-[#ECB769] hover:bg-[#d9a456] text-[#202020] font-black text-xs sm:text-sm rounded-2xl shadow-md transition cursor-pointer"
                 >
                   {copiedSql ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   <span>{copiedSql ? '¡SQL Copiado!' : '2. Copiar Script SQL'}</span>
@@ -777,8 +777,8 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
             {/* 3 Pasos Visuales */}
             <div className="mt-4 pt-4 border-t border-amber-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-2xl border border-amber-200">
-                <div className="flex items-center gap-2 font-black text-[#004C59] mb-1">
-                  <span className="w-5 h-5 rounded-full bg-[#004C59] text-white flex items-center justify-center text-[10px]">1</span>
+                <div className="flex items-center gap-2 font-black text-[#4E2B01] mb-1">
+                  <span className="w-5 h-5 rounded-full bg-[#4E2B01] text-[#FFF3BC] flex items-center justify-center text-[10px]">1</span>
                   <span>Abre el SQL Editor</span>
                 </div>
                 <p className="text-[11px] text-slate-600 leading-normal">
@@ -787,8 +787,8 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               </div>
 
               <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-2xl border border-amber-200">
-                <div className="flex items-center gap-2 font-black text-[#004C59] mb-1">
-                  <span className="w-5 h-5 rounded-full bg-[#004C59] text-white flex items-center justify-center text-[10px]">2</span>
+                <div className="flex items-center gap-2 font-black text-[#4E2B01] mb-1">
+                  <span className="w-5 h-5 rounded-full bg-[#4E2B01] text-[#FFF3BC] flex items-center justify-center text-[10px]">2</span>
                   <span>Pega el Script SQL</span>
                 </div>
                 <p className="text-[11px] text-slate-600 leading-normal">
@@ -797,8 +797,8 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               </div>
 
               <div className="bg-white/80 backdrop-blur-xs p-3.5 rounded-2xl border border-amber-200">
-                <div className="flex items-center gap-2 font-black text-[#004C59] mb-1">
-                  <span className="w-5 h-5 rounded-full bg-[#004C59] text-white flex items-center justify-center text-[10px]">3</span>
+                <div className="flex items-center gap-2 font-black text-[#4E2B01] mb-1">
+                  <span className="w-5 h-5 rounded-full bg-[#4E2B01] text-[#FFF3BC] flex items-center justify-center text-[10px]">3</span>
                   <span>Presiona "Run"</span>
                 </div>
                 <p className="text-[11px] text-slate-600 leading-normal">
@@ -811,12 +811,12 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
 
         {/* Supabase Status Banner (Visible for Admin) */}
         {isAdmin && (
-          <div className="bg-gradient-to-r from-teal-50 via-emerald-50 to-amber-50 border border-teal-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="bg-gradient-to-r from-[#FFF3BC]/60 via-[#FCF9F2] to-amber-50 border border-[#ECB769]/40 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2.5">
-              <Database className="w-5 h-5 text-[#004C59] shrink-0" />
+              <Database className="w-5 h-5 text-[#4E2B01] shrink-0" />
               <div>
                 <span className="font-bold text-slate-800 block">
-                  Supabase Proyecto: <code className="text-teal-800 font-mono text-[11px] font-black">{SUPABASE_CONFIG_DATA.projectId}</code>
+                  Supabase Proyecto: <code className="text-[#4E2B01] font-mono text-[11px] font-black">{SUPABASE_CONFIG_DATA.projectId}</code>
                 </span>
                 <span className="text-[11px] text-slate-500">
                   {supabaseStatus.checked 
@@ -895,14 +895,14 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-5 animate-in fade-in">
             <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border-2 border-slate-300 overflow-hidden flex flex-col max-h-[90vh]">
               {/* Header */}
-              <div className="p-4 sm:p-5 bg-[#004C59] text-white flex items-center justify-between">
+              <div className="p-4 sm:p-5 bg-[#4E2B01] text-[#FFF3BC] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-yellow-400 text-slate-950 rounded-xl">
+                  <div className="p-2 bg-[#ECB769] text-[#202020] rounded-xl shadow-xs">
                     <FolderPlus className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="text-base sm:text-lg font-black">Gestionar Categorías del Catálogo</h3>
-                    <p className="text-[11px] text-teal-100">Agrega nuevas categorías o elimina existentes</p>
+                    <p className="text-[11px] text-[#FFF3BC]/80">Agrega nuevas categorías o elimina existentes</p>
                   </div>
                 </div>
                 <button
@@ -916,9 +916,9 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
 
               <div className="p-5 overflow-y-auto space-y-6">
                 {/* Form to add a new category */}
-                <form onSubmit={handleAddCategory} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <form onSubmit={handleAddCategory} className="bg-[#FCF9F2] p-4 rounded-2xl border border-[#ECB769]/30 space-y-3">
                   <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                    <Plus className="w-4 h-4 text-[#004C59]" />
+                    <Plus className="w-4 h-4 text-[#4E2B01]" />
                     <span>Agregar Nueva Categoría</span>
                   </h4>
 
@@ -930,7 +930,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                       value={newCatName}
                       onChange={(e) => setNewCatName(e.target.value)}
                       placeholder="Ej. Retablos y Marcos, Fotolibros, Sublimación..."
-                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
                     />
                   </div>
 
@@ -941,13 +941,11 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                       onChange={(e) => setNewCatColor(e.target.value)}
                       className="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-xl font-medium"
                     >
-                      <option value="text-teal-600">Verde Petróleo (Teal)</option>
-                      <option value="text-yellow-600">Amarillo Dorado</option>
+                      <option value="text-[#4E2B01]">Café Minifoto</option>
+                      <option value="text-[#ECB769]">Dorado Minifoto</option>
                       <option value="text-amber-600">Ámbar / Naranja</option>
-                      <option value="text-lime-600">Lima Fresco</option>
                       <option value="text-emerald-600">Esmeralda</option>
                       <option value="text-indigo-600">Índigo / Azul</option>
-                      <option value="text-purple-600">Púrpura</option>
                       <option value="text-rose-600">Rosa / Magenta</option>
                     </select>
                   </div>
@@ -955,9 +953,9 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   <button
                     type="submit"
                     disabled={isAddingCategory || !newCatName.trim()}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#004C59] hover:bg-teal-900 active:scale-95 disabled:opacity-50 text-white text-xs font-black rounded-xl transition cursor-pointer shadow-md"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#4E2B01] hover:bg-[#381e01] active:scale-95 disabled:opacity-50 text-[#FFF3BC] text-xs font-black rounded-xl transition cursor-pointer shadow-md"
                   >
-                    <Plus className="w-4 h-4 text-yellow-400" />
+                    <Plus className="w-4 h-4 text-[#ECB769]" />
                     <span>{isAddingCategory ? 'Guardando en Supabase...' : 'Guardar Nueva Categoría'}</span>
                   </button>
                 </form>
@@ -1044,14 +1042,14 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 )}
                 <button
                   onClick={() => setDetailModalProduct(null)}
-                  className="absolute top-3 right-3 p-2 bg-slate-900/80 hover:bg-slate-900 text-white rounded-full transition cursor-pointer"
+                  className="absolute top-3 right-3 p-2 bg-[#202020]/80 hover:bg-[#202020] text-white rounded-full transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
-                <span className="absolute bottom-3 left-3 bg-[#004C59] text-white text-xs font-black px-3 py-1 rounded-xl shadow-md uppercase">
+                <span className="absolute bottom-3 left-3 bg-[#4E2B01] text-[#FFF3BC] text-xs font-black px-3 py-1 rounded-xl shadow-md uppercase">
                   {detailModalProduct.category.replace('_', ' ')}
                 </span>
-                <span className="absolute bottom-3 right-3 bg-yellow-400 text-slate-950 font-mono font-black text-base px-3 py-1 rounded-xl shadow-md">
+                <span className="absolute bottom-3 right-3 bg-[#ECB769] text-[#202020] font-mono font-black text-base px-3 py-1 rounded-xl shadow-md">
                   ${detailModalProduct.price.toFixed(2)} MXN
                 </span>
               </div>
@@ -1086,11 +1084,11 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                           type="checkbox"
                           checked={modalRetoque}
                           onChange={(e) => setModalRetoque(e.target.checked)}
-                          className="w-4 h-4 text-[#004C59] rounded"
+                          className="w-4 h-4 text-[#4E2B01] rounded"
                         />
                         <span className="text-xs font-bold text-slate-800">Retoque Digital Profesional</span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-teal-800">
+                      <span className="text-xs font-mono font-bold text-[#4E2B01]">
                         +${detailModalProduct.defaultRetoquePrice || 30}.00
                       </span>
                     </label>
@@ -1101,11 +1099,11 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                           type="checkbox"
                           checked={modalAutoAdh}
                           onChange={(e) => setModalAutoAdh(e.target.checked)}
-                          className="w-4 h-4 text-[#004C59] rounded"
+                          className="w-4 h-4 text-[#4E2B01] rounded"
                         />
                         <span className="text-xs font-bold text-slate-800">Adhesivo Autoadherible</span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-teal-800">
+                      <span className="text-xs font-mono font-bold text-[#4E2B01]">
                         +${detailModalProduct.defaultAutoAdheriblePrice || 20}.00
                       </span>
                     </label>
@@ -1139,7 +1137,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 {/* Subtotal calculation */}
                 <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                   <span className="text-xs font-black text-slate-600 uppercase">Total por este producto:</span>
-                  <span className="text-lg font-black text-[#004C59] font-mono">
+                  <span className="text-lg font-black text-[#4E2B01] font-mono">
                     ${((detailModalProduct.price + 
                       (detailModalProduct.hasExtras && modalRetoque ? (detailModalProduct.defaultRetoquePrice || 30) : 0) + 
                       (detailModalProduct.hasExtras && modalAutoAdh ? (detailModalProduct.defaultAutoAdheriblePrice || 20) : 0)
@@ -1160,9 +1158,9 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleConfirmSelection(detailModalProduct)}
-                  className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-[#004C59] hover:bg-teal-900 active:scale-95 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-[#4E2B01] hover:bg-[#381e01] active:scale-95 text-[#FFF3BC] font-black text-xs sm:text-sm rounded-xl shadow-md transition cursor-pointer"
                 >
-                  <Check className="w-4 h-4 text-yellow-400" />
+                  <Check className="w-4 h-4 text-[#ECB769]" />
                   <span>{selectedItems[detailModalProduct.id] ? 'Actualizar Selección' : 'Seleccionar este Producto'}</span>
                 </button>
               </div>
@@ -1173,13 +1171,13 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
         {/* MODAL / DRAWER RESUMEN DE PRODUCTOS SELECCIONADOS (CLIENTE Y CAMPO) */}
         {showSummaryDrawer && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-5 animate-in fade-in">
-            <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border-2 border-[#004C59] overflow-hidden flex flex-col max-h-[90vh]">
-              <div className="p-4 sm:p-5 bg-[#004C59] text-white flex items-center justify-between">
+            <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border-2 border-[#4E2B01] overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="p-4 sm:p-5 bg-[#4E2B01] text-[#FFF3BC] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <ShoppingCart className="w-6 h-6 text-yellow-400" />
+                  <ShoppingCart className="w-6 h-6 text-[#ECB769]" />
                   <div>
                     <h3 className="text-base sm:text-lg font-black">Resumen de Selección</h3>
-                    <p className="text-xs text-teal-200">
+                    <p className="text-xs text-[#FFF3BC]/80">
                       {totalSelectedCount} productos seleccionados • Total: ${totalSelectedAmount.toFixed(2)} MXN
                     </p>
                   </div>
@@ -1213,12 +1211,12 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                         <h4 className="text-xs sm:text-sm font-black text-slate-800 truncate">{item.name}</h4>
                         <div className="text-[11px] text-slate-500">
                           {item.quantity} pza x ${item.price.toFixed(2)}
-                          {item.retoque && <span className="ml-1 text-teal-700 font-bold">+ Retoque</span>}
-                          {item.autoadherible && <span className="ml-1 text-teal-700 font-bold">+ Adhesivo</span>}
+                          {item.retoque && <span className="ml-1 text-[#4E2B01] font-bold">+ Retoque</span>}
+                          {item.autoadherible && <span className="ml-1 text-[#4E2B01] font-bold">+ Adhesivo</span>}
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="font-mono font-black text-xs sm:text-sm text-[#004C59] block">
+                        <span className="font-mono font-black text-xs sm:text-sm text-[#4E2B01] block">
                           ${item.total.toFixed(2)}
                         </span>
                         <button
@@ -1236,7 +1234,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               <div className="p-4 bg-slate-100 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="w-full sm:w-auto text-center sm:text-left">
                   <span className="text-xs text-slate-500 uppercase font-bold block">Total Selección:</span>
-                  <span className="text-xl font-black text-[#004C59] font-mono">
+                  <span className="text-xl font-black text-[#4E2B01] font-mono">
                     ${totalSelectedAmount.toFixed(2)} MXN
                   </span>
                 </div>
@@ -1274,11 +1272,11 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
         {isAdmin && (isCreating || editingProduct) && (
           <form
             onSubmit={handleSaveForm}
-            className="bg-white rounded-3xl p-5 sm:p-7 shadow-lg border-2 border-[#004C59] space-y-5 animate-in fade-in"
+            className="bg-white rounded-3xl p-5 sm:p-7 shadow-lg border-2 border-[#4E2B01] space-y-5 animate-in fade-in"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-yellow-400 rounded-xl text-slate-950">
+                <div className="p-2 bg-[#ECB769] rounded-xl text-[#202020] shadow-xs">
                   <Upload className="w-5 h-5" />
                 </div>
                 <div>
@@ -1286,7 +1284,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                     {isCreating ? 'Dar de Alta Nuevo Producto & Subir Fotografía' : `Editar Producto: ${editingProduct?.name}`}
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Sube una foto desde tu equipo o dispositivo móvil, o selecciona de la galería. Se sincronizará inmediatamente.
+                    Sube una foto desde tu equipo o dispositivo móvil. Se sincronizará inmediatamente.
                   </p>
                 </div>
               </div>
@@ -1303,7 +1301,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
             <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                  <ImageIcon className="w-4 h-4 text-[#004C59]" />
+                  <ImageIcon className="w-4 h-4 text-[#4E2B01]" />
                   <span>Fotografía del Producto / Portada *</span>
                 </span>
                 <span className="text-[11px] text-slate-500">
@@ -1340,16 +1338,16 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 ) : (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden bg-white border-2 border-dashed border-teal-600/40 hover:border-[#004C59] bg-teal-50/20 hover:bg-teal-50/50 shrink-0 shadow-inner flex flex-col items-center justify-center text-center p-3 cursor-pointer transition group"
+                    className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden bg-white border-2 border-dashed border-[#ECB769]/50 hover:border-[#4E2B01] bg-[#FFF3BC]/20 hover:bg-[#FFF3BC]/50 shrink-0 shadow-inner flex flex-col items-center justify-center text-center p-3 cursor-pointer transition group"
                     title="Toca aquí para seleccionar una imagen desde tu dispositivo"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-teal-100 group-hover:bg-[#004C59] group-hover:text-white text-[#004C59] flex items-center justify-center transition mb-2 shadow-xs">
+                    <div className="w-12 h-12 rounded-2xl bg-[#FFF3BC] group-hover:bg-[#4E2B01] group-hover:text-[#FFF3BC] text-[#4E2B01] flex items-center justify-center transition mb-2 shadow-xs">
                       <Camera className="w-6 h-6" />
                     </div>
                     <span className="text-xs font-black text-slate-700 leading-tight">
                       En blanco
                     </span>
-                    <span className="text-[10px] text-teal-700 font-bold mt-1">
+                    <span className="text-[10px] text-[#4E2B01] font-bold mt-1">
                       Toca para subir foto
                     </span>
                     <span className="text-[9px] text-slate-400 mt-0.5">
@@ -1408,7 +1406,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                         value={formImageUrl}
                         onChange={(e) => setFormImageUrl(e.target.value)}
                         placeholder="https://ejemplo.com/mifoto.jpg"
-                        className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+                        className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
                       />
                     </div>
                   </div>
@@ -1426,7 +1424,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="Ej. Fotos Infantiles Color (6 pzas)"
-                  className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+                  className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
                 />
               </div>
 
@@ -1436,16 +1434,16 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowCategoryModal(true)}
-                    className="text-[10px] font-bold text-teal-700 hover:text-teal-900 hover:underline cursor-pointer flex items-center gap-1"
+                    className="text-[10px] font-bold text-[#4E2B01] hover:underline cursor-pointer flex items-center gap-1"
                   >
-                    <FolderPlus className="w-3 h-3" />
+                    <FolderPlus className="w-3 h-3 text-[#ECB769]" />
                     <span>+ Nueva / Borrar Categoría</span>
                   </button>
                 </div>
                 <select
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value as Category)}
-                  className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59] font-medium"
+                  className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01] font-medium"
                 >
                   {categoriesList.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -1466,7 +1464,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   required
                   value={formPrice}
                   onChange={(e) => setFormPrice(parseFloat(e.target.value) || 0)}
-                  className="w-full text-sm font-black text-[#004C59] px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59] font-mono"
+                  className="w-full text-sm font-black text-[#4E2B01] px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01] font-mono"
                 />
               </div>
 
@@ -1477,7 +1475,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   value={formUnit}
                   onChange={(e) => setFormUnit(e.target.value)}
                   placeholder="Ej. pza, juego, evento, paquete..."
-                  className="w-full text-xs sm:text-sm px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+                  className="w-full text-xs sm:text-sm px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
                 />
               </div>
 
@@ -1515,7 +1513,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 value={formDesc}
                 onChange={(e) => setFormDesc(e.target.value)}
                 placeholder="Ej. 6 piezas papel mate, fondo blanco reglamentario..."
-                className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+                className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
               />
             </div>
 
@@ -1526,7 +1524,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   type="checkbox"
                   checked={formHasExtras}
                   onChange={(e) => setFormHasExtras(e.target.checked)}
-                  className="w-4 h-4 text-[#004C59] rounded border-slate-300 focus:ring-[#004C59]"
+                  className="w-4 h-4 text-[#4E2B01] rounded border-slate-300 focus:ring-[#4E2B01]"
                 />
                 <span>Habilitar opciones adicionales para sumar al ticket (Retoque Digital y Autoadherible)</span>
               </label>
@@ -1568,9 +1566,9 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               </button>
               <button
                 type="submit"
-                className="flex items-center gap-2 px-6 py-2.5 bg-[#004C59] hover:bg-teal-900 active:scale-95 text-white text-xs sm:text-sm font-black rounded-xl shadow-lg transition cursor-pointer"
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#4E2B01] hover:bg-[#381e01] active:scale-95 text-[#FFF3BC] text-xs sm:text-sm font-black rounded-xl shadow-lg transition cursor-pointer"
               >
-                <Save className="w-4 h-4 text-yellow-400" />
+                <Save className="w-4 h-4 text-[#ECB769]" />
                 <span>{isCreating ? 'Guardar y Sincronizar en Supabase' : 'Guardar Cambios'}</span>
               </button>
             </div>
@@ -1585,7 +1583,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               onClick={() => setSelectedCategory('all')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-black text-xs whitespace-nowrap transition-all shadow-xs cursor-pointer ${
                 selectedCategory === 'all'
-                  ? 'bg-[#004C59] text-white ring-2 ring-[#004C59]'
+                  ? 'bg-[#4E2B01] text-[#FFF3BC] ring-2 ring-[#4E2B01]'
                   : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
               }`}
             >
@@ -1605,11 +1603,11 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                     onClick={() => setSelectedCategory(cat.id)}
                     className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs whitespace-nowrap transition-all shadow-xs cursor-pointer ${
                       isSelected
-                        ? 'bg-[#004C59] text-white ring-2 ring-[#004C59]'
+                        ? 'bg-[#4E2B01] text-[#FFF3BC] ring-2 ring-[#4E2B01]'
                         : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : (cat.color || 'text-teal-600')}`} />
+                    <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-[#ECB769]' : (cat.color || 'text-[#4E2B01]')}`} />
                     <span>{cat.label}</span>
                     <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected ? 'bg-white/20' : 'bg-slate-100 text-slate-600'}`}>
                       {count}
@@ -1639,7 +1637,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCategoryModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-black text-xs whitespace-nowrap bg-teal-50 hover:bg-teal-100 text-[#004C59] border-2 border-dashed border-teal-300 transition-all shadow-xs cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-black text-xs whitespace-nowrap bg-[#FFF3BC] hover:bg-[#FFF3BC]/80 text-[#4E2B01] border-2 border-dashed border-[#ECB769] transition-all shadow-xs cursor-pointer shrink-0"
                 title="Crear una nueva categoría para tus productos"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1657,7 +1655,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 placeholder="Buscar por nombre o descripción..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#004C59]"
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#4E2B01]"
               />
             </div>
 
@@ -1668,7 +1666,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setStatusFilter('all')}
-                  className={`px-2.5 py-1 rounded-lg transition ${statusFilter === 'all' ? 'bg-[#004C59] text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                  className={`px-2.5 py-1 rounded-lg transition ${statusFilter === 'all' ? 'bg-[#4E2B01] text-[#FFF3BC]' : 'text-slate-600 hover:bg-slate-100'}`}
                 >
                   Todos ({products.length})
                 </button>
@@ -1689,7 +1687,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               </div>
             ) : (
               <div className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
-                <Info className="w-3.5 h-3.5 text-[#004C59]" />
+                <Info className="w-3.5 h-3.5 text-[#4E2B01]" />
                 <span>Haz clic en un producto para ver fotos y seleccionarlo</span>
               </div>
             )}
@@ -1787,7 +1785,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                           <Camera className="w-8 h-8 sm:w-10 sm:h-10 text-slate-300 mb-1" />
                           <span className="text-[10px] sm:text-xs font-semibold text-slate-400">Sin fotografía</span>
                           {isAdmin && (
-                            <span className="text-[9px] text-[#004C59] font-bold mt-0.5">Toca para agregar foto</span>
+                            <span className="text-[9px] text-[#4E2B01] font-bold mt-0.5">Toca para agregar foto</span>
                           )}
                         </div>
                       )}
@@ -1811,7 +1809,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                       )}
 
                       {/* Precio sobre imagen */}
-                      <span className="absolute bottom-2.5 right-2.5 bg-slate-950/85 backdrop-blur-xs text-yellow-400 font-mono font-black text-xs sm:text-sm px-2.5 py-0.5 rounded-lg shadow-md">
+                      <span className="absolute bottom-2.5 right-2.5 bg-[#202020]/90 backdrop-blur-xs text-[#ECB769] font-mono font-black text-xs sm:text-sm px-2.5 py-0.5 rounded-lg shadow-md">
                         ${prod.price.toFixed(2)}
                       </span>
                     </div>
@@ -1819,7 +1817,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                     {/* Contenido */}
                     <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 block mb-0.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#4E2B01] block mb-0.5">
                           {prod.category.replace('_', ' ')}
                         </span>
                         <h3 className="font-black text-xs sm:text-sm text-slate-900 leading-snug line-clamp-2">
@@ -1862,7 +1860,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                                 e.stopPropagation();
                                 startEdit(prod);
                               }}
-                              className="p-1.5 text-slate-600 hover:text-[#004C59] hover:bg-teal-50 rounded-xl transition cursor-pointer"
+                              className="p-1.5 text-slate-600 hover:text-[#4E2B01] hover:bg-[#FFF3BC]/50 rounded-xl transition cursor-pointer"
                               title="Editar producto"
                             >
                               <Edit3 className="w-4 h-4" />
@@ -1894,17 +1892,17 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                             className={`w-full py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${
                               isSelectedByRole
                                 ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                : 'bg-[#004C59] text-white hover:bg-teal-900'
+                                : 'bg-[#4E2B01] text-[#FFF3BC] hover:bg-[#381e01]'
                             }`}
                           >
                             {isSelectedByRole ? (
                               <>
-                                <Check className="w-3.5 h-3.5 text-yellow-300" />
+                                <Check className="w-3.5 h-3.5 text-[#ECB769]" />
                                 <span>Modificar ({selectedQty})</span>
                               </>
                             ) : (
                               <>
-                                <ShoppingBag className="w-3.5 h-3.5 text-yellow-400" />
+                                <ShoppingBag className="w-3.5 h-3.5 text-[#ECB769]" />
                                 <span>Seleccionar</span>
                               </>
                             )}
@@ -1922,10 +1920,10 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
 
         {/* FLOATING ACTION BAR FOR CLIENT & FIELD ROLES */}
         {!isAdmin && totalSelectedCount > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t-2 border-[#004C59] p-3 sm:p-4 shadow-2xl flex items-center justify-between gap-3 safe-bottom">
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t-2 border-[#4E2B01] p-3 sm:p-4 shadow-2xl flex items-center justify-between gap-3 safe-bottom">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-[#004C59] text-white rounded-2xl shadow-sm">
-                <ShoppingCart className="w-5 h-5 text-yellow-400" />
+              <div className="p-2.5 bg-[#4E2B01] text-[#FFF3BC] rounded-2xl shadow-sm">
+                <ShoppingCart className="w-5 h-5 text-[#ECB769]" />
               </div>
               <div>
                 <span className="text-[11px] font-bold text-slate-500 uppercase block">Selección Actual</span>

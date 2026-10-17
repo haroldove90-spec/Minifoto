@@ -9,9 +9,9 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'hero' | 'card' }
 
   if (isInstalled) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-        <span className="hidden sm:inline">PWA Instalada</span>
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-[#FFF3BC] text-[#4E2B01] border border-[#ECB769]">
+        <CheckCircle2 className="w-3.5 h-3.5 text-[#4E2B01]" />
+        <span className="hidden sm:inline">Minifoto Instalada</span>
       </span>
     );
   }
@@ -30,8 +30,8 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'hero' | 'card' }
 
   const buttonClass =
     variant === 'header'
-      ? 'flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white bg-[#F97800] hover:bg-[#e06c00] active:scale-95 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#F97800]/50'
-      : 'flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-[#F97800] hover:bg-[#e06c00] active:scale-95 rounded-xl shadow-md transition-all';
+      ? 'flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-black text-[#FFF3BC] bg-[#4E2B01] hover:bg-[#202020] active:scale-95 rounded-xl border border-[#ECB769]/60 shadow-xs transition-all cursor-pointer'
+      : 'flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-black text-[#FFF3BC] bg-[#4E2B01] hover:bg-[#202020] active:scale-95 rounded-xl border border-[#ECB769]/60 shadow-md transition-all cursor-pointer';
 
   return (
     <>
@@ -39,59 +39,59 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'hero' | 'card' }
         onClick={handleInstallClick}
         type="button"
         className={buttonClass}
-        title="Instalar POS Fotografía como aplicación"
+        title="Instalar Minifoto como aplicación nativa"
       >
-        <Download className="w-4 h-4 shrink-0" />
-        <span>Instalar App</span>
+        <Download className="w-4 h-4 text-[#ECB769] shrink-0" />
+        <span>Instalar Minifoto</span>
       </button>
 
       {/* Installation Guide Modal */}
       {showGuide && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 relative text-slate-800">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border-2 border-[#ECB769] relative text-[#202020]">
             <button
               onClick={() => setShowGuide(false)}
-              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition"
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#4E2B01] rounded-full hover:bg-[#FFF3BC]/50 transition cursor-pointer"
               aria-label="Cerrar guía de instalación"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-[#004C59]/10 flex items-center justify-center p-1.5 border border-[#004C59]/20">
+              <div className="w-12 h-12 rounded-2xl bg-[#FFF3BC] flex items-center justify-center p-1.5 border border-[#ECB769]">
                 <img
-                  src="https://appdesignproyectos.com/photoicono.png"
-                  alt="POS Fotografía Icono"
+                  src="https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotoicono.png"
+                  alt="Minifoto Icono"
                   className="w-full h-full object-contain"
                 />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-[#004C59]">Instalar POS Fotografía</h3>
-                <p className="text-xs text-slate-500">Acceso rápido, pantalla completa y modo offline</p>
+                <h3 className="text-lg font-black text-[#4E2B01]">Instalar Minifoto</h3>
+                <p className="text-xs text-[#202020]/70 font-medium">Acceso rápido, pantalla completa y modo offline</p>
               </div>
             </div>
 
             {isIOS ? (
-              <div className="space-y-3 bg-amber-50/70 border border-amber-200 rounded-xl p-4 text-sm text-slate-700">
-                <div className="flex items-center gap-2 font-semibold text-amber-800">
-                  <Smartphone className="w-4 h-4" />
+              <div className="space-y-3 bg-[#FCF9F2] border border-[#ECB769]/40 rounded-2xl p-4 text-sm text-[#202020]">
+                <div className="flex items-center gap-2 font-bold text-[#4E2B01]">
+                  <Smartphone className="w-4 h-4 text-[#ECB769]" />
                   Instrucciones para iPhone / iPad (Safari):
                 </div>
-                <ol className="list-decimal pl-5 space-y-1.5 text-xs text-slate-700">
-                  <li>Toca el botón <strong>Compartir</strong> <span className="font-mono bg-amber-100 px-1 rounded">⎋</span> en la barra inferior de Safari.</li>
+                <ol className="list-decimal pl-5 space-y-1.5 text-xs text-[#202020]/80">
+                  <li>Toca el botón <strong>Compartir</strong> <span className="font-mono bg-[#FFF3BC] px-1 rounded text-[#4E2B01]">⎋</span> en la barra inferior de Safari.</li>
                   <li>Desplázate hacia abajo y selecciona <strong>"Agregar al inicio"</strong> o <strong>"Añadir a pantalla de inicio"</strong>.</li>
-                  <li>Confirma el nombre <strong>POS Fotografía</strong> y presiona <strong>Agregar</strong>.</li>
+                  <li>Confirma el nombre <strong>Minifoto</strong> y presiona <strong>Agregar</strong>.</li>
                 </ol>
               </div>
             ) : (
-              <div className="space-y-3 bg-teal-50/70 border border-teal-200 rounded-xl p-4 text-sm text-slate-700">
-                <div className="flex items-center gap-2 font-semibold text-[#004C59]">
-                  <Monitor className="w-4 h-4" />
+              <div className="space-y-3 bg-[#FCF9F2] border border-[#ECB769]/40 rounded-2xl p-4 text-sm text-[#202020]">
+                <div className="flex items-center gap-2 font-bold text-[#4E2B01]">
+                  <Monitor className="w-4 h-4 text-[#ECB769]" />
                   Instrucciones para Android o PC (Chrome / Edge):
                 </div>
-                <ol className="list-decimal pl-5 space-y-1.5 text-xs text-slate-700">
+                <ol className="list-decimal pl-5 space-y-1.5 text-xs text-[#202020]/80">
                   <li>Haz clic en el menú de 3 puntos del navegador (arriba a la derecha).</li>
-                  <li>Selecciona la opción <strong>"Instalar POS Fotografía"</strong> o <strong>"Crear acceso directo"</strong>.</li>
+                  <li>Selecciona la opción <strong>"Instalar Minifoto"</strong> o <strong>"Crear acceso directo"</strong>.</li>
                   <li>Marca la casilla <em>"Abrir como ventana"</em> para tener experiencia nativa de escritorio o tablet.</li>
                 </ol>
               </div>
@@ -100,7 +100,7 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'hero' | 'card' }
             <div className="mt-5 flex justify-end">
               <button
                 onClick={() => setShowGuide(false)}
-                className="w-full sm:w-auto px-5 py-2.5 bg-[#004C59] text-white font-semibold text-sm rounded-xl hover:bg-[#003842] transition"
+                className="w-full sm:w-auto px-6 py-2.5 bg-[#4E2B01] text-[#FFF3BC] font-black text-sm rounded-xl hover:bg-[#202020] transition cursor-pointer border border-[#ECB769]"
               >
                 Entendido
               </button>
@@ -111,9 +111,9 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'hero' | 'card' }
 
       {/* Install success toast */}
       {installSuccess && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-3 bg-[#004C59] text-white px-4 py-3 rounded-xl shadow-xl animate-in slide-in-from-bottom duration-300">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          <span className="text-sm font-medium">¡POS Fotografía se ha instalado correctamente!</span>
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-3 bg-[#4E2B01] text-[#FFF3BC] px-5 py-3 rounded-2xl shadow-xl border-2 border-[#ECB769] animate-in slide-in-from-bottom duration-300">
+          <CheckCircle2 className="w-5 h-5 text-[#ECB769]" />
+          <span className="text-sm font-bold">¡Minifoto se ha instalado correctamente!</span>
         </div>
       )}
     </>
