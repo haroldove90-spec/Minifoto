@@ -56,15 +56,35 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({
             </p>
           </div>
 
-          {/* Botón Gigante para Entrar al POS Touch en Pantalla Completa */}
-          <button
-            onClick={() => onSelectTab('pos_cashier')}
-            className="w-full md:w-auto px-8 py-5 bg-[#F97800] hover:bg-orange-600 active:scale-95 text-white font-black text-lg sm:text-xl rounded-2xl shadow-2xl border-2 border-orange-400 cursor-pointer transition flex items-center justify-center gap-3 shrink-0"
-          >
-            <ShoppingBag className="w-7 h-7" />
-            <span>ABRIR PUNTO DE VENTA TOUCH</span>
-            <ArrowRight className="w-6 h-6" />
-          </button>
+          {/* Botón Principal por Rol: Catálogo para Admin, POS Touch para Cajero */}
+          {currentRole === 'admin' ? (
+            <button
+              onClick={() => onSelectTab('catalogs')}
+              className="w-full md:w-auto px-7 py-4 sm:py-5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-black text-base sm:text-lg rounded-2xl shadow-2xl border-2 border-yellow-400 cursor-pointer transition flex items-center justify-center gap-3 shrink-0"
+            >
+              <Layers className="w-6 h-6 text-yellow-400" />
+              <span>ADMINISTRAR CATÁLOGO & FOTOS</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          ) : currentRole === 'cashier' ? (
+            <button
+              onClick={() => onSelectTab('pos_cashier')}
+              className="w-full md:w-auto px-8 py-5 bg-[#F97800] hover:bg-orange-600 active:scale-95 text-white font-black text-lg sm:text-xl rounded-2xl shadow-2xl border-2 border-orange-400 cursor-pointer transition flex items-center justify-center gap-3 shrink-0"
+            >
+              <ShoppingBag className="w-7 h-7" />
+              <span>ABRIR PUNTO DE VENTA TOUCH</span>
+              <ArrowRight className="w-6 h-6" />
+            </button>
+          ) : (
+            <button
+              onClick={() => onSelectTab('catalogs')}
+              className="w-full md:w-auto px-7 py-4 sm:py-5 bg-[#004C59] hover:bg-teal-900 active:scale-95 text-white font-black text-base sm:text-lg rounded-2xl shadow-2xl border-2 border-yellow-400 cursor-pointer transition flex items-center justify-center gap-3 shrink-0"
+            >
+              <Layers className="w-6 h-6 text-yellow-400" />
+              <span>VER CATÁLOGO DE FOTOS</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Resumen Rápido de Métricas */}
@@ -110,24 +130,51 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             
-            {/* POS Touch */}
-            <div 
-              onClick={() => onSelectTab('pos_cashier')}
-              className="p-5 bg-white hover:bg-yellow-50 rounded-2xl border-2 border-yellow-400 hover:border-yellow-500 shadow-sm hover:shadow-md transition cursor-pointer flex items-start gap-4 active:scale-98"
-            >
-              <div className="p-3 rounded-2xl bg-yellow-400 text-slate-950 shrink-0">
-                <ShoppingBag className="w-7 h-7" />
+            {/* POS Touch (Exclusivo para Cajero) */}
+            {currentRole === 'cashier' && (
+              <div 
+                onClick={() => onSelectTab('pos_cashier')}
+                className="p-5 bg-white hover:bg-yellow-50 rounded-2xl border-2 border-yellow-400 hover:border-yellow-500 shadow-sm hover:shadow-md transition cursor-pointer flex items-start gap-4 active:scale-98"
+              >
+                <div className="p-3 rounded-2xl bg-yellow-400 text-slate-950 shrink-0">
+                  <ShoppingBag className="w-7 h-7" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-black text-base text-slate-900">Punto de Venta Touch</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Terminal táctil completa con botones grandes, selección de productos variables y calculadora de cobro.
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-xs font-black text-[#F97800] mt-2">
+                    Abrir Caja ➔
+                  </span>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-black text-base text-slate-900">Punto de Venta Touch</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Terminal táctil completa con botones grandes, selección de productos variables y calculadora de cobro.
-                </p>
-                <span className="inline-flex items-center gap-1 text-xs font-black text-[#F97800] mt-2">
-                  Abrir Caja ➔
-                </span>
+            )}
+
+            {/* Catálogo de Productos (Para Admin, Vendedor en Campo y Cliente) */}
+            {currentRole !== 'cashier' && (
+              <div 
+                onClick={() => onSelectTab('catalogs')}
+                className="p-5 bg-white hover:bg-indigo-50 rounded-2xl border-2 border-indigo-400 hover:border-indigo-500 shadow-sm hover:shadow-md transition cursor-pointer flex items-start gap-4 active:scale-98"
+              >
+                <div className="p-3 rounded-2xl bg-indigo-600 text-white shrink-0">
+                  <Layers className="w-7 h-7" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-black text-base text-slate-900">
+                    {currentRole === 'admin' ? 'Catálogo & Subida de Fotos' : 'Catálogo Fotográfico'}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {currentRole === 'admin' 
+                      ? 'Sube fotos, asigna precios, activa/desactiva productos y sincroniza con Supabase.'
+                      : 'Visualiza fotografías en alta calidad, paquetes disponibles y selecciona productos.'}
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-xs font-black text-indigo-700 mt-2">
+                    {currentRole === 'admin' ? 'Administrar Catálogo ➔' : 'Ver Productos ➔'}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Entregas y Liquidación */}
             <div 

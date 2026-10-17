@@ -342,8 +342,8 @@ export const INITIAL_GATEWAYS: PaymentGatewayConfig[] = [
 ];
 
 export const INITIAL_SUPABASE: SupabaseConfig = {
-  url: 'https://proyecto-foto-estudio.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_anon_key_para_pruebas',
+  url: 'https://xqggdnoxvskotwlcuwgd.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxZ2dkbm94dnNrb3R3bGN1d2dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyMDAyMTQsImV4cCI6MjEwNzc3NjIxNH0.c3ZAbpDk7KXnpROcsfFhoXclJ3EJAatODillp6F12YY',
   syncEnabled: true,
   autoSync: true,
   lastSyncTime: new Date().toISOString(),

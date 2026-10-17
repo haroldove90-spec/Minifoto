@@ -1,6 +1,6 @@
 import React from 'react';
 import { Role } from '../types';
-import { ShieldCheck, Store, Smartphone, UserCog } from 'lucide-react';
+import { ShieldCheck, Store, Smartphone, ShoppingBag } from 'lucide-react';
 
 interface RoleSelectorProps {
   onSelectRole: (role: Role, operatorName: string) => void;
@@ -37,10 +37,10 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole, brandL
       color: 'border-teal-700/30 hover:border-[#004C59]',
     },
     {
-      id: 'admin',
-      name: 'Supervisión y Reportes',
-      operator: 'Uriel (Dueño)',
-      icon: <UserCog className="w-10 h-10 sm:w-12 sm:h-12 text-[#F97800]" />,
+      id: 'client',
+      name: 'Cliente (Catálogo)',
+      operator: 'Cliente Invitado',
+      icon: <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12 text-[#F97800]" />,
       color: 'border-orange-500/30 hover:border-[#F97800]',
     },
   ];
@@ -80,7 +80,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole, brandL
 
       {/* Subtle indicator bottom */}
       <div className="mt-8 text-center text-xs text-slate-600 font-medium">
-        Selecciona un rol para ingresar al sistema de punto de venta
+        Selecciona un rol para ingresar al sistema
       </div>
     </div>
   );

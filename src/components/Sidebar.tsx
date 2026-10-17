@@ -49,13 +49,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     switch (currentRole) {
       case 'admin':
         return [
-          { id: 'home' as ActiveTab, label: 'Inicio / Resumen', icon: Home, color: 'text-teal-400' },
-          { id: 'pos_cashier' as ActiveTab, label: 'Punto de Venta Touch', icon: ShoppingBag, color: 'text-orange-500' },
-          { id: 'deliveries' as ActiveTab, label: 'Entrega y Liquidación', icon: PackageCheck, color: 'text-emerald-500' },
-          { id: 'schools' as ActiveTab, label: 'Gestión Escolar 2026', icon: GraduationCap, color: 'text-teal-600' },
-          { id: 'catalogs' as ActiveTab, label: 'Catálogos Multinegocio', icon: Layers, color: 'text-indigo-600' },
-          { id: 'reports' as ActiveTab, label: 'Reportes y Métricas', icon: BarChart3, color: 'text-amber-500' },
-          { id: 'config' as ActiveTab, label: 'Configuración & Pagos', icon: Sliders, color: 'text-slate-600' },
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo & Fotos', icon: Layers, color: 'text-indigo-400' },
+          { id: 'schools' as ActiveTab, label: 'Gestión Escolar 2026', icon: GraduationCap, color: 'text-teal-400' },
+          { id: 'deliveries' as ActiveTab, label: 'Entrega y Liquidación', icon: PackageCheck, color: 'text-emerald-400' },
+          { id: 'reports' as ActiveTab, label: 'Reportes y Métricas', icon: BarChart3, color: 'text-amber-400' },
+          { id: 'config' as ActiveTab, label: 'Configuración & Pagos', icon: Sliders, color: 'text-slate-400' },
+          { id: 'home' as ActiveTab, label: 'Resumen General', icon: Home, color: 'text-teal-400' },
         ];
       case 'cashier':
         return [
@@ -67,9 +66,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ];
       case 'field':
         return [
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo de Productos', icon: Layers, color: 'text-indigo-400' },
           { id: 'field_collector' as ActiveTab, label: 'Cobro en Campo (Escuelas)', icon: Smartphone, color: 'text-[#004C59]' },
-          { id: 'history' as ActiveTab, label: 'Recibos Emitidos', icon: Receipt, color: 'text-[#F97800]' },
           { id: 'schools' as ActiveTab, label: 'Directorio de Alumnos', icon: Users, color: 'text-teal-600' },
+          { id: 'history' as ActiveTab, label: 'Recibos Emitidos', icon: Receipt, color: 'text-[#F97800]' },
+        ];
+      case 'client':
+        return [
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo de Productos', icon: Layers, color: 'text-[#F97800]' },
         ];
     }
   };

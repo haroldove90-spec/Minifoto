@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'cashier' | 'field';
+export type Role = 'admin' | 'cashier' | 'field' | 'client';
 
 export type Category = 
   | 'foto_estudio'

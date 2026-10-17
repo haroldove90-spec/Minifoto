@@ -140,9 +140,13 @@ export const getStoredSupabaseConfig = (): SupabaseConfig => {
   const data = localStorage.getItem(KEYS.SUPABASE);
   if (data) {
     try {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (parsed.url && parsed.url.includes('xqggdnoxvskotwlcuwgd')) {
+        return parsed;
+      }
     } catch {}
   }
+  localStorage.setItem(KEYS.SUPABASE, JSON.stringify(INITIAL_SUPABASE));
   return INITIAL_SUPABASE;
 };
 

@@ -27,10 +27,9 @@ export const BottomBar: React.FC<BottomBarProps> = ({
     switch (currentRole) {
       case 'admin':
         return [
-          { id: 'pos_cashier' as ActiveTab, label: 'POS Touch', icon: ShoppingBag },
-          { id: 'deliveries' as ActiveTab, label: 'Entregas', icon: PackageCheck },
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo', icon: Layers },
           { id: 'schools' as ActiveTab, label: 'Escuelas', icon: GraduationCap },
-          { id: 'catalogs' as ActiveTab, label: 'Catálogos', icon: Layers },
+          { id: 'deliveries' as ActiveTab, label: 'Entregas', icon: PackageCheck },
           { id: 'reports' as ActiveTab, label: 'Reportes', icon: BarChart3 },
           { id: 'config' as ActiveTab, label: 'Ajustes', icon: Sliders },
         ];
@@ -43,9 +42,14 @@ export const BottomBar: React.FC<BottomBarProps> = ({
         ];
       case 'field':
         return [
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo', icon: Layers },
           { id: 'field_collector' as ActiveTab, label: 'Cobro Campo', icon: Smartphone },
-          { id: 'history' as ActiveTab, label: 'Recibos', icon: Receipt },
           { id: 'schools' as ActiveTab, label: 'Alumnos', icon: GraduationCap },
+          { id: 'history' as ActiveTab, label: 'Recibos', icon: Receipt },
+        ];
+      case 'client':
+        return [
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo', icon: Layers },
         ];
     }
   };

@@ -57,6 +57,11 @@ export const Header: React.FC<HeaderProps> = ({
       color: 'bg-emerald-500/10 text-emerald-800 border-emerald-500/30',
       icon: <Smartphone className="w-3.5 h-3.5" />,
     },
+    client: {
+      title: 'Cliente (Catálogo Digital)',
+      color: 'bg-orange-500/10 text-[#F97800] border-orange-500/30',
+      icon: <Store className="w-3.5 h-3.5" />,
+    },
   };
 
   const handleConfirmClear = async () => {

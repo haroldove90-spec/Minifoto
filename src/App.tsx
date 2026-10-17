@@ -39,6 +39,17 @@ import {
   restoreSampleDataSystem
 } from './services/storage';
 
+import {
+  saveSaleToSupabase,
+  saveStudentToSupabase,
+  saveProductsBatchToSupabase,
+  saveSchoolsBatchToSupabase,
+  fetchProductsFromSupabase,
+  fetchStudentsFromSupabase,
+  fetchSalesFromSupabase,
+  fetchSchoolsFromSupabase
+} from './services/supabaseClient';
+
 import { RoleSelector } from './components/RoleSelector';
 import { Header } from './components/Header';
 import { Sidebar, ActiveTab } from './components/Sidebar';
@@ -58,7 +69,13 @@ export default function App() {
   // Session & Role state
   const [currentRole, setCurrentRole] = useState<Role | null>(() => getStoredRole());
   const [operatorName, setOperatorName] = useState<string>(() => getStoredOperator());
-  const [activeTab, setActiveTab] = useState<ActiveTab>('pos_cashier');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    const role = getStoredRole();
+    if (role === 'cashier') return 'pos_cashier';
+    if (role === 'field') return 'catalogs';
+    if (role === 'client') return 'catalogs';
+    return 'catalogs'; // admin defaults to catalogs (POS removed from admin)
+  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
   // App data states
@@ -76,7 +93,7 @@ export default function App() {
   const [activeStudentTicket, setActiveStudentTicket] = useState<GraduationStudent | null>(null);
   const [autoPrintTicket, setAutoPrintTicket] = useState<boolean>(false);
 
-  // Load stored data on mount
+  // Load stored data on mount & background sync with Supabase
   useEffect(() => {
     setProducts(getStoredProducts());
     setSchools(getStoredSchools());
@@ -86,6 +103,32 @@ export default function App() {
     setGateways(getStoredGateways());
     setSupabaseConfig(getStoredSupabaseConfig());
     setIsSampleCleared(isSampleDataCleared());
+
+    // Background sync from Supabase if connected
+    fetchProductsFromSupabase().then((remoteProds) => {
+      if (remoteProds && remoteProds.length > 0) {
+        setProducts(remoteProds);
+        saveStoredProducts(remoteProds);
+      }
+    });
+    fetchStudentsFromSupabase().then((remoteStds) => {
+      if (remoteStds && remoteStds.length > 0) {
+        setStudents(remoteStds);
+        saveStoredStudents(remoteStds);
+      }
+    });
+    fetchSalesFromSupabase().then((remoteSales) => {
+      if (remoteSales && remoteSales.length > 0) {
+        setSales(remoteSales);
+        saveStoredSales(remoteSales);
+      }
+    });
+    fetchSchoolsFromSupabase().then((remoteSchools) => {
+      if (remoteSchools && remoteSchools.length > 0) {
+        setSchools(remoteSchools);
+        saveStoredSchools(remoteSchools);
+      }
+    });
   }, []);
 
   // When role changes, set default active tab appropriately
@@ -96,11 +139,14 @@ export default function App() {
     saveStoredOperator(opName);
 
     if (role === 'field') {
-      setActiveTab('field_collector');
+      setActiveTab('catalogs');
     } else if (role === 'cashier') {
       setActiveTab('pos_cashier');
+    } else if (role === 'client') {
+      setActiveTab('catalogs');
     } else {
-      setActiveTab('pos_cashier');
+      // admin role: default is catalogs (POS removed from admin)
+      setActiveTab('catalogs');
     }
   };
 
@@ -109,15 +155,19 @@ export default function App() {
     saveStoredRole(null);
   };
 
-  // Data mutations
+  // Data mutations with dual-sync: LocalStorage + Supabase
   const handleSaveProducts = (newProducts: Product[]) => {
     setProducts(newProducts);
     saveStoredProducts(newProducts);
+    // Sync to Supabase
+    saveProductsBatchToSupabase(newProducts);
   };
 
   const handleSaveSchools = (newSchools: School[]) => {
     setSchools(newSchools);
     saveStoredSchools(newSchools);
+    // Sync to Supabase
+    saveSchoolsBatchToSupabase(newSchools);
   };
 
   const handleSaveStudents = (newStudents: GraduationStudent[]) => {
@@ -131,12 +181,16 @@ export default function App() {
     setActiveSaleTicket(newSale);
     setActiveStudentTicket(null);
     setAutoPrintTicket(options?.autoPrint ?? true);
+    // Sync sale to Supabase
+    saveSaleToSupabase(newSale);
   };
 
   const handleAddStudentReceipt = (newStudent: GraduationStudent) => {
     const updated = [newStudent, ...students];
     setStudents(updated);
     saveStoredStudents(updated);
+    // Sync student to Supabase
+    saveStudentToSupabase(newStudent);
 
     // Also record the deposit as a sale record
     if (newStudent.depositAmount > 0) {
@@ -171,6 +225,8 @@ export default function App() {
       };
       const updatedSales = addStoredSale(depositSale);
       setSales(updatedSales);
+      // Sync deposit sale to Supabase
+      saveSaleToSupabase(depositSale);
     }
   };
 
@@ -178,6 +234,8 @@ export default function App() {
     const updated = students.map((s) => (s.id === updatedStudent.id ? updatedStudent : s));
     setStudents(updated);
     saveStoredStudents(updated);
+    // Sync updated student to Supabase
+    saveStudentToSupabase(updatedStudent);
   };
 
   const handleRecordLiquidationSale = (liquidationSale: Sale, updatedStudent: GraduationStudent) => {
@@ -185,6 +243,8 @@ export default function App() {
     if (liquidationSale.total > 0) {
       const updatedSales = addStoredSale(liquidationSale);
       setSales(updatedSales);
+      // Sync liquidation sale to Supabase
+      saveSaleToSupabase(liquidationSale);
     }
     setActiveStudentTicket(updatedStudent);
     setActiveSaleTicket(null);
@@ -343,6 +403,8 @@ export default function App() {
             <AdminCatalogsView
               products={products}
               onSaveProducts={handleSaveProducts}
+              currentRole={currentRole}
+              operatorName={operatorName}
             />
           )}
 
