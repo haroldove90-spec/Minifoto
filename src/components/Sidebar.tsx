@@ -21,6 +21,7 @@ export type ActiveTab =
   | 'home'
   | 'pos_cashier'
   | 'field_collector'
+  | 'tablet_pos'
   | 'deliveries'
   | 'catalogs'
   | 'schools'
@@ -51,28 +52,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
     switch (currentRole) {
       case 'admin':
         return [
+          { id: 'tablet_pos' as ActiveTab, label: 'Cobranza Escolar (8 Tablets)', icon: Smartphone, color: 'text-[#ECB769]' },
+          { id: 'schools' as ActiveTab, label: 'Gestión Escolar & Alumnos', icon: GraduationCap, color: 'text-[#FFF3BC]' },
           { id: 'catalogs' as ActiveTab, label: 'Catálogo & Fotos', icon: Layers, color: 'text-[#ECB769]' },
-          { id: 'schools' as ActiveTab, label: 'Gestión Escolar 2026', icon: GraduationCap, color: 'text-[#FFF3BC]' },
           { id: 'deliveries' as ActiveTab, label: 'Entrega y Liquidación', icon: PackageCheck, color: 'text-[#ECB769]' },
           { id: 'reports' as ActiveTab, label: 'Reportes y Métricas', icon: BarChart3, color: 'text-[#ECB769]' },
-          { id: 'config' as ActiveTab, label: 'Configuración & Pagos', icon: Sliders, color: 'text-slate-300' },
+          { id: 'config' as ActiveTab, label: 'Configuración & Terminales', icon: Sliders, color: 'text-slate-300' },
           { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
           { id: 'home' as ActiveTab, label: 'Resumen General', icon: Home, color: 'text-[#ECB769]' },
         ];
       case 'cashier':
         return [
-          { id: 'home' as ActiveTab, label: 'Inicio / Menú', icon: Home, color: 'text-[#ECB769]' },
+          { id: 'tablet_pos' as ActiveTab, label: 'Cobranza Escolar (Oficinas)', icon: Smartphone, color: 'text-[#ECB769]' },
+          { id: 'schools' as ActiveTab, label: 'Alumnos y Padrón Escolar', icon: GraduationCap, color: 'text-[#ECB769]' },
           { id: 'pos_cashier' as ActiveTab, label: 'Punto de Venta Touch', icon: ShoppingBag, color: 'text-[#ECB769]' },
           { id: 'deliveries' as ActiveTab, label: 'Entregas & Liquidación', icon: PackageCheck, color: 'text-[#FFF3BC]' },
-          { id: 'schools' as ActiveTab, label: 'Alumnos y Paquetes', icon: GraduationCap, color: 'text-[#ECB769]' },
-          { id: 'history' as ActiveTab, label: 'Historial de Ventas', icon: Receipt, color: 'text-slate-300' },
+          { id: 'history' as ActiveTab, label: 'Historial de Cobros', icon: Receipt, color: 'text-slate-300' },
           { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
         ];
       case 'field':
         return [
+          { id: 'tablet_pos' as ActiveTab, label: 'Cobro en Tablet (POS)', icon: Smartphone, color: 'text-[#ECB769]' },
+          { id: 'schools' as ActiveTab, label: 'Directorio de Alumnos', icon: Users, color: 'text-[#FFF3BC]' },
           { id: 'catalogs' as ActiveTab, label: 'Catálogo de Productos', icon: Layers, color: 'text-[#ECB769]' },
-          { id: 'field_collector' as ActiveTab, label: 'Cobro en Campo (Escuelas)', icon: Smartphone, color: 'text-[#FFF3BC]' },
-          { id: 'schools' as ActiveTab, label: 'Directorio de Alumnos', icon: Users, color: 'text-[#ECB769]' },
           { id: 'history' as ActiveTab, label: 'Recibos Emitidos', icon: Receipt, color: 'text-[#ECB769]' },
           { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
         ];

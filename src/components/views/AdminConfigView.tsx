@@ -38,15 +38,15 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
   onRestoreSampleData,
   isSampleCleared,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'gateways' | 'sync' | 'brand' | 'data'>('gateways');
+  const [activeSubTab, setActiveSubTab] = useState<'terminals' | 'gateways' | 'sync' | 'brand' | 'data'>('terminals');
 
   // Brand form state
   const [bName, setBName] = useState(brand.businessName);
   const [bAddress, setBAddress] = useState(brand.address);
   const [bPhone, setBPhone] = useState(brand.phone);
   const [bFooter, setBFooter] = useState(brand.ticketFooter);
-  const [bPrimary, setBPrimary] = useState(brand.primaryColor || '#004C59');
-  const [bSecondary, setBSecondary] = useState(brand.secondaryColor || '#F97800');
+  const [bPrimary, setBPrimary] = useState(brand.primaryColor || '#4E2B01');
+  const [bSecondary, setBSecondary] = useState(brand.secondaryColor || '#ECB769');
   const [bLogoUrl, setBLogoUrl] = useState(brand.logoUrl);
 
   // Supabase form state
@@ -170,10 +170,22 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
         {/* Sub-tabs */}
         <div className="flex gap-2 overflow-x-auto border-b border-slate-200 pb-2">
           <button
+            onClick={() => setActiveSubTab('terminals')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              activeSubTab === 'terminals'
+                ? 'bg-[#4E2B01] text-[#FFF3BC] shadow-xs'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            <Smartphone className="w-4 h-4" />
+            <span>8 Tablets (POS-01 a POS-08) & Santander</span>
+          </button>
+
+          <button
             onClick={() => setActiveSubTab('gateways')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               activeSubTab === 'gateways'
-                ? 'bg-[#004C59] text-white shadow-xs'
+                ? 'bg-[#4E2B01] text-[#FFF3BC] shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
             }`}
           >
@@ -185,7 +197,7 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
             onClick={() => setActiveSubTab('sync')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               activeSubTab === 'sync'
-                ? 'bg-[#004C59] text-white shadow-xs'
+                ? 'bg-[#4E2B01] text-[#FFF3BC] shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
             }`}
           >
@@ -197,7 +209,7 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
             onClick={() => setActiveSubTab('brand')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               activeSubTab === 'brand'
-                ? 'bg-[#004C59] text-white shadow-xs'
+                ? 'bg-[#4E2B01] text-[#FFF3BC] shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
             }`}
           >
@@ -209,7 +221,7 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
             onClick={() => setActiveSubTab('data')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               activeSubTab === 'data'
-                ? 'bg-[#004C59] text-white shadow-xs'
+                ? 'bg-[#4E2B01] text-[#FFF3BC] shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
             }`}
           >
@@ -217,6 +229,91 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
             <span>Gestión de Datos</span>
           </button>
         </div>
+
+        {/* 0. TERMINALS & SANTANDER BANKING TAB */}
+        {activeSubTab === 'terminals' && (
+          <div className="space-y-4">
+            {/* Santander SPEI Info Card */}
+            <div className="bg-gradient-to-r from-[#EC0000] to-[#B30000] text-white p-5 rounded-3xl shadow-md space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-black tracking-tight">Integración Bancaria Santander SPEI</h3>
+                  <p className="text-xs text-white/90">Parámetros de conciliación escolar e identificación automática</p>
+                </div>
+                <span className="text-[10px] font-black bg-white text-[#EC0000] px-3 py-1 rounded-full uppercase">
+                  Activo
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+                <div className="bg-black/20 p-3 rounded-2xl">
+                  <span className="text-[10px] opacity-80 uppercase font-bold block">Banco Receptor</span>
+                  <span className="font-bold text-sm">Banco Santander México</span>
+                </div>
+                <div className="bg-black/20 p-3 rounded-2xl">
+                  <span className="text-[10px] opacity-80 uppercase font-bold block">CLABE Concentradora</span>
+                  <span className="font-mono font-black text-sm tracking-wider">014180655012345678</span>
+                </div>
+                <div className="bg-black/20 p-3 rounded-2xl">
+                  <span className="text-[10px] opacity-80 uppercase font-bold block">Algoritmo de Referencia</span>
+                  <span className="font-mono font-black text-sm">MF-[Escuela]-[Folio]</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 8 Tablets Grid */}
+            <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-200 space-y-4">
+              <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm sm:text-base font-black text-slate-800">
+                    Control de 8 Tablets Móviles de Cobradores
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Registro de dispositivos móviles (POS-01 a POS-08), cobrador asignado y estado de sincronización
+                  </p>
+                </div>
+                <span className="text-xs font-mono font-black text-[#4E2B01] bg-[#FCF9F2] px-3 py-1 rounded-xl border border-[#ECB769]">
+                  8 Tablets Registradas
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                {[
+                  { id: 'POS-01', user: 'Juan Pérez', battery: '94%', sync: 'Hace 2 min', status: 'En Línea' },
+                  { id: 'POS-02', user: 'Carlos Méndez', battery: '88%', sync: 'Hace 5 min', status: 'En Línea' },
+                  { id: 'POS-03', user: 'Roberto Silva', battery: '76%', sync: 'Hace 12 min', status: 'En Línea' },
+                  { id: 'POS-04', user: 'Ana Delgado', battery: '99%', sync: 'Hace 1 min', status: 'En Línea' },
+                  { id: 'POS-05', user: 'Martín Gómez', battery: '82%', sync: 'Hace 8 min', status: 'En Línea' },
+                  { id: 'POS-06', user: 'Laura Vargas', battery: '65%', sync: 'Hace 20 min', status: 'En Línea' },
+                  { id: 'POS-07', user: 'David Morales', battery: '91%', sync: 'Hace 4 min', status: 'En Línea' },
+                  { id: 'POS-08', user: 'Elena Torres', battery: '85%', sync: 'Hace 10 min', status: 'En Línea' },
+                ].map((tablet) => (
+                  <div key={tablet.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-black text-xs text-[#4E2B01] bg-[#FCF9F2] px-2 py-0.5 rounded-lg border border-[#ECB769]/50">
+                        {tablet.id}
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                        {tablet.status}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Cobrador</span>
+                      <p className="font-bold text-slate-800 text-xs truncate">{tablet.user}</p>
+                    </div>
+
+                    <div className="pt-1 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-500">
+                      <span>Batería: {tablet.battery}</span>
+                      <span>Sinc: {tablet.sync}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 1. GATEWAYS TAB */}
         {activeSubTab === 'gateways' && (
@@ -235,7 +332,7 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
                 <div
                   key={gw.provider}
                   className={`p-4 rounded-xl border-2 transition-all ${
-                    gw.active ? 'border-[#004C59] bg-teal-50/20' : 'border-slate-200 bg-slate-50'
+                    gw.active ? 'border-[#4E2B01] bg-[#FFF3BC]/20' : 'border-slate-200 bg-slate-50'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -244,7 +341,7 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
                         type="checkbox"
                         checked={gw.active}
                         onChange={() => handleToggleGateway(gw.provider)}
-                        className="w-5 h-5 text-[#004C59] rounded border-slate-300 focus:ring-[#004C59]"
+                        className="w-5 h-5 text-[#4E2B01] rounded border-slate-300 focus:ring-[#4E2B01]"
                       />
                       <div>
                         <span className="font-bold text-sm text-slate-800">{gw.name}</span>
@@ -293,9 +390,9 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
               <button
                 type="button"
                 onClick={handleSaveAllGateways}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#004C59] hover:bg-[#003842] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#4E2B01] hover:bg-[#381e01] text-[#FFF3BC] text-xs sm:text-sm font-bold rounded-xl shadow-md transition"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-4 h-4 text-[#ECB769]" />
                 <span>Guardar Pasarelas</span>
               </button>
             </div>
@@ -317,19 +414,19 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
                   El sistema funciona 100% offline y almacena datos localmente. Puedes conectar Supabase para respaldo en tiempo real y borrado remoto.
                 </p>
               </div>
-              <Cloud className="w-8 h-8 text-[#004C59]" />
+              <Cloud className="w-8 h-8 text-[#4E2B01]" />
             </div>
 
-            <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl flex items-center justify-between">
+            <div className="p-3 bg-[#FFF3BC]/30 border border-[#ECB769]/50 rounded-xl flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-[#004C59] block">Habilitar Sincronización Automática</span>
+                <span className="text-xs font-bold text-[#4E2B01] block">Habilitar Sincronización Automática</span>
                 <span className="text-[11px] text-slate-600">Sincroniza alumnos y ventas al restaurar conexión a internet</span>
               </div>
               <input
                 type="checkbox"
                 checked={sbEnabled}
                 onChange={(e) => setSbEnabled(e.target.checked)}
-                className="w-5 h-5 text-[#004C59] rounded border-slate-300 focus:ring-[#004C59]"
+                className="w-5 h-5 text-[#4E2B01] rounded border-slate-300 focus:ring-[#4E2B01]"
               />
             </div>
 
@@ -341,7 +438,7 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
                   value={sbUrl}
                   onChange={(e) => setSbUrl(e.target.value)}
                   placeholder="https://xyzproject.supabase.co"
-                  className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59] font-mono"
+                  className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01] font-mono"
                 />
               </div>
 
@@ -352,7 +449,7 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
                   value={sbKey}
                   onChange={(e) => setSbKey(e.target.value)}
                   placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                  className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59] font-mono"
+                  className="w-full text-xs sm:text-sm px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01] font-mono"
                 />
               </div>
             </div>
@@ -375,9 +472,9 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
 
               <button
                 type="submit"
-                className="flex items-center gap-2 px-5 py-2 bg-[#004C59] hover:bg-[#003842] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition"
+                className="flex items-center gap-2 px-5 py-2 bg-[#4E2B01] hover:bg-[#381e01] text-[#FFF3BC] text-xs sm:text-sm font-bold rounded-xl shadow-md transition"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-4 h-4 text-[#ECB769]" />
                 <span>Guardar Configuración Supabase</span>
               </button>
             </div>
@@ -392,10 +489,10 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
           >
             <div className="border-b border-slate-100 pb-3">
               <h2 className="text-sm sm:text-base font-bold text-slate-800">
-                Identidad Gráfica y Paleta de Colores
+                Identidad Gráfica y Paleta de Colores Minifoto
               </h2>
               <p className="text-xs text-slate-500">
-                Colores corporativos institucionales requeridos: #004C59 (Primario) y #F97800 (Secundario)
+                Colores corporativos oficiales: #4E2B01 (Café Principal), #ECB769 (Dorado Acento), #FFF3BC (Crema Suave) y #FCF9F2 (Fondo Header)
               </p>
             </div>
 
@@ -415,7 +512,7 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
                     onChange={(e) => setBPrimary(e.target.value)}
                     className="font-mono text-xs font-bold uppercase px-3 py-2 bg-white border border-slate-300 rounded-lg w-28"
                   />
-                  <span className="text-xs text-slate-600 font-semibold">(Estudio #004C59)</span>
+                  <span className="text-xs text-slate-600 font-semibold">(Minifoto #4E2B01)</span>
                 </div>
               </div>
 
@@ -434,7 +531,7 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
                     onChange={(e) => setBSecondary(e.target.value)}
                     className="font-mono text-xs font-bold uppercase px-3 py-2 bg-white border border-slate-300 rounded-lg w-28"
                   />
-                  <span className="text-xs text-slate-600 font-semibold">(Acento #F97800)</span>
+                  <span className="text-xs text-slate-600 font-semibold">(Acento #ECB769)</span>
                 </div>
               </div>
             </div>
@@ -495,9 +592,9 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="flex items-center gap-2 px-5 py-2 bg-[#004C59] hover:bg-[#003842] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition"
+                className="flex items-center gap-2 px-5 py-2 bg-[#4E2B01] hover:bg-[#381e01] text-[#FFF3BC] text-xs sm:text-sm font-bold rounded-xl shadow-md transition"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-4 h-4 text-[#ECB769]" />
                 <span>Guardar Identidad</span>
               </button>
             </div>
@@ -570,8 +667,8 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
 
         {/* Global Toast */}
         {savedSuccess && (
-          <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 bg-[#004C59] text-white px-4 py-3 rounded-xl shadow-xl animate-in slide-in-from-bottom text-xs font-bold">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 bg-[#4E2B01] text-[#FFF3BC] px-4 py-3 rounded-xl shadow-xl animate-in slide-in-from-bottom text-xs font-bold border-2 border-[#ECB769]">
+            <CheckCircle2 className="w-4 h-4 text-[#ECB769]" />
             <span>Configuración guardada correctamente</span>
           </div>
         )}

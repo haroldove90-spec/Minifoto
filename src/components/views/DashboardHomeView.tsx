@@ -92,7 +92,7 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
             <span className="text-[11px] font-bold text-slate-500 uppercase block">Ventas de Hoy</span>
-            <span className="text-2xl font-black text-[#004C59] font-mono">
+            <span className="text-2xl font-black text-[#4E2B01] font-mono">
               ${todaySalesTotal.toFixed(2)}
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">{todaySales.length} transacciones</span>

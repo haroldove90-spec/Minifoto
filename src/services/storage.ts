@@ -6,7 +6,15 @@ import {
   PaymentGatewayConfig, 
   SupabaseConfig, 
   BrandConfig, 
-  Role 
+  Role,
+  TerminalId,
+  PaymentRecord,
+  WhatsAppLog,
+  BankTransferRecord,
+  AuditLogItem,
+  PaymentMethod,
+  CategoryItem,
+  UserProfile
 } from '../types';
 import { 
   INITIAL_PRODUCTS, 
@@ -18,7 +26,6 @@ import {
   INITIAL_CATEGORIES,
   INITIAL_USER_PROFILES
 } from './initialData';
-import { CategoryItem, UserProfile } from '../types';
 
 const KEYS = {
   SAMPLE_CLEARED: 'pos_photo_sample_data_cleared_v1',
@@ -34,6 +41,9 @@ const KEYS = {
   DELETED_PRODUCT_IDS: 'pos_photo_deleted_product_ids_v1',
   CATEGORIES: 'pos_photo_categories_v1',
   USER_PROFILES: 'pos_photo_user_profiles_v1',
+  ACTIVE_TERMINAL: 'pos_photo_active_terminal_v1',
+  BANK_TRANSFERS: 'pos_photo_bank_transfers_v1',
+  AUDIT_LOGS: 'pos_photo_audit_logs_v1',
 };
 
 // Check if sample data has been permanently cleared
@@ -114,18 +124,59 @@ export const saveStoredSchools = (schools: School[]) => {
   localStorage.setItem(KEYS.SCHOOLS, JSON.stringify(schools));
 };
 
+// Generate Santander bank reference (e.g. MF-015-000123)
+export const generateSantanderReference = (schoolName: string, idOrFolio: string): string => {
+  const cleanSchool = schoolName.replace(/[^0-9]/g, '');
+  const schoolCode = cleanSchool ? cleanSchool.padStart(3, '0').slice(-3) : '015';
+  const cleanNum = idOrFolio.replace(/[^0-9]/g, '');
+  const folioCode = cleanNum ? cleanNum.padStart(6, '0').slice(-6) : Math.floor(100000 + Math.random() * 900000).toString();
+  return `MF-${schoolCode}-${folioCode}`;
+};
+
 export const getStoredStudents = (): GraduationStudent[] => {
   const data = localStorage.getItem(KEYS.STUDENTS);
+  let students: GraduationStudent[] = [];
+
   if (data) {
     try {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        students = parsed;
+      }
     } catch {}
   }
-  if (isSampleDataCleared()) {
-    return [];
+
+  if (students.length === 0) {
+    if (isSampleDataCleared()) {
+      return [];
+    }
+    students = INITIAL_STUDENTS;
+  } else {
+    // If stored students does not have the mockup student 'std-sec15-01', prepend initial students
+    const hasSec15 = students.some(s => s.id === 'std-sec15-01' || s.schoolId === 'sch-sec15');
+    if (!hasSec15 && !isSampleDataCleared()) {
+      students = [...INITIAL_STUDENTS.filter(s => s.schoolId === 'sch-sec15'), ...students];
+    }
   }
-  localStorage.setItem(KEYS.STUDENTS, JSON.stringify(INITIAL_STUDENTS));
-  return INITIAL_STUDENTS;
+
+  // Ensure all students have santanderReference, grade, group and payment history
+  const enriched = students.map((s, idx) => {
+    const parts = (s.gradeGroup || '').trim().split(' ');
+    const grade = s.grade || parts[0] || '1°';
+    const group = s.group || parts[1] || 'A';
+    const ref = s.santanderReference || generateSantanderReference(s.schoolName, s.matricula || s.folio || String(idx + 100));
+    return {
+      ...s,
+      grade,
+      group,
+      santanderReference: ref,
+      consentWhatsapp: s.consentWhatsapp !== false,
+      paymentHistory: Array.isArray(s.paymentHistory) ? s.paymentHistory : [],
+      whatsappLogs: Array.isArray(s.whatsappLogs) ? s.whatsappLogs : [],
+    };
+  });
+
+  return enriched;
 };
 
 export const saveStoredStudents = (students: GraduationStudent[]) => {
@@ -326,4 +377,282 @@ export const saveStoredUserProfile = (profile: UserProfile) => {
     saveStoredOperator(profile.name);
   }
 };
+
+// ==========================================
+// ACTIVE TERMINAL (POS-01 to POS-08 / OFICINA-01)
+// ==========================================
+export const getActiveTerminal = (): TerminalId => {
+  const terminal = localStorage.getItem(KEYS.ACTIVE_TERMINAL);
+  if (terminal && ['POS-01', 'POS-02', 'POS-03', 'POS-04', 'POS-05', 'POS-06', 'POS-07', 'POS-08', 'OFICINA-01'].includes(terminal)) {
+    return terminal as TerminalId;
+  }
+  return 'POS-01';
+};
+
+export const setActiveTerminal = (terminalId: TerminalId) => {
+  localStorage.setItem(KEYS.ACTIVE_TERMINAL, terminalId);
+};
+
+// ==========================================
+// AUDIT LOGS
+// ==========================================
+export const getStoredAuditLogs = (): AuditLogItem[] => {
+  const data = localStorage.getItem(KEYS.AUDIT_LOGS);
+  if (data) {
+    try {
+      return JSON.parse(data);
+    } catch {}
+  }
+  return [];
+};
+
+export const addAuditLog = (entry: Omit<AuditLogItem, 'id' | 'timestamp'>) => {
+  const current = getStoredAuditLogs();
+  const newLog: AuditLogItem = {
+    id: `log-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    timestamp: new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }),
+    ...entry,
+  };
+  const updated = [newLog, ...current].slice(0, 500); // keep last 500
+  localStorage.setItem(KEYS.AUDIT_LOGS, JSON.stringify(updated));
+  return newLog;
+};
+
+// ==========================================
+// BANK TRANSFERS (SANTANDER RECONCILIATION)
+// ==========================================
+export const getStoredBankTransfers = (): BankTransferRecord[] => {
+  const data = localStorage.getItem(KEYS.BANK_TRANSFERS);
+  if (data) {
+    try {
+      return JSON.parse(data);
+    } catch {}
+  }
+  // Initialize with any pending transfer from students
+  const students = getStoredStudents();
+  const initialTransfers: BankTransferRecord[] = [];
+  students.forEach((s) => {
+    (s.paymentHistory || []).forEach((p) => {
+      if (p.method === 'transferencia') {
+        initialTransfers.push({
+          id: `tr-${p.id}`,
+          date: p.date,
+          studentId: s.id,
+          studentName: s.studentName,
+          schoolName: s.schoolName,
+          santanderReference: s.santanderReference,
+          amount: p.amount,
+          status: p.status === 'completado' ? 'confirmado' : 'pendiente',
+          terminalId: p.terminalId || 'POS-01',
+          operatorName: p.operatorName || 'Cobrador',
+          notes: p.notes,
+        });
+      }
+    });
+  });
+  localStorage.setItem(KEYS.BANK_TRANSFERS, JSON.stringify(initialTransfers));
+  return initialTransfers;
+};
+
+export const saveStoredBankTransfers = (transfers: BankTransferRecord[]) => {
+  localStorage.setItem(KEYS.BANK_TRANSFERS, JSON.stringify(transfers));
+};
+
+export const registerBankTransfer = (transfer: Omit<BankTransferRecord, 'id' | 'date'>) => {
+  const current = getStoredBankTransfers();
+  const newTransfer: BankTransferRecord = {
+    id: `tr-${Date.now()}`,
+    date: new Date().toLocaleDateString('es-MX'),
+    ...transfer,
+  };
+  const updated = [newTransfer, ...current];
+  saveStoredBankTransfers(updated);
+  return newTransfer;
+};
+
+export const confirmBankTransfer = (
+  transferId: string, 
+  confirmedBy: string, 
+  bankFolio?: string
+): { success: boolean; studentName?: string; amount?: number } => {
+  const transfers = getStoredBankTransfers();
+  const transfer = transfers.find(t => t.id === transferId);
+  if (!transfer) return { success: false };
+
+  transfer.status = 'confirmado';
+  transfer.confirmedAt = new Date().toLocaleString('es-MX');
+  transfer.confirmedBy = confirmedBy;
+  if (bankFolio) transfer.bankTransactionFolio = bankFolio;
+  saveStoredBankTransfers(transfers);
+
+  // Update student payment status and balance
+  const students = getStoredStudents();
+  const student = students.find(s => s.id === transfer.studentId || s.santanderReference === transfer.santanderReference);
+  if (student) {
+    const payment = (student.paymentHistory || []).find(p => p.method === 'transferencia' && p.status === 'pendiente_confirmacion');
+    if (payment) {
+      payment.status = 'completado';
+    } else {
+      // Create completed payment record
+      const newPay: PaymentRecord = {
+        id: `pay-${Date.now()}`,
+        date: new Date().toLocaleDateString('es-MX'),
+        concept: student.remainingAmount - transfer.amount <= 0 ? 'Liquidación Total' : 'Abono Transferencia',
+        amount: transfer.amount,
+        balanceAfter: Math.max(0, student.remainingAmount - transfer.amount),
+        method: 'transferencia',
+        santanderReference: transfer.santanderReference,
+        status: 'completado',
+        terminalId: 'OFICINA-01',
+        operatorName: confirmedBy,
+        notes: `Conciliado en Santander ref ${bankFolio || 'SPEI'}`,
+      };
+      student.paymentHistory = [newPay, ...(student.paymentHistory || [])];
+      student.depositAmount += transfer.amount;
+      student.remainingAmount = Math.max(0, student.totalAmount - student.depositAmount);
+      if (student.remainingAmount === 0) {
+        student.deliveryStatus = 'listo';
+      }
+    }
+    saveStoredStudents(students);
+  }
+
+  addAuditLog({
+    user: confirmedBy,
+    role: 'admin',
+    action: 'CONCILIACION_TRANSFERENCIA',
+    details: `Transferencia confirmada por $${transfer.amount} Ref ${transfer.santanderReference} - Alumno: ${transfer.studentName}`,
+    studentFolio: transfer.santanderReference,
+  });
+
+  return { success: true, studentName: transfer.studentName, amount: transfer.amount };
+};
+
+// ==========================================
+// STUDENT PAYMENTS AND INSTALLMENTS
+// ==========================================
+export const recordStudentPayment = (params: {
+  studentId: string;
+  amount: number;
+  method: PaymentMethod;
+  concept?: string;
+  terminalId: string;
+  operatorName: string;
+  notes?: string;
+}): { success: boolean; student?: GraduationStudent; payment?: PaymentRecord } => {
+  const students = getStoredStudents();
+  const studentIndex = students.findIndex(s => s.id === params.studentId);
+  if (studentIndex === -1) return { success: false };
+
+  const student = students[studentIndex];
+  const isPendingTransfer = params.method === 'transferencia';
+  const newDeposit = isPendingTransfer ? student.depositAmount : student.depositAmount + params.amount;
+  const newRemaining = isPendingTransfer ? student.remainingAmount : Math.max(0, student.totalAmount - newDeposit);
+
+  const concept = params.concept || (
+    newRemaining === 0 ? 'Liquidación Total' : (student.depositAmount === 0 ? 'Anticipo' : 'Abono')
+  );
+
+  const paymentRecord: PaymentRecord = {
+    id: `pay-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    date: new Date().toLocaleDateString('es-MX'),
+    concept,
+    amount: params.amount,
+    balanceAfter: isPendingTransfer ? student.remainingAmount : newRemaining,
+    method: params.method,
+    terminalId: params.terminalId,
+    operatorName: params.operatorName,
+    status: isPendingTransfer ? 'pendiente_confirmacion' : 'completado',
+    santanderReference: student.santanderReference,
+    notes: params.notes,
+  };
+
+  const updatedStudent: GraduationStudent = {
+    ...student,
+    depositAmount: newDeposit,
+    remainingAmount: newRemaining,
+    deliveryStatus: newRemaining === 0 ? 'listo' : student.deliveryStatus,
+    paymentHistory: [paymentRecord, ...(student.paymentHistory || [])],
+  };
+
+  students[studentIndex] = updatedStudent;
+  saveStoredStudents(students);
+
+  // If transfer, register in bank transfers list as pending
+  if (isPendingTransfer) {
+    registerBankTransfer({
+      studentId: student.id,
+      studentName: student.studentName,
+      schoolName: student.schoolName,
+      santanderReference: student.santanderReference,
+      amount: params.amount,
+      status: 'pendiente',
+      terminalId: params.terminalId,
+      operatorName: params.operatorName,
+      notes: params.notes,
+    });
+  }
+
+  addAuditLog({
+    user: params.operatorName,
+    role: 'field',
+    terminalId: params.terminalId,
+    action: isPendingTransfer ? 'REGISTRO_TRANSFERENCIA_PENDIENTE' : 'COBRO_ALUMNO',
+    details: `${concept} de $${params.amount} (${params.method}) - Alumno: ${student.studentName}`,
+    studentFolio: student.folio,
+  });
+
+  return { success: true, student: updatedStudent, payment: paymentRecord };
+};
+
+// Schedule next installment (Programar Plazo)
+export const scheduleStudentDueDate = (
+  studentId: string, 
+  dueDate: string, 
+  dueAmount: number,
+  operatorName: string
+): boolean => {
+  const students = getStoredStudents();
+  const index = students.findIndex(s => s.id === studentId);
+  if (index === -1) return false;
+
+  students[index].nextDueDate = dueDate;
+  students[index].nextDueAmount = dueAmount;
+  saveStoredStudents(students);
+
+  addAuditLog({
+    user: operatorName,
+    role: 'field',
+    action: 'PROGRAMAR_PLAZO',
+    details: `Plazo acordado para el ${dueDate} por $${dueAmount} - Alumno: ${students[index].studentName}`,
+    studentFolio: students[index].folio,
+  });
+
+  return true;
+};
+
+// Log WhatsApp notification
+export const logStudentWhatsApp = (
+  studentId: string, 
+  type: WhatsAppLog['type'], 
+  phone: string, 
+  message: string
+) => {
+  const students = getStoredStudents();
+  const index = students.findIndex(s => s.id === studentId);
+  if (index === -1) return;
+
+  const newLog: WhatsAppLog = {
+    id: `wa-${Date.now()}`,
+    date: new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }),
+    type,
+    phone,
+    message,
+    status: 'enviado',
+  };
+
+  students[index].whatsappLogs = [newLog, ...(students[index].whatsappLogs || [])];
+  saveStoredStudents(students);
+};
+
 

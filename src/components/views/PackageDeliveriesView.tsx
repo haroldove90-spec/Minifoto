@@ -137,7 +137,7 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Folio, alumno o escuela..."
-                className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+                className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
               />
             </div>
 
@@ -149,7 +149,7 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
                   onClick={() => setFilterStatus(st)}
                   className={`px-2.5 py-2 rounded-lg font-bold capitalize transition ${
                     filterStatus === st
-                      ? 'bg-[#004C59] text-white shadow-xs'
+                      ? 'bg-[#4E2B01] text-[#FFF3BC] shadow-xs'
                       : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                   }`}
                 >
@@ -193,7 +193,7 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
                             student.deliveryStatus === 'entregado'
                               ? 'bg-emerald-100 text-emerald-800'
                               : student.deliveryStatus === 'listo'
-                              ? 'bg-teal-100 text-[#004C59]'
+                              ? 'bg-[#FFF3BC] text-[#4E2B01] border border-[#ECB769]/50'
                               : 'bg-amber-100 text-amber-800'
                           }`}
                         >
@@ -201,7 +201,7 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
                         </span>
                       </div>
 
-                      <p className="text-xs text-[#004C59] font-bold">
+                      <p className="text-xs text-[#4E2B01] font-bold">
                         {student.schoolName} • {student.gradeGroup}
                       </p>
 
@@ -230,8 +230,8 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
                         </span>
                       </div>
                       <div className="border-l border-slate-200 pl-3">
-                        <span className="text-[10px] uppercase font-bold text-[#F97800] block">Resto</span>
-                        <span className={`font-mono font-extrabold text-sm ${student.remainingAmount > 0 ? 'text-[#F97800]' : 'text-slate-400'}`}>
+                        <span className="text-[10px] uppercase font-bold text-[#ECB769] block">Resto</span>
+                        <span className={`font-mono font-extrabold text-sm ${student.remainingAmount > 0 ? 'text-[#4E2B01]' : 'text-slate-400'}`}>
                           ${student.remainingAmount.toFixed(2)}
                         </span>
                       </div>
@@ -243,7 +243,7 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
                       <button
                         type="button"
                         onClick={() => onOpenTicket(student)}
-                        className="p-2 text-slate-600 hover:text-[#004C59] bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition"
+                        className="p-2 text-slate-600 hover:text-[#4E2B01] bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition"
                         title="Ver / Reimprimir Comprobante"
                       >
                         <Printer className="w-4 h-4" />
@@ -254,7 +254,7 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleMarkReady(student)}
-                          className="px-3 py-2 bg-teal-50 hover:bg-teal-100 text-[#004C59] font-bold text-xs rounded-xl border border-teal-200 transition"
+                          className="px-3 py-2 bg-[#FFF3BC] hover:bg-[#FFF3BC]/80 text-[#4E2B01] font-bold text-xs rounded-xl border border-[#ECB769]/50 transition cursor-pointer"
                         >
                           Marcar Listo
                         </button>
@@ -295,7 +295,7 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
           <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 text-slate-800 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-bold text-[#004C59]">Liquidación y Entrega de Paquete</h3>
+                <h3 className="text-base font-bold text-[#4E2B01]">Liquidación y Entrega de Paquete</h3>
                 <span className="text-xs text-slate-500 font-mono">Folio: {selectedStudentForLiquidation.folio}</span>
               </div>
               <span className="p-2 bg-emerald-100 text-emerald-700 rounded-full">
@@ -315,7 +315,7 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
                 <span className="text-xs font-bold text-amber-900 block">Saldo por Cobrar:</span>
                 <span className="text-[11px] text-amber-700">Importe de liquidación final</span>
               </div>
-              <span className="text-2xl font-black text-[#F97800]">
+              <span className="text-2xl font-black text-[#ECB769]">
                 ${selectedStudentForLiquidation.remainingAmount.toFixed(2)}
               </span>
             </div>
@@ -332,7 +332,7 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
                       onClick={() => setPaymentMethod(m)}
                       className={`py-2 rounded-lg capitalize border transition ${
                         paymentMethod === m
-                          ? 'bg-[#004C59] text-white border-[#004C59] font-bold'
+                          ? 'bg-[#4E2B01] text-white border-[#4E2B01] font-bold'
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                       }`}
                     >
@@ -354,7 +354,7 @@ export const PackageDeliveriesView: React.FC<PackageDeliveriesViewProps> = ({
               <button
                 type="button"
                 onClick={handleConfirmLiquidation}
-                className="flex-1 py-2.5 text-xs font-bold bg-[#004C59] hover:bg-[#003842] text-white rounded-xl shadow-md transition"
+                className="flex-1 py-2.5 text-xs font-bold bg-[#4E2B01] hover:bg-[#381e01] text-white rounded-xl shadow-md transition"
               >
                 Confirmar y Marcar Entregado
               </button>

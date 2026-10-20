@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { School, GraduationStudent } from '../../types';
+import { generateSantanderReference } from '../../services/storage';
 import { 
   GraduationCap, 
   Smartphone, 
@@ -118,6 +119,8 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
       depositAmount: depositNum,
       remainingAmount,
       deliveryStatus: remainingAmount === 0 ? 'listo' : 'pendiente',
+      santanderReference: generateSantanderReference(currentSchoolName, folio),
+      consentWhatsapp: true,
       contactPhone: contactPhone.trim() || undefined,
       createdAt: dateStr,
     };
@@ -146,16 +149,16 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         
         {/* Banner for Field Collector */}
-        <div className="bg-linear-to-r from-[#004C59] to-teal-800 rounded-2xl p-4 sm:p-5 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-gradient-to-r from-[#4E2B01] via-[#381e01] to-[#202020] rounded-2xl p-4 sm:p-5 text-[#FFF3BC] shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-white/10 rounded-xl">
-              <Smartphone className="w-6 h-6 text-[#F97800]" />
+              <Smartphone className="w-6 h-6 text-[#ECB769]" />
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-black tracking-tight">
+              <h1 className="text-base sm:text-lg font-black tracking-tight text-white">
                 Módulo Vendedor en Campo (Móvil / Tablet)
               </h1>
-              <p className="text-xs text-teal-100">
+              <p className="text-xs text-[#FFF3BC]/80">
                 Registro de alumnos, cobro de anticipos e impresión de tickets en escuelas y eventos
               </p>
             </div>
@@ -163,12 +166,12 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs px-3 py-2 rounded-xl border border-white/10 flex items-center justify-between sm:justify-start gap-4">
             <div>
-              <span className="text-[10px] uppercase font-bold text-teal-200 block">Anticipos Hoy</span>
+              <span className="text-[10px] uppercase font-bold text-[#ECB769] block">Anticipos Hoy</span>
               <span className="text-lg font-extrabold text-white">${totalCollectedToday.toFixed(2)}</span>
             </div>
             <div className="border-l border-white/20 pl-4">
-              <span className="text-[10px] uppercase font-bold text-teal-200 block">Recibos</span>
-              <span className="text-lg font-extrabold text-amber-300">{recentStudents.length}</span>
+              <span className="text-[10px] uppercase font-bold text-[#ECB769] block">Recibos</span>
+              <span className="text-lg font-extrabold text-[#FFF3BC]">{recentStudents.length}</span>
             </div>
           </div>
         </div>
@@ -177,7 +180,7 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
         <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <SchoolIcon className="w-5 h-5 text-[#004C59]" />
+              <SchoolIcon className="w-5 h-5 text-[#4E2B01]" />
               <h2 className="text-sm sm:text-base font-bold text-slate-800">
                 Selecciona la Escuela del Alumno
               </h2>
@@ -185,9 +188,9 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
             <button
               type="button"
               onClick={() => setIsAddingNewSchool(!isAddingNewSchool)}
-              className="text-xs text-[#004C59] font-bold hover:underline flex items-center gap-1"
+              className="text-xs text-[#4E2B01] font-bold hover:underline flex items-center gap-1"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 text-[#ECB769]" />
               <span>{isAddingNewSchool ? 'Ver lista existente' : '+ Otra Escuela'}</span>
             </button>
           </div>
@@ -200,7 +203,7 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                 value={customSchoolName}
                 onChange={(e) => setCustomSchoolName(e.target.value)}
                 placeholder="Ej. Escuela Secundaria #45"
-                className="w-full text-sm px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+                className="w-full text-sm px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
               />
             </div>
           ) : (
@@ -214,7 +217,7 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                     onClick={() => setSelectedSchoolId(sch.id)}
                     className={`p-3 rounded-xl border-2 text-left font-bold text-xs sm:text-sm transition-all active:scale-95 cursor-pointer flex flex-col justify-between min-h-[75px] ${
                       isSelected
-                        ? 'border-[#004C59] bg-[#004C59]/10 text-[#004C59] shadow-xs'
+                        ? 'border-[#4E2B01] bg-[#FFF3BC]/30 text-[#4E2B01] shadow-xs'
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
                     }`}
                   >
@@ -239,7 +242,7 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
 
           <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-[#F97800]" />
+              <GraduationCap className="w-5 h-5 text-[#ECB769]" />
               <span>Datos del Alumno & Anticipo</span>
             </h2>
             <span className="text-xs font-mono font-bold px-2 py-1 bg-slate-100 rounded text-slate-600">
@@ -257,7 +260,7 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 placeholder="Ej. Emiliano Hernández Gómez"
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59] font-medium"
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01] font-medium"
               />
             </div>
 
@@ -269,7 +272,7 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                 value={gradeGroup}
                 onChange={(e) => setGradeGroup(e.target.value)}
                 placeholder="Ej. 6° B"
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59] font-medium"
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01] font-medium"
               />
             </div>
           </div>
@@ -287,15 +290,15 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                     onClick={() => handleSelectPackagePreset(preset)}
                     className={`p-3 rounded-xl border-2 text-left transition-all active:scale-95 cursor-pointer ${
                       isSelected
-                        ? 'border-[#F97800] bg-orange-50/60 ring-1 ring-[#F97800]'
+                        ? 'border-[#ECB769] bg-[#FFF3BC]/50 ring-1 ring-[#ECB769]'
                         : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs text-slate-800">{preset.title}</span>
-                      <span className="font-extrabold text-xs text-[#004C59]">${preset.price}</span>
+                      <span className="font-extrabold text-xs text-[#4E2B01]">${preset.price}</span>
                     </div>
-                    <span className="text-[11px] text-[#F97800] font-semibold block mt-0.5">
+                    <span className="text-[11px] text-[#4E2B01] font-semibold block mt-0.5">
                       {preset.photos}
                     </span>
                     <p className="text-[10px] text-slate-600 line-clamp-1 mt-0.5">{preset.description}</p>
@@ -314,7 +317,7 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                 value={totalPhotos}
                 onChange={(e) => setTotalPhotos(e.target.value)}
                 placeholder="Ej. 10 fotos + cuadro"
-                className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#004C59]"
+                className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#4E2B01]"
               />
             </div>
 
@@ -325,15 +328,15 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                 min="0"
                 value={totalAmount}
                 onChange={(e) => setTotalAmount(parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 text-xs sm:text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#004C59]"
+                className="w-full px-3 py-2 text-xs sm:text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#4E2B01]"
               />
             </div>
           </div>
 
           {/* Anticipo & Resto Calculation (Crucial field per user request) */}
-          <div className="bg-teal-50/60 border border-teal-200 rounded-2xl p-4 sm:p-5 space-y-4">
-            <div className="flex items-center gap-2 text-[#004C59] font-bold text-sm">
-              <Banknote className="w-5 h-5" />
+          <div className="bg-[#FFF3BC]/30 border border-[#ECB769]/50 rounded-2xl p-4 sm:p-5 space-y-4">
+            <div className="flex items-center gap-2 text-[#4E2B01] font-bold text-sm">
+              <Banknote className="w-5 h-5 text-[#ECB769]" />
               <span>Cobro de Anticipo y Cálculo de Resto</span>
             </div>
 
@@ -379,7 +382,7 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setDepositAmount(totalAmount.toString())}
-                    className="py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg active:scale-95 shadow-xs"
+                    className="py-2 bg-[#4E2B01] hover:bg-[#381e01] text-[#FFF3BC] rounded-lg active:scale-95 shadow-xs font-black"
                   >
                     Totalidad
                   </button>
@@ -388,12 +391,12 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
             </div>
 
             {/* Resto Display */}
-            <div className="p-3 bg-white rounded-xl border border-teal-200 flex items-center justify-between">
+            <div className="p-3 bg-white rounded-xl border border-[#ECB769]/40 flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-slate-600 uppercase block">Resto por Liquidar:</span>
                 <span className="text-[11px] text-slate-500">Saldo pendiente al entregar fotografías</span>
               </div>
-              <span className="text-2xl font-black text-[#F97800]">
+              <span className="text-2xl font-black text-[#4E2B01]">
                 ${remainingAmount.toFixed(2)}
               </span>
             </div>
@@ -408,7 +411,7 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                 value={contactPhone}
                 onChange={(e) => setContactPhone(e.target.value)}
                 placeholder="Ej. 55 1234 5678"
-                className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#004C59]"
+                className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#4E2B01]"
               />
             </div>
           </div>
@@ -416,9 +419,9 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
           {/* SUBMIT BUTTON: Generates the exact receipt required */}
           <button
             type="submit"
-            className="w-full py-4 px-6 bg-[#004C59] hover:bg-[#003842] active:scale-98 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-4 px-6 bg-[#4E2B01] hover:bg-[#381e01] active:scale-98 text-[#FFF3BC] font-extrabold text-sm sm:text-base rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            <Printer className="w-5 h-5 text-[#F97800]" />
+            <Printer className="w-5 h-5 text-[#ECB769]" />
             <span>REGISTRAR Y EMITIR TICKET PORTÁTIL</span>
           </button>
         </form>
@@ -427,7 +430,7 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
         <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#F97800]" />
+              <Sparkles className="w-4 h-4 text-[#ECB769]" />
               <span>Recibos Recientes Emitidos en Campo</span>
             </h3>
             <span className="text-xs text-slate-500">{recentStudents.length} registrados</span>
@@ -453,11 +456,11 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                         {student.folio}
                       </span>
                     </div>
-                    <p className="text-xs text-[#004C59] font-medium">
+                    <p className="text-xs text-[#4E2B01] font-medium">
                       {student.schoolName} • {student.gradeGroup}
                     </p>
                     <p className="text-[11px] text-slate-500">
-                      Total: ${student.totalAmount} | Anticipo: <strong className="text-emerald-700">${student.depositAmount}</strong> | Resto: <strong className="text-[#F97800]">${student.remainingAmount}</strong>
+                      Total: ${student.totalAmount} | Anticipo: <strong className="text-emerald-700">${student.depositAmount}</strong> | Resto: <strong className="text-[#4E2B01]">${student.remainingAmount}</strong>
                     </p>
                   </div>
 
@@ -465,9 +468,9 @@ export const FieldCollectorView: React.FC<FieldCollectorViewProps> = ({
                     <button
                       type="button"
                       onClick={() => onOpenTicket(student)}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-[#004C59]/10 hover:bg-[#004C59]/20 text-[#004C59] text-xs font-bold rounded-lg transition"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-[#FFF3BC] hover:bg-[#FFF3BC]/80 text-[#4E2B01] text-xs font-bold rounded-lg border border-[#ECB769]/50 transition cursor-pointer"
                     >
-                      <Printer className="w-3.5 h-3.5" />
+                      <Printer className="w-3.5 h-3.5 text-[#ECB769]" />
                       <span>Ver Ticket</span>
                     </button>
                   </div>

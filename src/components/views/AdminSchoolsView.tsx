@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { School, GraduationStudent } from '../../types';
+import { generateSantanderReference } from '../../services/storage';
 import { 
   GraduationCap, 
   Plus, 
@@ -119,6 +120,8 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
       totalAmount: stdTotal,
       depositAmount: stdDeposit,
       remainingAmount: Math.max(0, stdTotal - stdDeposit),
+      santanderReference: generateSantanderReference(targetSchool ? targetSchool.name : 'Escuela General', folio),
+      consentWhatsapp: true,
       deliveryStatus: stdDeposit >= stdTotal ? 'listo' : 'pendiente',
       contactPhone: stdPhone.trim() || undefined,
       createdAt: dateStr,
@@ -143,15 +146,15 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
         {/* Header with Season Segment */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#004C59]/10 rounded-xl">
-              <GraduationCap className="w-6 h-6 text-[#004C59]" />
+            <div className="p-3 bg-[#FFF3BC] text-[#4E2B01] rounded-xl shadow-xs">
+              <GraduationCap className="w-6 h-6 text-[#4E2B01]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base sm:text-lg font-bold text-slate-800">
                   Gestión Escolar y Convenios
                 </h1>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#F97800] text-white">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#ECB769] text-[#202020]">
                   Graduaciones {selectedSeason}
                 </span>
               </div>
@@ -176,16 +179,16 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
             <button
               type="button"
               onClick={() => setShowSchoolModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#004C59] hover:bg-[#003842] text-white text-xs font-bold rounded-xl shadow-xs transition"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#4E2B01] hover:bg-[#381e01] text-[#FFF3BC] text-xs font-bold rounded-xl shadow-xs transition"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 text-[#ECB769]" />
               <span>+ Nueva Escuela</span>
             </button>
 
             <button
               type="button"
               onClick={() => setShowStudentModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#F97800] hover:bg-[#e06c00] text-white text-xs font-bold rounded-xl shadow-xs transition"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#ECB769] hover:bg-[#d9a456] text-[#202020] text-xs font-bold rounded-xl shadow-xs transition"
             >
               <Plus className="w-4 h-4" />
               <span>+ Cargar Alumno</span>
@@ -212,19 +215,19 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
           </div>
 
           <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
-            <span className="text-[11px] font-bold uppercase text-[#F97800] block">Resto por Liquidar</span>
-            <span className="text-lg sm:text-2xl font-black text-[#F97800]">
+            <span className="text-[11px] font-bold uppercase text-[#ECB769] block">Resto por Liquidar</span>
+            <span className="text-lg sm:text-2xl font-black text-[#4E2B01]">
               ${totalRemainingToCollect.toFixed(2)}
             </span>
-            <span className="text-[10px] text-orange-800 block mt-0.5">Pendiente por cobrar</span>
+            <span className="text-[10px] text-slate-500 block mt-0.5">Pendiente por cobrar</span>
           </div>
 
           <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
-            <span className="text-[11px] font-bold uppercase text-[#004C59] block">Paquetes Entregados</span>
-            <span className="text-lg sm:text-2xl font-black text-[#004C59]">
+            <span className="text-[11px] font-bold uppercase text-[#4E2B01] block">Paquetes Entregados</span>
+            <span className="text-lg sm:text-2xl font-black text-[#4E2B01]">
               {totalDelivered} / {filteredStudents.length}
             </span>
-            <span className="text-[10px] text-teal-800 block mt-0.5">
+            <span className="text-[10px] text-slate-500 block mt-0.5">
               {filteredStudents.length > 0 ? Math.round((totalDelivered / filteredStudents.length) * 100) : 0}% entregado
             </span>
           </div>
@@ -244,7 +247,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
               onClick={() => setSelectedSchoolId('all')}
               className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
                 selectedSchoolId === 'all'
-                  ? 'bg-[#004C59] text-white shadow-xs'
+                  ? 'bg-[#4E2B01] text-[#FFF3BC] shadow-xs'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
@@ -260,7 +263,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
                     onClick={() => setSelectedSchoolId(sch.id)}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 cursor-pointer ${
                       isSelected
-                        ? 'bg-[#004C59] text-white shadow-xs'
+                        ? 'bg-[#4E2B01] text-[#FFF3BC] shadow-xs'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
@@ -292,7 +295,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Base de Datos de Alumnos Graduados
               </span>
-              <span className="text-xs font-mono bg-teal-100 text-[#004C59] px-2 py-0.5 rounded font-bold">
+              <span className="text-xs font-mono bg-[#FFF3BC] text-[#4E2B01] px-2 py-0.5 rounded font-bold border border-[#ECB769]/40">
                 {filteredStudents.length} alumnos
               </span>
             </div>
@@ -304,7 +307,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por nombre o folio..."
-                className="w-full text-xs pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#004C59]"
+                className="w-full text-xs pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#4E2B01]"
               />
             </div>
           </div>
@@ -339,8 +342,13 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
                       <td className="p-3 font-mono font-bold text-slate-700">{std.folio}</td>
                       <td className="p-3 font-bold text-slate-900">{std.studentName}</td>
                       <td className="p-3">
-                        <span className="text-[#004C59] font-bold block">{std.schoolName}</span>
-                        <span className="text-[11px] text-slate-500">{std.gradeGroup}</span>
+                        <span className="text-[#4E2B01] font-bold block">{std.schoolName}</span>
+                        <span className="text-[11px] text-slate-500 block">{std.gradeGroup}</span>
+                        {std.santanderReference && (
+                          <span className="font-mono text-[10px] text-[#EC0000] font-black bg-red-50 px-1.5 py-0.5 rounded border border-red-200 inline-block mt-0.5">
+                            {std.santanderReference}
+                          </span>
+                        )}
                       </td>
                       <td className="p-3 text-slate-700">
                         <span>{std.packageName}</span>
@@ -352,7 +360,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
                       <td className="p-3 text-right font-mono font-bold text-emerald-700">
                         ${std.depositAmount.toFixed(2)}
                       </td>
-                      <td className="p-3 text-right font-mono font-extrabold text-[#F97800]">
+                      <td className="p-3 text-right font-mono font-extrabold text-[#4E2B01]">
                         ${std.remainingAmount.toFixed(2)}
                       </td>
                       <td className="p-3 text-center">
@@ -361,7 +369,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
                             std.deliveryStatus === 'entregado'
                               ? 'bg-emerald-100 text-emerald-800'
                               : std.deliveryStatus === 'listo'
-                              ? 'bg-teal-100 text-[#004C59]'
+                              ? 'bg-[#FFF3BC] text-[#4E2B01] border border-[#ECB769]/50'
                               : 'bg-amber-100 text-amber-800'
                           }`}
                         >
@@ -373,7 +381,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onOpenTicket(std)}
-                            className="p-1.5 text-slate-600 hover:text-[#004C59] bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+                            className="p-1.5 text-slate-600 hover:text-[#4E2B01] bg-slate-100 hover:bg-slate-200 rounded-lg transition"
                             title="Ver ticket del alumno"
                           >
                             <Download className="w-3.5 h-3.5" />
@@ -406,7 +414,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
             className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 space-y-4"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-[#004C59]">Nueva Escuela de Convenio</h3>
+              <h3 className="text-base font-bold text-[#4E2B01]">Nueva Escuela de Convenio</h3>
               <button
                 type="button"
                 onClick={() => setShowSchoolModal(false)}
@@ -424,7 +432,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
                 value={newSchoolName}
                 onChange={(e) => setNewSchoolName(e.target.value)}
                 placeholder="Ej. Escuela Lerdo de Tejada"
-                className="w-full text-sm px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+                className="w-full text-sm px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
               />
             </div>
 
@@ -461,7 +469,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-[#004C59] hover:bg-[#003842] text-white text-xs font-bold rounded-xl shadow-md"
+                className="px-5 py-2 bg-[#4E2B01] hover:bg-[#381e01] text-[#FFF3BC] text-xs font-bold rounded-xl shadow-md transition"
               >
                 Guardar Escuela
               </button>
@@ -478,7 +486,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
             className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-[#004C59]">Registrar Alumno Graduado</h3>
+              <h3 className="text-base font-bold text-[#4E2B01]">Registrar Alumno Graduado</h3>
               <button
                 type="button"
                 onClick={() => setShowStudentModal(false)}
@@ -523,7 +531,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
                 value={stdName}
                 onChange={(e) => setStdName(e.target.value)}
                 placeholder="Nombre del graduado..."
-                className="w-full text-xs sm:text-sm px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004C59]"
+                className="w-full text-xs sm:text-sm px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
               />
             </div>
 
@@ -550,7 +558,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 bg-teal-50/60 p-3 rounded-xl border border-teal-200">
+            <div className="grid grid-cols-2 gap-3 bg-[#FFF3BC]/30 p-3 rounded-xl border border-[#ECB769]/50">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">Precio Total ($):</label>
                 <input
@@ -576,7 +584,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
 
             <div className="flex items-center justify-between text-xs px-2">
               <span className="font-bold text-slate-600">Resto que quedará pendiente:</span>
-              <span className="font-mono text-sm font-black text-[#F97800]">
+              <span className="font-mono text-sm font-black text-[#4E2B01]">
                 ${Math.max(0, stdTotal - stdDeposit).toFixed(2)}
               </span>
             </div>
@@ -602,7 +610,7 @@ export const AdminSchoolsView: React.FC<AdminSchoolsViewProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-[#F97800] hover:bg-[#e06c00] text-white text-xs font-bold rounded-xl shadow-md"
+                className="px-5 py-2 bg-[#ECB769] hover:bg-[#d9a456] text-[#202020] text-xs font-bold rounded-xl shadow-md transition"
               >
                 Registrar Alumno
               </button>

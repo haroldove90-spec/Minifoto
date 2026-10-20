@@ -96,6 +96,31 @@ export interface School {
   phone?: string;
 }
 
+export type TerminalId = 'POS-01' | 'POS-02' | 'POS-03' | 'POS-04' | 'POS-05' | 'POS-06' | 'POS-07' | 'POS-08' | 'OFICINA-01';
+
+export interface PaymentRecord {
+  id: string;
+  date: string;
+  concept: string; // 'Anticipo' | 'Abono' | 'Liquidación'
+  amount: number;
+  balanceAfter: number;
+  method: PaymentMethod;
+  terminalId?: string;
+  operatorName?: string;
+  status: 'completado' | 'pendiente_confirmacion' | 'cancelado';
+  santanderReference?: string;
+  notes?: string;
+}
+
+export interface WhatsAppLog {
+  id: string;
+  date: string;
+  type: 'recordatorio' | 'vencimiento' | 'comprobante' | 'datos_bancarios';
+  phone: string;
+  message: string;
+  status: 'enviado';
+}
+
 export interface GraduationStudent {
   id: string;
   folio: string;
@@ -103,17 +128,58 @@ export interface GraduationStudent {
   schoolName: string;
   seasonYear: string;
   studentName: string;
-  gradeGroup: string;
+  matricula?: string;
+  grade?: string; // '1°', '2°', '3°', etc.
+  group?: string; // 'A', 'B', 'C', etc.
+  gradeGroup: string; // '1° A'
+  tutorName?: string;
+  tutorWhatsapp?: string;
+  tutorPhone?: string;
+  consentWhatsapp?: boolean;
+  avatarUrl?: string;
   packageName: string;
   totalPhotos: number | string;
   totalAmount: number;
   depositAmount: number;
   remainingAmount: number;
+  santanderReference: string; // e.g. MF-015-000123
   deliveryStatus: 'pendiente' | 'listo' | 'entregado';
   deliveryDate?: string;
+  nextDueDate?: string; // '2026-10-20'
+  nextDueAmount?: number;
+  paymentHistory?: PaymentRecord[];
+  whatsappLogs?: WhatsAppLog[];
   contactPhone?: string;
   notes?: string;
   createdAt: string;
+}
+
+export interface BankTransferRecord {
+  id: string;
+  date: string;
+  studentId: string;
+  studentName: string;
+  schoolName: string;
+  santanderReference: string;
+  amount: number;
+  status: 'pendiente' | 'confirmado' | 'rechazado';
+  terminalId?: string;
+  operatorName?: string;
+  confirmedAt?: string;
+  confirmedBy?: string;
+  bankTransactionFolio?: string;
+  notes?: string;
+}
+
+export interface AuditLogItem {
+  id: string;
+  timestamp: string;
+  user: string;
+  role: Role;
+  terminalId?: string;
+  action: string;
+  details: string;
+  studentFolio?: string;
 }
 
 export interface PaymentGatewayConfig {
@@ -143,3 +209,4 @@ export interface BrandConfig {
   logoUrl: string;
   iconUrl: string;
 }
+

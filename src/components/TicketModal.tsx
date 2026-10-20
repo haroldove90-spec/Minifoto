@@ -3,9 +3,14 @@ import { Sale, GraduationStudent, BrandConfig } from '../types';
 import { Printer, Share2, X, CheckCircle, Copy, Check } from 'lucide-react';
 import { printTicketElement } from '../services/printService';
 
+import { PaymentRecord } from '../types';
+
 interface TicketModalProps {
   sale?: Sale | null;
   studentTicket?: GraduationStudent | null;
+  paymentRecord?: PaymentRecord | null;
+  terminalId?: string;
+  operatorName?: string;
   brand: BrandConfig;
   onClose: () => void;
   autoPrint?: boolean;
@@ -14,6 +19,9 @@ interface TicketModalProps {
 export const TicketModal: React.FC<TicketModalProps> = ({
   sale,
   studentTicket,
+  paymentRecord,
+  terminalId = 'POS-01',
+  operatorName = 'Cobrador',
   brand,
   onClose,
   autoPrint = false,
@@ -177,23 +185,28 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
           <div className="border-t border-dashed border-slate-400 my-2.5"></div>
 
-          {/* Student Graduation / Mobile Seller Receipt */}
+          {/* Student Graduation / Mobile Seller Receipt (matches Mockup 10) */}
           {studentTicket && (
             <div className="space-y-2">
-              <div className="text-center font-bold text-xs uppercase bg-slate-100 py-1 rounded">
-                COMPROBANTE DE PAQUETE ESCOLAR
+              <div className="text-center font-bold text-xs uppercase bg-[#4E2B01] text-[#FFF3BC] py-1.5 rounded-lg tracking-wider">
+                COMPROBANTE DE PAGO
               </div>
               
-              <div className="grid grid-cols-2 text-xs gap-y-1 pt-1">
+              <div className="grid grid-cols-2 text-xs gap-y-1.5 pt-1">
                 <span className="text-slate-500 font-bold">Folio:</span>
-                <span className="font-bold text-right text-slate-900">{studentTicket.folio}</span>
+                <span className="font-bold text-right text-slate-900 font-mono">{studentTicket.folio}</span>
 
                 <span className="text-slate-500">Fecha:</span>
-                <span className="text-right text-slate-700">{studentTicket.createdAt}</span>
+                <span className="text-right text-slate-700 font-medium">
+                  {paymentRecord?.date || new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                </span>
 
-                <span className="text-slate-500 font-bold">Alumno:</span>
-                <span className="font-bold text-right text-slate-900 truncate pl-1">
-                  {studentTicket.studentName}
+                <span className="text-slate-500 font-bold">Terminal:</span>
+                <span className="font-black text-right text-[#4E2B01] font-mono">{terminalId}</span>
+
+                <span className="text-slate-500 font-bold">Cobrador:</span>
+                <span className="font-bold text-right text-slate-900 uppercase truncate pl-1">
+                  {operatorName}
                 </span>
 
                 <span className="text-slate-500 font-bold">Escuela:</span>
@@ -201,43 +214,42 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                   {studentTicket.schoolName}
                 </span>
 
-                <span className="text-slate-500">Grado/Grupo:</span>
-                <span className="text-right text-slate-800">{studentTicket.gradeGroup}</span>
-
-                <span className="text-slate-500 font-bold">Total Fotos:</span>
-                <span className="font-bold text-right text-slate-900">
-                  {studentTicket.totalPhotos}
+                <span className="text-slate-500">Alumno:</span>
+                <span className="font-black text-right text-slate-900 truncate pl-1">
+                  {studentTicket.studentName}
                 </span>
 
-                <span className="text-slate-500">Paquete:</span>
+                <span className="text-slate-500">Concepto:</span>
                 <span className="text-right text-slate-700 truncate pl-1 text-[11px]">
-                  {studentTicket.packageName}
+                  {studentTicket.packageName || 'Paquete fotográfico'}
                 </span>
+
+                {studentTicket.santanderReference && (
+                  <>
+                    <span className="text-slate-500 font-bold">Ref. Santander:</span>
+                    <span className="font-bold text-right text-slate-800 font-mono text-[11px]">
+                      {studentTicket.santanderReference}
+                    </span>
+                  </>
+                )}
               </div>
 
-              <div className="border-t border-dashed border-slate-400 my-2"></div>
+              <div className="border-t border-dashed border-slate-400 my-2.5"></div>
 
-              {/* Price, Deposit and Remaining calculation */}
-              <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                <div className="flex justify-between text-xs">
-                  <span className="font-bold text-slate-700">Precio Total:</span>
-                  <span className="font-bold text-slate-900">${studentTicket.totalAmount.toFixed(2)}</span>
+              {/* Price, Payment and Remaining calculation (matches Mockup 10) */}
+              <div className="space-y-1.5 bg-[#FCF9F2] p-3 rounded-xl border border-[#ECB769]/50">
+                <div className="flex justify-between text-xs text-slate-800">
+                  <span className="font-bold">Pago recibido:</span>
+                  <span className="font-black text-base text-emerald-700">
+                    ${(paymentRecord?.amount ?? studentTicket.depositAmount).toFixed(2)}
+                  </span>
                 </div>
-                <div className="flex justify-between text-xs text-emerald-700">
-                  <span className="font-bold">Anticipo Pagado:</span>
-                  <span className="font-bold">-${studentTicket.depositAmount.toFixed(2)}</span>
+                <div className="border-t border-slate-200 pt-1 flex justify-between text-xs text-slate-800">
+                  <span className="font-bold">Saldo pendiente:</span>
+                  <span className="font-black text-base text-amber-700">
+                    ${studentTicket.remainingAmount.toFixed(2)}
+                  </span>
                 </div>
-                <div className="border-t border-slate-300 pt-1 flex justify-between text-sm font-extrabold text-[#4E2B01]">
-                  <span>Resto por Liquidar:</span>
-                  <span>${studentTicket.remainingAmount.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="text-[11px] text-slate-600 flex justify-between pt-1">
-                <span>Estatus de entrega:</span>
-                <span className="font-bold uppercase text-[#4E2B01]">
-                  {studentTicket.deliveryStatus}
-                </span>
               </div>
             </div>
           )}
@@ -336,12 +348,30 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
           <div className="border-t border-dashed border-slate-400 my-3"></div>
 
-          {/* Barcode simulation */}
-          <div className="flex flex-col items-center justify-center my-2 space-y-1">
-            <div className="h-9 w-44 bg-repeating-linear-to-r from-black via-black via-2px to-transparent to-4px"></div>
-            <span className="text-[10px] tracking-widest text-slate-500">
-              *{studentTicket ? studentTicket.folio : sale?.folio}*
-            </span>
+          {/* QR Code / Barcode (matches Mockup 10) */}
+          <div className="flex flex-col items-center justify-center my-3 space-y-2">
+            {studentTicket ? (
+              <div className="flex flex-col items-center">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(`MINIFOTO:${studentTicket.folio}:${studentTicket.santanderReference || ''}:SALDO:${studentTicket.remainingAmount}`)}`}
+                  alt="Código QR de validación"
+                  className="w-24 h-24 sm:w-28 sm:h-28 border-2 border-slate-900 p-1 rounded-lg"
+                />
+                <span className="text-[10px] font-mono tracking-widest text-slate-500 mt-1">
+                  {studentTicket.folio}
+                </span>
+                <p className="font-bold text-xs text-slate-800 mt-2 font-sans">
+                  ¡Gracias por su confianza!
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center space-y-1">
+                <div className="h-9 w-44 bg-repeating-linear-to-r from-black via-black via-2px to-transparent to-4px"></div>
+                <span className="text-[10px] tracking-widest text-slate-500">
+                  *{sale?.folio}*
+                </span>
+              </div>
+            )}
           </div>
 
           <p className="text-center text-[10px] text-slate-500 mt-2 leading-relaxed">

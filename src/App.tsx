@@ -65,6 +65,7 @@ import { AdminSchoolsView } from './components/views/AdminSchoolsView';
 import { AdminReportsView } from './components/views/AdminReportsView';
 import { AdminConfigView } from './components/views/AdminConfigView';
 import { UserProfileView } from './components/views/UserProfileView';
+import { TabletPOSCobroView } from './components/views/TabletPOSCobroView';
 import { SplashScreen } from './components/SplashScreen';
 
 export default function App() {
@@ -73,10 +74,8 @@ export default function App() {
   const [operatorName, setOperatorName] = useState<string>(() => getStoredOperator());
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     const role = getStoredRole();
-    if (role === 'cashier') return 'pos_cashier';
-    if (role === 'field') return 'catalogs';
     if (role === 'client') return 'catalogs';
-    return 'catalogs'; // admin defaults to catalogs (POS removed from admin)
+    return 'tablet_pos'; // admin, cashier and field all have direct access to tablet_pos
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
@@ -140,15 +139,10 @@ export default function App() {
     saveStoredRole(role);
     saveStoredOperator(opName);
 
-    if (role === 'field') {
-      setActiveTab('catalogs');
-    } else if (role === 'cashier') {
-      setActiveTab('pos_cashier');
-    } else if (role === 'client') {
+    if (role === 'client') {
       setActiveTab('catalogs');
     } else {
-      // admin role: default is catalogs (POS removed from admin)
-      setActiveTab('catalogs');
+      setActiveTab('tablet_pos');
     }
   };
 
@@ -389,16 +383,16 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'tablet_pos' && (
+            <TabletPOSCobroView
+              currentRole={currentRole}
+              operatorName={operatorName}
+            />
+          )}
+
           {activeTab === 'field_collector' && (
-            <FieldCollectorView
-              schools={schools}
-              onAddStudentReceipt={handleAddStudentReceipt}
-              onOpenTicket={(std) => {
-                setActiveStudentTicket(std);
-                setActiveSaleTicket(null);
-                setAutoPrintTicket(true);
-              }}
-              recentStudents={students}
+            <TabletPOSCobroView
+              currentRole={currentRole}
               operatorName={operatorName}
             />
           )}

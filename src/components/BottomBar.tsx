@@ -28,27 +28,26 @@ export const BottomBar: React.FC<BottomBarProps> = ({
     switch (currentRole) {
       case 'admin':
         return [
-          { id: 'catalogs' as ActiveTab, label: 'Catálogo', icon: Layers },
+          { id: 'tablet_pos' as ActiveTab, label: 'Cobranza', icon: Smartphone },
           { id: 'schools' as ActiveTab, label: 'Escuelas', icon: GraduationCap },
-          { id: 'deliveries' as ActiveTab, label: 'Entregas', icon: PackageCheck },
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo', icon: Layers },
           { id: 'reports' as ActiveTab, label: 'Reportes', icon: BarChart3 },
           { id: 'config' as ActiveTab, label: 'Ajustes', icon: Sliders },
           { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
         ];
       case 'cashier':
         return [
+          { id: 'tablet_pos' as ActiveTab, label: 'Cobranza', icon: Smartphone },
+          { id: 'schools' as ActiveTab, label: 'Alumnos', icon: GraduationCap },
           { id: 'pos_cashier' as ActiveTab, label: 'POS Touch', icon: ShoppingBag },
           { id: 'deliveries' as ActiveTab, label: 'Entregas', icon: PackageCheck },
-          { id: 'schools' as ActiveTab, label: 'Alumnos', icon: GraduationCap },
-          { id: 'history' as ActiveTab, label: 'Ventas', icon: Receipt },
           { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
         ];
       case 'field':
         return [
-          { id: 'catalogs' as ActiveTab, label: 'Catálogo', icon: Layers },
-          { id: 'field_collector' as ActiveTab, label: 'Cobro Campo', icon: Smartphone },
+          { id: 'tablet_pos' as ActiveTab, label: 'Cobro Tablet', icon: Smartphone },
           { id: 'schools' as ActiveTab, label: 'Alumnos', icon: GraduationCap },
-          { id: 'history' as ActiveTab, label: 'Recibos', icon: Receipt },
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo', icon: Layers },
           { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
         ];
       case 'client':
