@@ -126,26 +126,26 @@ export const TicketModal: React.FC<TicketModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto print:p-0 print:bg-white animate-in fade-in">
-      <div className="relative w-full max-w-sm sm:max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden my-auto border border-slate-300 print:border-none print:shadow-none print:max-w-none print:w-full">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-2 sm:p-4 overflow-hidden print:p-0 print:bg-white animate-in fade-in">
+      <div className="relative w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-[#4E2B01] flex flex-col max-h-[92vh] sm:max-h-[88vh] print:max-h-none print:border-none print:shadow-none print:max-w-none print:w-full print:overflow-visible">
         
         {/* Top actions (Hidden in print) */}
-        <div className="print:hidden bg-slate-900 text-white p-3.5 flex items-center justify-between">
+        <div className="print:hidden bg-[#4E2B01] text-[#FFF3BC] px-4 py-3 border-b-2 border-[#ECB769] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-emerald-400" />
-            <span className="font-bold text-sm">Ticket de Venta Generado</span>
+            <CheckCircle className="w-5 h-5 text-[#ECB769]" />
+            <span className="font-black text-sm text-[#FFF3BC]">Ticket de Venta Generado</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={handleCopyText}
-              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition text-xs flex items-center gap-1"
+              className="p-1.5 rounded-lg text-[#FFF3BC]/80 hover:text-[#FFF3BC] hover:bg-white/10 transition text-xs flex items-center gap-1 cursor-pointer"
               title="Copiar texto del ticket"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-[#ECB769]" />}
             </button>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className="p-1.5 rounded-lg text-[#FFF3BC]/80 hover:text-[#FFF3BC] hover:bg-white/10 transition cursor-pointer"
               aria-label="Cerrar ticket"
             >
               <X className="w-5 h-5" />
@@ -154,34 +154,35 @@ export const TicketModal: React.FC<TicketModalProps> = ({
         </div>
 
         {/* Status banner when print dialog was dispatched */}
-        <div className="print:hidden bg-emerald-50 border-b border-emerald-100 px-4 py-2 flex items-center justify-between text-xs text-emerald-800 font-medium">
-          <span className="flex items-center gap-1.5">
+        <div className="print:hidden bg-emerald-50 border-b border-emerald-200 px-4 py-2 flex items-center justify-between text-xs text-emerald-800 font-medium shrink-0">
+          <span className="flex items-center gap-1.5 font-bold">
             <Printer className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
             {isPrinting ? 'Enviando a la impresora...' : 'Listo para imprimir en ticketera térmica'}
           </span>
           <button
             onClick={handlePrint}
-            className="text-[11px] font-bold text-emerald-700 underline hover:text-emerald-900 cursor-pointer"
+            className="text-[11px] font-black text-emerald-700 underline hover:text-emerald-900 cursor-pointer"
           >
-            Reintentar impresión
+            Reintentar
           </button>
         </div>
 
-        {/* Thermal Ticket Content */}
-        <div className="p-6 bg-white font-mono text-slate-900 text-xs sm:text-sm print:p-2" id="printable-ticket">
-          {/* Unencapsulated Full-Size Logo */}
-          <div className="flex flex-col items-center mb-4 text-center">
-            <img
-              src={brand.logoUrl || 'https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotologo.png'}
-              alt={brand.businessName}
-              className="h-14 sm:h-16 w-auto max-w-[220px] object-contain mb-2 print:max-h-16"
-            />
-            <h2 className="font-sans font-bold text-base sm:text-lg text-slate-800 tracking-tight leading-none mt-1">
-              {brand.businessName}
-            </h2>
-            <p className="text-[11px] text-slate-600 mt-1">{brand.address}</p>
-            <p className="text-[11px] text-slate-600">Tel: {brand.phone}</p>
-          </div>
+        {/* Internal Scrollable Thermal Ticket Content */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 bg-slate-100/70 print:p-0 print:overflow-visible print:bg-white">
+          <div className="p-4 sm:p-5 bg-white font-mono text-slate-900 text-xs shadow-xs rounded-2xl border border-slate-200 print:shadow-none print:border-none print:p-2 max-w-sm mx-auto" id="printable-ticket">
+            {/* Unencapsulated Full-Size Logo */}
+            <div className="flex flex-col items-center mb-3 text-center">
+              <img
+                src={brand.logoUrl || 'https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotologo.png'}
+                alt={brand.businessName}
+                className="h-10 sm:h-12 w-auto max-w-[180px] object-contain mb-1.5 print:max-h-16"
+              />
+              <h2 className="font-sans font-black text-base text-slate-800 tracking-tight leading-none mt-1">
+                {brand.businessName}
+              </h2>
+              <p className="text-[11px] text-slate-600 mt-1">{brand.address}</p>
+              <p className="text-[11px] text-slate-600">Tel: {brand.phone}</p>
+            </div>
 
           <div className="border-t border-dashed border-slate-400 my-2.5"></div>
 
@@ -382,26 +383,34 @@ export const TicketModal: React.FC<TicketModalProps> = ({
             {brand.ticketFooter}
           </p>
         </div>
+      </div>
 
-        {/* Print & Action Footer (Hidden in print) */}
-        <div className="print:hidden bg-slate-50 p-4 border-t border-slate-200 flex flex-col sm:flex-row gap-2.5">
-          <button
-            onClick={handlePrint}
-            type="button"
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#4E2B01] hover:bg-[#381e01] active:scale-95 text-[#FFF3BC] font-bold text-sm rounded-xl shadow-md transition cursor-pointer"
-          >
-            <Printer className="w-4 h-4 text-[#ECB769]" />
-            <span>{isPrinting ? 'Imprimiendo...' : 'Mandar a Imprimir Ticket'}</span>
-          </button>
-          <button
-            onClick={handleShareWhatsApp}
-            type="button"
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-sm rounded-xl shadow-md transition cursor-pointer"
-          >
-            <Share2 className="w-4 h-4" />
-            <span>WhatsApp</span>
-          </button>
-        </div>
+      {/* Print & Action Footer (Fixed at the bottom, ALWAYS visible on tablets & PCs) */}
+      <div className="print:hidden bg-white p-3 sm:p-4 border-t-2 border-[#ECB769]/60 flex flex-col sm:flex-row gap-2 shrink-0">
+        <button
+          onClick={handlePrint}
+          type="button"
+          className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#4E2B01] hover:bg-[#202020] active:scale-95 text-[#FFF3BC] font-black text-xs sm:text-sm rounded-xl shadow-md border-2 border-[#ECB769] transition cursor-pointer"
+        >
+          <Printer className="w-4 h-4 text-[#ECB769]" />
+          <span>{isPrinting ? 'Imprimiendo...' : 'Mandar a Imprimir (80mm)'}</span>
+        </button>
+        <button
+          onClick={handleShareWhatsApp}
+          type="button"
+          className="flex-1 sm:flex-initial flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition cursor-pointer"
+        >
+          <Share2 className="w-4 h-4" />
+          <span>WhatsApp</span>
+        </button>
+        <button
+          onClick={onClose}
+          type="button"
+          className="px-3 py-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl cursor-pointer text-center"
+        >
+          Cerrar
+        </button>
+      </div>
       </div>
     </div>
   );
