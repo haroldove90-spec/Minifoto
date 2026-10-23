@@ -37,9 +37,9 @@ export const BottomBar: React.FC<BottomBarProps> = ({
         ];
       case 'cashier':
         return [
+          { id: 'pos_cashier' as ActiveTab, label: 'POS Mostrador', icon: ShoppingBag },
           { id: 'tablet_pos' as ActiveTab, label: 'Cobranza', icon: Smartphone },
           { id: 'schools' as ActiveTab, label: 'Alumnos', icon: GraduationCap },
-          { id: 'pos_cashier' as ActiveTab, label: 'POS Touch', icon: ShoppingBag },
           { id: 'deliveries' as ActiveTab, label: 'Entregas', icon: PackageCheck },
           { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
         ];

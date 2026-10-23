@@ -63,9 +63,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ];
       case 'cashier':
         return [
+          { id: 'pos_cashier' as ActiveTab, label: 'POS (Productos & Calculadora)', icon: ShoppingBag, color: 'text-[#ECB769]' },
           { id: 'tablet_pos' as ActiveTab, label: 'Cobranza Escolar (Oficinas)', icon: Smartphone, color: 'text-[#ECB769]' },
           { id: 'schools' as ActiveTab, label: 'Alumnos y Padrón Escolar', icon: GraduationCap, color: 'text-[#ECB769]' },
-          { id: 'pos_cashier' as ActiveTab, label: 'Punto de Venta Touch', icon: ShoppingBag, color: 'text-[#ECB769]' },
           { id: 'deliveries' as ActiveTab, label: 'Entregas & Liquidación', icon: PackageCheck, color: 'text-[#FFF3BC]' },
           { id: 'history' as ActiveTab, label: 'Historial de Cobros', icon: Receipt, color: 'text-slate-300' },
           { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product, CartItem, Category, PaymentMethod, Sale } from '../../types';
 import { 
   Camera, 
@@ -28,18 +28,33 @@ import {
   Image as ImageIcon,
   Layers,
   Tag,
-  LogOut
+  LogOut,
+  FlaskConical,
+  BarChart3,
+  Copy,
+  Check,
+  Search,
+  Share2,
+  DollarSign,
+  TrendingUp,
+  Clock,
+  Send
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { CATEGORY_FALLBACK_IMAGES } from '../../services/initialData';
 import { getStoredCategories } from '../../services/storage';
+import { printTicketElement } from '../../services/printService';
 
 interface CashierPOSViewProps {
   products: Product[];
+  sales?: Sale[];
+  initialCart?: CartItem[];
+  onClearPendingCart?: () => void;
   operatorName: string;
   onCompleteSale: (sale: Sale, options?: { autoPrint?: boolean }) => void;
   onExitToDashboard?: () => void;
   onSwitchRole?: () => void;
+  onNavigateToReports?: () => void;
   brandLogo?: string;
 }
 
@@ -47,10 +62,14 @@ type PosScreenMode = 'main' | 'variable_selector' | 'calculator_checkout';
 
 export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
   products,
+  sales = [],
+  initialCart,
+  onClearPendingCart,
   operatorName,
   onCompleteSale,
   onExitToDashboard,
   onSwitchRole,
+  onNavigateToReports,
   brandLogo = 'https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotologo.png',
 }) => {
   // Navigation mode between the 3 touch screens
@@ -78,6 +97,22 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
 
   // Electronic simulation feedback
   const [terminalSimStatus, setTerminalSimStatus] = useState<'idle' | 'processing' | 'approved'>('idle');
+
+  // Modals for Test Purchases and Corte de Caja (POS Sales Report)
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [showCorteModal, setShowCorteModal] = useState(false);
+  const [corteCopied, setCorteCopied] = useState(false);
+  const [corteSearch, setCorteSearch] = useState('');
+
+  // Auto-populate cart if items were forwarded from Catalog
+  useEffect(() => {
+    if (initialCart && initialCart.length > 0) {
+      setCart((prev) => [...prev, ...initialCart]);
+      if (onClearPendingCart) {
+        onClearPendingCart();
+      }
+    }
+  }, [initialCart, onClearPendingCart]);
 
   // Filter only active products for POS operations
   const activeProducts = products.filter((p) => p.isActive !== false);
@@ -334,6 +369,205 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
     setTimeout(() => {
       setTerminalSimStatus('approved');
     }, 1200);
+  };
+
+  // Test purchases presets with realistic studio & school products
+  const TEST_PRESETS = [
+    {
+      id: 'test-1',
+      title: '📸 Prueba 1: Foto Estudio Infantil + Retoque',
+      description: 'Foto Infantil (x6 pzas) $110 + Retoque Digital profesional $30',
+      total: 140,
+      badge: 'Estudio Fotográfico',
+      items: [
+        {
+          id: `item-test-estudio-${Date.now()}`,
+          productId: 'fe-1',
+          name: 'Foto Infantil (x6 pzas)',
+          category: 'foto_estudio',
+          unitPrice: 140,
+          quantity: 1,
+          options: {
+            retoque: true,
+            retoquePrice: 30,
+            autoAdherible: false,
+            autoAdheriblePrice: 0,
+          },
+          totalPrice: 140,
+        },
+      ],
+    },
+    {
+      id: 'test-2',
+      title: '🎓 Prueba 2: Paquete Graduación Escolar',
+      description: 'Paquete Graduación Básico con Diploma y Fotografías Escolares',
+      total: 450,
+      badge: 'Paquete Escolar',
+      items: [
+        {
+          id: `item-test-grad-${Date.now()}`,
+          productId: 'grad-1',
+          name: 'Paquete Graduación Básico 2026',
+          category: 'graduaciones',
+          unitPrice: 450,
+          quantity: 1,
+          options: {},
+          totalPrice: 450,
+        },
+      ],
+    },
+    {
+      id: 'test-3',
+      title: '🖼️ Prueba 3: Ampliación 11x14 + Fotoacabado',
+      description: 'Ampliación profesional 11x14" ($220) con acabado texturizado ($60)',
+      total: 280,
+      badge: 'Marcos y Cuadros',
+      items: [
+        {
+          id: `item-test-amp-${Date.now()}`,
+          productId: 'amp-2',
+          name: 'Ampliación 11x14"',
+          category: 'ampliaciones',
+          unitPrice: 220,
+          quantity: 1,
+          options: {},
+          totalPrice: 220,
+        },
+        {
+          id: `item-test-acab-${Date.now()}`,
+          productId: 'fa-1',
+          name: 'Fotoacabado Texturizado / Poliéster',
+          category: 'fotoacabado',
+          unitPrice: 60,
+          quantity: 1,
+          options: {},
+          totalPrice: 60,
+        },
+      ],
+    },
+    {
+      id: 'test-4',
+      title: '🎞️ Prueba 4: Revelado Minilab x10 + Foto Pasaporte',
+      description: '10 impresiones Minilab 4x6" ($100) + 1 juego de Foto Pasaporte ($120)',
+      total: 220,
+      badge: 'Express Mostrador',
+      items: [
+        {
+          id: `item-test-mini-${Date.now()}`,
+          productId: 'ml-1',
+          name: 'Impresión Minilab 4x6" (x10)',
+          category: 'minilab',
+          unitPrice: 100,
+          quantity: 1,
+          options: {},
+          totalPrice: 100,
+        },
+        {
+          id: `item-test-pasa-${Date.now()}`,
+          productId: 'fe-3',
+          name: 'Foto Pasaporte / Visa Fondo Blanco',
+          category: 'foto_estudio',
+          unitPrice: 120,
+          quantity: 1,
+          options: {},
+          totalPrice: 120,
+        },
+      ],
+    },
+  ];
+
+  // Load a test preset into the cart
+  const handleLoadTestPresetToCart = (preset: typeof TEST_PRESETS[0]) => {
+    setCart([...preset.items]);
+    setShowTestModal(false);
+  };
+
+  // Immediate 1-click test checkout (generates ticket and auto-prints immediately)
+  const handleDirectQuickTestSale = (preset: typeof TEST_PRESETS[0], method: PaymentMethod = 'efectivo') => {
+    const folio = `TK-${Math.floor(100000 + Math.random() * 900000)}`;
+    const now = new Date();
+    const dateStr = `${now.toLocaleDateString('es-MX')} ${now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+    const amountPaid = method === 'efectivo' ? (preset.total <= 200 ? 200 : preset.total <= 500 ? 500 : 1000) : preset.total;
+    const change = method === 'efectivo' ? amountPaid - preset.total : 0;
+
+    const testSale: Sale = {
+      id: `sale-test-${Date.now()}`,
+      folio,
+      date: dateStr,
+      role: 'cashier',
+      operatorName: operatorName || 'Cajero de Mostrador',
+      clientName: 'Cliente Compra de Prueba',
+      items: [...preset.items],
+      subtotal: preset.total,
+      discount: 0,
+      total: preset.total,
+      paymentMethod: method,
+      amountPaid,
+      change,
+      status: 'completado',
+      notes: `Venta de Prueba Realizada con Éxito (${method.toUpperCase()})`,
+    };
+
+    try {
+      confetti({ particleCount: 80, spread: 90 });
+    } catch {}
+
+    setShowTestModal(false);
+    clearAllCart();
+    onCompleteSale(testSale, { autoPrint: true });
+  };
+
+  // Plain text shift report for copying or sharing
+  const getCorteReportPlainText = () => {
+    const list = sales || [];
+    const totalRev = list.reduce((sum, s) => sum + s.total, 0);
+    const cashTotal = list.filter((s) => s.paymentMethod === 'efectivo').reduce((sum, s) => sum + s.total, 0);
+    const clipTotal = list.filter((s) => s.paymentMethod === 'clip').reduce((sum, s) => sum + s.total, 0);
+    const mpTotal = list.filter((s) => s.paymentMethod === 'mercadopago').reduce((sum, s) => sum + s.total, 0);
+    const transferTotal = list.filter((s) => s.paymentMethod === 'transferencia').reduce((sum, s) => sum + s.total, 0);
+
+    const now = new Date();
+    const dateStr = `${now.toLocaleDateString('es-MX')} ${now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+
+    let text = `=========================================\n`;
+    text += `📸 MINIFOTO - CORTE DE CAJA / POS OFICINA\n`;
+    text += `=========================================\n`;
+    text += `Fecha y Hora: ${dateStr}\n`;
+    text += `Operador: ${operatorName}\n`;
+    text += `Terminal: POS Mostrador / Oficina\n`;
+    text += `Estatus del Módulo: 🟢 ACTIVO AL 100%\n`;
+    text += `-----------------------------------------\n`;
+    text += `RESUMEN FINANCIERO:\n`;
+    text += `• Total Ingresos: $${totalRev.toFixed(2)} MXN\n`;
+    text += `• Tickets de Venta Emitidos: ${list.length}\n`;
+    text += `• Efectivo en Caja: $${cashTotal.toFixed(2)} MXN\n`;
+    text += `• Tarjeta / Clip: $${clipTotal.toFixed(2)} MXN\n`;
+    text += `• SPEI / Transferencia: $${transferTotal.toFixed(2)} MXN\n`;
+    text += `• Mercado Pago: $${mpTotal.toFixed(2)} MXN\n`;
+    text += `-----------------------------------------\n`;
+    text += `ÚLTIMOS TICKETS REGISTRADOS:\n`;
+    if (list.length === 0) {
+      text += `(Sin ventas registradas en esta sesión aún)\n`;
+    } else {
+      list.slice(0, 10).forEach((s, idx) => {
+        text += `${idx + 1}. #${s.folio} | $${s.total.toFixed(2)} | ${s.paymentMethod.toUpperCase()} | ${s.clientName || 'Cliente General'}\n`;
+      });
+    }
+    text += `=========================================\n`;
+    text += `Reporte de ventas para el cliente - Sistema Minifoto`;
+    return text;
+  };
+
+  const handleCopyCorteReport = async () => {
+    try {
+      await navigator.clipboard.writeText(getCorteReportPlainText());
+      setCorteCopied(true);
+      setTimeout(() => setCorteCopied(false), 2500);
+    } catch {}
+  };
+
+  const handlePrintCorteThermal = () => {
+    printTicketElement('corte-thermal-printable');
   };
 
   // Products belonging to the active variable category (Only active items)
@@ -845,15 +1079,15 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
       <div className="bg-[#FCF9F2] text-[#202020] px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between border-b-2 border-[#ECB769]/40 shadow-xs shrink-0">
         
         {/* Left: Big Return Button & Full Unencapsulated Logo */}
-        <div className="flex items-center gap-2.5 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
           {onExitToDashboard && (
             <button
               onClick={onExitToDashboard}
-              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] font-black text-xs sm:text-sm rounded-xl border-2 border-[#ECB769] shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95 transition"
+              className="px-2.5 py-1.5 sm:px-3.5 sm:py-2 bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] font-black text-xs sm:text-sm rounded-xl border-2 border-[#ECB769] shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95 transition"
               title="Regresar al menú principal"
             >
               <Home className="w-4 h-4 text-[#ECB769]" />
-              <span>Dashboard</span>
+              <span className="hidden sm:inline">Dashboard</span>
             </button>
           )}
 
@@ -861,15 +1095,50 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
           <img 
             src={brandLogo} 
             alt="Minifoto" 
-            className="h-9 sm:h-12 w-auto max-w-[150px] sm:max-w-[220px] object-contain shrink-0 hidden xs:block"
+            className="h-8 sm:h-11 w-auto max-w-[130px] sm:max-w-[200px] object-contain shrink-0 hidden xs:block"
           />
+
+          {/* POS Active Indicator */}
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full border border-emerald-300 text-[11px] font-black">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>POS ACTIVO AL 100% • MODO VENTA</span>
+          </div>
         </div>
 
         {/* Center / Right: Operator and Session Controls */}
-        <div className="flex items-center gap-2 sm:gap-4 text-xs">
-          <div className="flex flex-col text-right">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Punto de Venta Touch</span>
-            <span className="font-black text-[#4E2B01] truncate max-w-[140px] sm:max-w-xs">
+        <div className="flex items-center gap-2 sm:gap-3 text-xs">
+          
+          {/* Quick Test Purchase Button */}
+          <button
+            type="button"
+            onClick={() => setShowTestModal(true)}
+            className="px-2.5 sm:px-3 py-1.5 bg-[#FFF3BC] hover:bg-[#ECB769] text-[#4E2B01] border-2 border-[#ECB769] font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition"
+            title="Realizar compras de prueba y emitir tickets"
+          >
+            <FlaskConical className="w-3.5 h-3.5 text-[#4E2B01]" />
+            <span className="hidden sm:inline">Compras de Prueba</span>
+            <span className="sm:hidden">Pruebas</span>
+            <span className="bg-[#4E2B01] text-[#FFF3BC] text-[10px] px-1.5 py-0.2 rounded-full font-bold">4</span>
+          </button>
+
+          {/* Shift Report / Corte de Caja Button */}
+          <button
+            type="button"
+            onClick={() => setShowCorteModal(true)}
+            className="px-2.5 sm:px-3 py-1.5 bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] border-2 border-[#ECB769] font-black text-xs rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition"
+            title="Ver corte de caja y reporte de ventas"
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-[#ECB769]" />
+            <span className="hidden sm:inline">Corte de Caja</span>
+            <span className="sm:hidden">Corte</span>
+            <span className="bg-[#ECB769] text-[#4E2B01] text-[10px] px-1.5 py-0.2 rounded-full font-black">
+              {sales?.length || 0}
+            </span>
+          </button>
+
+          <div className="hidden md:flex flex-col text-right pl-1">
+            <span className="text-[9px] uppercase font-bold text-slate-500">Punto de Venta</span>
+            <span className="font-black text-[#4E2B01] truncate max-w-[120px] sm:max-w-xs">
               {operatorName}
             </span>
           </div>
@@ -1158,6 +1427,395 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
               <CreditCard className="w-4 h-4 text-[#ECB769]" />
               <span>COBRAR (${total.toFixed(2)})</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 1: COMPRAS DE PRUEBA EN EL POS (100% OPERATIVO)
+          ========================================================================= */}
+      {showTestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-5 overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border-3 border-[#4E2B01] overflow-hidden my-auto flex flex-col max-h-[92vh]">
+            
+            {/* Header */}
+            <div className="bg-[#4E2B01] text-[#FFF3BC] p-4 sm:p-5 flex items-center justify-between border-b-2 border-[#ECB769] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-[#ECB769] text-[#4E2B01] rounded-2xl shadow-xs">
+                  <FlaskConical className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-black tracking-tight text-[#FFF3BC]">
+                      Compras de Prueba en Punto de Venta
+                    </h2>
+                    <span className="px-2 py-0.5 bg-emerald-500 text-white font-black text-[10px] rounded-full uppercase tracking-wider">
+                      Activo 100%
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#FFF3BC]/80">
+                    Realiza compras de prueba para emitir, visualizar e imprimir tickets térmicos de 80mm
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTestModal(false)}
+                className="p-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 bg-[#FCF9F2] flex-1">
+              
+              <div className="bg-amber-50 border-2 border-[#ECB769] p-3.5 rounded-2xl text-xs text-[#4E2B01]">
+                <p className="font-bold">
+                  💡 ¿Cómo funciona una compra de prueba?
+                </p>
+                <p className="mt-1 text-slate-700">
+                  Puedes <strong>cargar el ticket</strong> para probar el teclado táctil, billetes y cambio, o hacer <strong>Cobro Inmediato</strong> para que el sistema genere el folio oficial <span className="font-mono font-bold">#TK-XXXXXX</span>, active el confeti y mande el ticket térmico a impresión.
+                </p>
+              </div>
+
+              {/* Presets List */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {TEST_PRESETS.map((preset) => (
+                  <div
+                    key={preset.id}
+                    className="bg-white rounded-2xl p-4 border-2 border-[#ECB769]/60 hover:border-[#4E2B01] shadow-xs hover:shadow-md transition flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1.5">
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-[#FFF3BC] text-[#4E2B01] border border-[#ECB769]">
+                          {preset.badge}
+                        </span>
+                        <span className="text-base font-black font-mono text-[#4E2B01]">
+                          ${preset.total.toFixed(2)}
+                        </span>
+                      </div>
+                      <h3 className="font-black text-sm text-slate-900 leading-snug">
+                        {preset.title}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                        {preset.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleLoadTestPresetToCart(preset)}
+                          className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition cursor-pointer text-center active:scale-95"
+                          title="Cargar artículos al ticket actual"
+                        >
+                          Cargar al Ticket
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDirectQuickTestSale(preset, 'efectivo')}
+                          className="py-2 px-2.5 bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] font-black text-xs rounded-xl shadow-xs border border-[#ECB769] transition cursor-pointer text-center active:scale-95 flex items-center justify-center gap-1"
+                          title="Cobro rápido en efectivo y emisión de ticket"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-[#ECB769]" />
+                          <span>⚡ Cobrar Ticket</span>
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDirectQuickTestSale(preset, 'clip')}
+                        className="w-full py-1.5 text-[11px] font-bold text-[#4E2B01] hover:bg-[#FFF3BC] rounded-lg transition cursor-pointer text-center border border-dashed border-[#ECB769]"
+                      >
+                        Cobrar simulando Tarjeta / Clip
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white p-3.5 sm:p-4 border-t border-slate-200 flex items-center justify-between shrink-0">
+              <span className="text-[11px] text-slate-500 font-medium">
+                Las compras se registran en el corte de caja y sincronizan con la base de datos.
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowTestModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 2: CORTE DE CAJA Y REPORTE DE VENTAS DEL POS
+          ========================================================================= */}
+      {showCorteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-3 sm:p-5 overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border-3 border-[#4E2B01] overflow-hidden my-auto flex flex-col max-h-[92vh]">
+            
+            {/* Header */}
+            <div className="bg-[#4E2B01] text-[#FFF3BC] p-4 sm:p-5 flex items-center justify-between border-b-2 border-[#ECB769] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-[#ECB769] text-[#4E2B01] rounded-2xl shadow-xs">
+                  <BarChart3 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-black tracking-tight text-[#FFF3BC]">
+                    Corte de Caja y Reporte de Ventas POS
+                  </h2>
+                  <p className="text-xs text-[#FFF3BC]/80">
+                    Operador: {operatorName} • Terminal Mostrador (Oficina) • Módulo Operativo 100%
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCorteModal(false)}
+                className="p-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-5 bg-[#FCF9F2] flex-1">
+              
+              {/* Financial KPI Cards */}
+              {(() => {
+                const list = sales || [];
+                const totalRev = list.reduce((sum, s) => sum + s.total, 0);
+                const cashTotal = list.filter((s) => s.paymentMethod === 'efectivo').reduce((sum, s) => sum + s.total, 0);
+                const clipTotal = list.filter((s) => s.paymentMethod === 'clip').reduce((sum, s) => sum + s.total, 0);
+                const mpTotal = list.filter((s) => s.paymentMethod === 'mercadopago').reduce((sum, s) => sum + s.total, 0);
+                const transferTotal = list.filter((s) => s.paymentMethod === 'transferencia').reduce((sum, s) => sum + s.total, 0);
+
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-white p-3.5 rounded-2xl border-2 border-[#ECB769] shadow-xs">
+                      <span className="text-[10px] uppercase font-black text-slate-500 block">Total Vendido</span>
+                      <span className="text-lg sm:text-xl font-black font-mono text-[#4E2B01] block mt-0.5">
+                        ${totalRev.toFixed(2)}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-bold">{list.length} tickets emitidos</span>
+                    </div>
+
+                    <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Efectivo en Caja</span>
+                      <span className="text-lg sm:text-xl font-black font-mono text-emerald-700 block mt-0.5">
+                        ${cashTotal.toFixed(2)}
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-bold">Cobros físicos</span>
+                    </div>
+
+                    <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Tarjeta / Clip</span>
+                      <span className="text-lg sm:text-xl font-black font-mono text-blue-700 block mt-0.5">
+                        ${clipTotal.toFixed(2)}
+                      </span>
+                      <span className="text-[10px] text-blue-600 font-bold">Terminal bancaria</span>
+                    </div>
+
+                    <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">SPEI / Banco</span>
+                      <span className="text-lg sm:text-xl font-black font-mono text-[#4E2B01] block mt-0.5">
+                        ${(transferTotal + mpTotal).toFixed(2)}
+                      </span>
+                      <span className="text-[10px] text-[#ECB769] font-black">Santander / Digital</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Tickets Table */}
+              <div className="bg-white rounded-2xl border-2 border-[#ECB769]/50 shadow-xs overflow-hidden">
+                <div className="bg-[#FFF3BC] px-4 py-2.5 border-b border-[#ECB769] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-[#4E2B01]" />
+                    <span className="font-black text-xs uppercase text-[#4E2B01]">
+                      Historial de Tickets Emitidos en Mostrador ({sales?.length || 0})
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por folio, cliente..."
+                      value={corteSearch}
+                      onChange={(e) => setCorteSearch(e.target.value)}
+                      className="pl-8 pr-3 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#4E2B01]"
+                    />
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto max-h-64 divide-y divide-slate-100">
+                  {(() => {
+                    const list = (sales || []).filter((s) => {
+                      if (!corteSearch.trim()) return true;
+                      const q = corteSearch.toLowerCase();
+                      return (
+                        s.folio.toLowerCase().includes(q) ||
+                        (s.clientName && s.clientName.toLowerCase().includes(q)) ||
+                        s.paymentMethod.toLowerCase().includes(q)
+                      );
+                    });
+
+                    if (list.length === 0) {
+                      return (
+                        <div className="p-8 text-center text-slate-400 text-xs">
+                          <Receipt className="w-8 h-8 text-slate-300 mx-auto mb-1" />
+                          <p className="font-bold text-slate-600">No hay ventas registradas aún</p>
+                          <p className="mt-0.5">Usa el botón "Compras de Prueba" arriba para generar tickets de demostración.</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-600 tracking-wider">
+                          <tr>
+                            <th className="px-3 py-2">Folio</th>
+                            <th className="px-3 py-2">Fecha / Hora</th>
+                            <th className="px-3 py-2">Cliente</th>
+                            <th className="px-3 py-2">Artículos</th>
+                            <th className="px-3 py-2">Método</th>
+                            <th className="px-3 py-2 text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {list.map((s) => (
+                            <tr key={s.id} className="hover:bg-amber-50/50 transition">
+                              <td className="px-3 py-2 font-mono font-black text-[#4E2B01]">
+                                #{s.folio}
+                              </td>
+                              <td className="px-3 py-2 text-slate-500 font-mono text-[11px]">
+                                {s.date}
+                              </td>
+                              <td className="px-3 py-2 font-bold text-slate-800">
+                                {s.clientName || 'Cliente General'}
+                              </td>
+                              <td className="px-3 py-2 text-slate-600 text-[11px] truncate max-w-[180px]">
+                                {s.items.map((i) => `${i.quantity}x ${i.name}`).join(', ')}
+                              </td>
+                              <td className="px-3 py-2">
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-[#FFF3BC] text-[#4E2B01] border border-[#ECB769]/50">
+                                  {s.paymentMethod}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono font-black text-[#4E2B01]">
+                                ${s.total.toFixed(2)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    );
+                  })()}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer with Actions: Copy for Client, WhatsApp, Print Thermal Shift Report */}
+            <div className="bg-white p-3.5 sm:p-5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+              
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Copy for client */}
+                <button
+                  type="button"
+                  onClick={handleCopyCorteReport}
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] font-black text-xs rounded-xl shadow-sm border border-[#ECB769] transition cursor-pointer active:scale-95"
+                >
+                  {corteCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-[#ECB769]" />}
+                  <span>{corteCopied ? '¡Reporte Copiado!' : 'Copiar Reporte para Cliente'}</span>
+                </button>
+
+                {/* Send via WhatsApp */}
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(getCorteReportPlainText())}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-sm transition cursor-pointer active:scale-95"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>Enviar por WhatsApp</span>
+                </a>
+
+                {/* Print 80mm Z-Cut Thermal Ticket */}
+                <button
+                  type="button"
+                  onClick={handlePrintCorteThermal}
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 bg-[#FFF3BC] hover:bg-[#ECB769] text-[#4E2B01] font-black text-xs rounded-xl border border-[#ECB769] shadow-sm transition cursor-pointer active:scale-95"
+                >
+                  <Printer className="w-4 h-4 text-[#4E2B01]" />
+                  <span>Imprimir Corte Térmico (80mm)</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowCorteModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            {/* Hidden printable thermal shift receipt container for 80mm printer */}
+            <div id="corte-thermal-printable" className="hidden">
+              <div className="text-center font-bold text-sm">MINIFOTO ESTUDIO</div>
+              <div className="text-center text-xs">PUNTO DE VENTA Y MOSTRADOR</div>
+              <div className="text-center text-xs">CORTE DE CAJA / TURNO</div>
+              <div className="border-dashed"></div>
+              <div className="flex-between text-xs">
+                <span>Fecha:</span>
+                <span>{new Date().toLocaleDateString('es-MX')} {new Date().toLocaleTimeString('es-MX')}</span>
+              </div>
+              <div className="flex-between text-xs">
+                <span>Operador:</span>
+                <span>{operatorName}</span>
+              </div>
+              <div className="flex-between text-xs">
+                <span>Terminal:</span>
+                <span>POS OFICINA</span>
+              </div>
+              <div className="border-dashed"></div>
+              <div className="flex-between text-xs font-bold">
+                <span>TOTAL VENDIDO:</span>
+                <span>${(sales || []).reduce((sum, s) => sum + s.total, 0).toFixed(2)} MXN</span>
+              </div>
+              <div className="flex-between text-xs">
+                <span>Tickets Emitidos:</span>
+                <span>{(sales || []).length}</span>
+              </div>
+              <div className="flex-between text-xs">
+                <span>Efectivo:</span>
+                <span>${(sales || []).filter(s => s.paymentMethod === 'efectivo').reduce((sum, s) => sum + s.total, 0).toFixed(2)}</span>
+              </div>
+              <div className="flex-between text-xs">
+                <span>Tarjeta (Clip):</span>
+                <span>${(sales || []).filter(s => s.paymentMethod === 'clip').reduce((sum, s) => sum + s.total, 0).toFixed(2)}</span>
+              </div>
+              <div className="flex-between text-xs">
+                <span>SPEI / Banco:</span>
+                <span>${(sales || []).filter(s => s.paymentMethod === 'transferencia').reduce((sum, s) => sum + s.total, 0).toFixed(2)}</span>
+              </div>
+              <div className="border-dashed"></div>
+              <div className="text-center text-[10px]">
+                ¡Módulo POS 100% Operativo!
+              </div>
+            </div>
+
           </div>
         </div>
       )}

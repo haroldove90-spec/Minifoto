@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sale, GraduationStudent, BrandConfig } from '../types';
-import { Printer, Share2, X, CheckCircle, Copy, Check } from 'lucide-react';
+import { Printer, Share2, X, CheckCircle, Copy, Check, Receipt } from 'lucide-react';
 import { printTicketElement } from '../services/printService';
 
 import { PaymentRecord } from '../types';
@@ -257,13 +257,17 @@ export const TicketModal: React.FC<TicketModalProps> = ({
           {/* Standard Studio POS Ticket */}
           {sale && (
             <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Folio:</span>
-                <span className="font-bold">#{sale.folio}</span>
+              <div className="text-center font-bold text-xs uppercase bg-[#4E2B01] text-[#FFF3BC] py-1.5 rounded-lg tracking-wider mb-2 flex items-center justify-center gap-1.5">
+                <Receipt className="w-3.5 h-3.5 text-[#ECB769]" />
+                <span>TICKET DE VENTA Y COBRO OFICIAL</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Fecha:</span>
-                <span>{sale.date}</span>
+                <span className="text-slate-500 font-bold">Folio de Venta:</span>
+                <span className="font-bold text-[#4E2B01] font-mono text-sm">#{sale.folio}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-500 font-bold">Fecha / Hora:</span>
+                <span className="font-medium text-slate-700">{sale.date}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500">Atendió:</span>

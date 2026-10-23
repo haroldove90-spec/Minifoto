@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Role, 
   Product, 
+  CartItem,
   School, 
   GraduationStudent, 
   Sale, 
@@ -74,8 +75,9 @@ export default function App() {
   const [operatorName, setOperatorName] = useState<string>(() => getStoredOperator());
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     const role = getStoredRole();
+    if (role === 'cashier') return 'pos_cashier';
     if (role === 'client') return 'catalogs';
-    return 'tablet_pos'; // admin, cashier and field all have direct access to tablet_pos
+    return 'tablet_pos'; // admin and field default to tablet_pos
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
@@ -93,6 +95,12 @@ export default function App() {
   const [activeSaleTicket, setActiveSaleTicket] = useState<Sale | null>(null);
   const [activeStudentTicket, setActiveStudentTicket] = useState<GraduationStudent | null>(null);
   const [autoPrintTicket, setAutoPrintTicket] = useState<boolean>(false);
+  const [pendingCartItems, setPendingCartItems] = useState<CartItem[]>([]);
+
+  const handleGoToPOSWithItems = (items: CartItem[]) => {
+    setPendingCartItems(items);
+    setActiveTab('pos_cashier');
+  };
 
   // Load stored data on mount & background sync with Supabase
   useEffect(() => {
@@ -139,7 +147,9 @@ export default function App() {
     saveStoredRole(role);
     saveStoredOperator(opName);
 
-    if (role === 'client') {
+    if (role === 'cashier') {
+      setActiveTab('pos_cashier');
+    } else if (role === 'client') {
       setActiveTab('catalogs');
     } else {
       setActiveTab('tablet_pos');
@@ -305,10 +315,14 @@ export default function App() {
         <SplashScreen minDisplayTimeMs={1200} />
         <CashierPOSView
           products={products}
+          sales={sales}
+          initialCart={pendingCartItems}
+          onClearPendingCart={() => setPendingCartItems([])}
           operatorName={operatorName}
           onCompleteSale={handleCompleteSale}
           onExitToDashboard={() => setActiveTab('home')}
           onSwitchRole={handleLogout}
+          onNavigateToReports={() => setActiveTab('reports')}
           brandLogo={brand.logoUrl}
         />
 
@@ -403,6 +417,7 @@ export default function App() {
               onSaveProducts={handleSaveProducts}
               currentRole={currentRole}
               operatorName={operatorName}
+              onGoToPOSWithItems={handleGoToPOSWithItems}
             />
           )}
 

@@ -24,7 +24,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole, brandL
     },
     {
       id: 'cashier',
-      name: 'Cajero de Oficina',
+      name: 'Cajero de Oficina (POS & Calculadora)',
       operator: 'Cajero Mostrador',
       icon: <Store className="w-10 h-10 sm:w-12 sm:h-12 text-[#ECB769]" />,
       color: 'border-[#ECB769]/50 hover:border-[#ECB769]',

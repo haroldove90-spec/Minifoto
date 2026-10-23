@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Product, Category, Role } from '../../types';
+import { Product, Category, Role, CartItem } from '../../types';
 import { 
   Plus, 
   Trash2, 
@@ -61,6 +61,7 @@ interface AdminCatalogsViewProps {
   onSaveProducts: (products: Product[]) => void;
   currentRole?: Role | null;
   operatorName?: string;
+  onGoToPOSWithItems?: (items: CartItem[]) => void;
 }
 
 interface SelectedItem {
@@ -82,6 +83,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
   onSaveProducts,
   currentRole = 'admin',
   operatorName = 'Usuario',
+  onGoToPOSWithItems,
 }) => {
   const isAdmin = currentRole === 'admin';
   const isField = currentRole === 'field';
@@ -549,17 +551,42 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
   const totalActive = products.filter((p) => p.isActive !== false).length;
   const totalInactive = products.filter((p) => p.isActive === false).length;
 
-  // Format WhatsApp quotation text
+  // Format WhatsApp order text
   const generateWhatsAppMessage = () => {
-    let msg = `Hola, me interesa solicitar cotización del Catálogo Fotográfico:\n\n`;
+    let msg = `*MINIFOTO - Solicitud de Pedido y Venta Fotográfica:*\n\n`;
     selectedList.forEach((item, idx) => {
       msg += `${idx + 1}. *${item.name}* (x${item.quantity}) - $${item.total.toFixed(2)}\n`;
       if (item.retoque) msg += `   + Retoque Digital\n`;
       if (item.autoadherible) msg += `   + Autoadherible\n`;
     });
-    msg += `\n*Total Estimado:* $${totalSelectedAmount.toFixed(2)} MXN\n`;
-    msg += `Cliente/Contacto: ${operatorName}`;
+    msg += `\n*Total a Pagar:* $${totalSelectedAmount.toFixed(2)} MXN\n`;
+    msg += `Atendido por / Contacto: ${operatorName}\n`;
+    msg += `¡Listo para procesar y emitir ticket de venta!`;
     return encodeURIComponent(msg);
+  };
+
+  // Send items directly to POS checkout
+  const handleSendSelectionToPOS = () => {
+    if (selectedList.length === 0) return;
+    const cartItems: CartItem[] = selectedList.map((item) => ({
+      id: `${item.productId}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      productId: item.productId,
+      name: item.name,
+      category: item.category,
+      unitPrice: item.price + item.extraTotal / item.quantity,
+      quantity: item.quantity,
+      options: {
+        retoque: item.retoque,
+        retoquePrice: item.retoque ? 30 : 0,
+        autoAdherible: item.autoadherible,
+        autoAdheriblePrice: item.autoadherible ? 20 : 0,
+      },
+      totalPrice: item.total,
+    }));
+    if (onGoToPOSWithItems) {
+      onGoToPOSWithItems(cartItems);
+      showToast('¡Productos enviados al Punto de Venta Touch!');
+    }
   };
 
   return (
@@ -600,7 +627,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               <p className="text-xs text-slate-500 mt-0.5 max-w-2xl">
                 {isAdmin
                   ? 'Sube fotos, asigna precios, activa/desactiva productos o selecciona varios para borrarlos definitivamente del navegador y Supabase.'
-                  : 'Explora las fotografías y servicios disponibles en alta calidad. Toca cualquier producto para seleccionarlo o ver sus detalles y cotización.'}
+                  : 'Explora las fotografías y servicios disponibles en alta calidad. Selecciona productos para realizar compras en el punto de venta touch y emitir tickets.'}
               </p>
             </div>
           </div>
@@ -1239,7 +1266,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <button
                     onClick={() => {
                       setSelectedItems({});
@@ -1251,14 +1278,28 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                     Vaciar
                   </button>
 
+                  {onGoToPOSWithItems && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleSendSelectionToPOS();
+                        setShowSummaryDrawer(false);
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] font-black text-xs rounded-xl shadow-md border-2 border-[#ECB769] transition cursor-pointer active:scale-95"
+                    >
+                      <ShoppingBag className="w-4 h-4 text-[#ECB769]" />
+                      <span>Comprar en POS / Cobrar Ahora</span>
+                    </button>
+                  )}
+
                   <a
                     href={`https://wa.me/?text=${generateWhatsAppMessage()}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md transition cursor-pointer"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md transition cursor-pointer"
                   >
                     <Send className="w-4 h-4" />
-                    <span>Cotizar por WhatsApp</span>
+                    <span>Enviar Pedido por WhatsApp</span>
                   </a>
                 </div>
               </div>
@@ -1937,20 +1978,31 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowSummaryDrawer(true)}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition cursor-pointer"
+                className="px-3 sm:px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 Ver Detalle
               </button>
+
+              {onGoToPOSWithItems && (
+                <button
+                  type="button"
+                  onClick={handleSendSelectionToPOS}
+                  className="flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#4E2B01] hover:bg-[#202020] active:scale-95 text-[#FFF3BC] text-xs sm:text-sm font-black rounded-xl shadow-lg border-2 border-[#ECB769] transition cursor-pointer"
+                >
+                  <ShoppingBag className="w-4 h-4 text-[#ECB769]" />
+                  <span>Comprar en POS</span>
+                </button>
+              )}
 
               <a
                 href={`https://wa.me/?text=${generateWhatsAppMessage()}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#F97800] hover:bg-orange-600 active:scale-95 text-white text-xs sm:text-sm font-black rounded-xl shadow-lg transition cursor-pointer"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition cursor-pointer"
+                title="Compartir por WhatsApp"
               >
-                <Send className="w-4 h-4" />
-                <span className="hidden sm:inline">Solicitar Cotización</span>
-                <span className="sm:hidden">Cotizar</span>
+                <Send className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">WhatsApp</span>
               </a>
             </div>
           </div>
