@@ -69,6 +69,23 @@ export const markProductAsDeleted = (productIds: string | string[]) => {
   localStorage.setItem(KEYS.DELETED_PRODUCT_IDS, JSON.stringify(updated));
 };
 
+export const getDeletedCategoryIds = (): string[] => {
+  const data = localStorage.getItem('pos_photo_deleted_category_ids_v1');
+  if (!data) return [];
+  try {
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+};
+
+export const markCategoryAsDeleted = (categoryIds: string | string[]) => {
+  const current = getDeletedCategoryIds();
+  const toAdd = Array.isArray(categoryIds) ? categoryIds : [categoryIds];
+  const updated = Array.from(new Set([...current, ...toAdd]));
+  localStorage.setItem('pos_photo_deleted_category_ids_v1', JSON.stringify(updated));
+};
+
 export const getStoredProducts = (): Product[] => {
   const data = localStorage.getItem(KEYS.PRODUCTS);
   const deletedIds = new Set(getDeletedProductIds());
@@ -334,14 +351,19 @@ export const restoreSampleDataSystem = () => {
 // ==========================================
 export const getStoredCategories = (): CategoryItem[] => {
   const data = localStorage.getItem(KEYS.CATEGORIES);
-  if (data) {
+  const deletedCatIds = new Set(getDeletedCategoryIds());
+
+  if (data !== null) {
     try {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.filter((c: CategoryItem) => !deletedCatIds.has(c.id));
+      }
     } catch {}
   }
-  localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(INITIAL_CATEGORIES));
-  return INITIAL_CATEGORIES;
+  const initial = INITIAL_CATEGORIES.filter((c) => !deletedCatIds.has(c.id));
+  localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(initial));
+  return initial;
 };
 
 export const saveStoredCategories = (categories: CategoryItem[]) => {

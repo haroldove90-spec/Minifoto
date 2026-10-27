@@ -22,6 +22,7 @@ import {
   saveStoredOperator,
   getStoredProducts, 
   saveStoredProducts,
+  getDeletedProductIds,
   getStoredSchools, 
   saveStoredSchools,
   getStoredStudents, 
@@ -116,8 +117,10 @@ export default function App() {
     // Background sync from Supabase if connected
     fetchProductsFromSupabase().then((remoteProds) => {
       if (remoteProds && remoteProds.length > 0) {
-        setProducts(remoteProds);
-        saveStoredProducts(remoteProds);
+        const deletedIds = new Set(getDeletedProductIds());
+        const filtered = remoteProds.filter((p) => !deletedIds.has(p.id));
+        setProducts(filtered);
+        saveStoredProducts(filtered);
       }
     });
     fetchStudentsFromSupabase().then((remoteStds) => {

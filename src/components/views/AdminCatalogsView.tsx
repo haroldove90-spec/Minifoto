@@ -53,7 +53,7 @@ import {
   saveCategoryToSupabase,
   deleteCategoryFromSupabase
 } from '../../services/supabaseClient';
-import { markProductAsDeleted, getStoredCategories, saveStoredCategories } from '../../services/storage';
+import { markProductAsDeleted, markCategoryAsDeleted, getStoredCategories, saveStoredCategories } from '../../services/storage';
 import { CategoryItem } from '../../types';
 
 interface AdminCatalogsViewProps {
@@ -146,6 +146,20 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
   // Bulk Category Assignment state
   const [showBulkCategoryModal, setShowBulkCategoryModal] = useState(false);
   const [isBulkAssigning, setIsBulkAssigning] = useState(false);
+
+  // In-app Delete Confirmation Modal State (Reliable across browsers and iframes)
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    type: 'single_product' | 'bulk_products' | 'category';
+    id?: string;
+    name?: string;
+    count?: number;
+    extraMessage?: string;
+  }>({
+    isOpen: false,
+    type: 'single_product',
+  });
+  const [isDeletingProcess, setIsDeletingProcess] = useState(false);
 
   // Helper to resolve icon for any category
   const getCategoryIcon = (catId: string) => {
@@ -426,25 +440,15 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     cancelForm();
   };
 
-  // SINGLE PRODUCT DELETE: Permanently remove from state, mark in localStorage, and delete from Supabase
-  const handleDelete = async (id: string, name: string) => {
+  // SINGLE PRODUCT DELETE: Trigger in-app confirmation modal
+  const handleDelete = (id: string, name: string) => {
     if (!isAdmin) return;
-    if (confirm(`¿Seguro que deseas eliminar definitivamente "${name}" del catálogo? Se borrará de Supabase y no volverá a cargarse.`)) {
-      // 1. Mark as permanently deleted in localStorage so browser never resurrects it
-      markProductAsDeleted(id);
-
-      // 2. Delete from Supabase
-      deleteProductFromSupabase(id);
-
-      // 3. Update local state
-      const updated = products.filter((p) => p.id !== id);
-      onSaveProducts(updated);
-
-      // If it was selected for bulk delete, remove it
-      setSelectedForDelete((prev) => prev.filter((item) => item !== id));
-
-      showToast(`Producto "${name}" eliminado permanentemente del sistema y Supabase`);
-    }
+    setDeleteModal({
+      isOpen: true,
+      type: 'single_product',
+      id,
+      name,
+    });
   };
 
   // BULK PRODUCT SELECTION & DELETE (One or Multiple Products)
@@ -464,33 +468,94 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     }
   };
 
-  const handleDeleteSelected = async () => {
+  // Trigger in-app modal for bulk deletion
+  const handleDeleteSelected = () => {
     if (selectedForDelete.length === 0) return;
+    setDeleteModal({
+      isOpen: true,
+      type: 'bulk_products',
+      count: selectedForDelete.length,
+    });
+  };
 
-    const count = selectedForDelete.length;
-    const confirmMessage = count === 1
-      ? '¿Confirmas eliminar definitivamente este producto? Se borrará de Supabase y del navegador, y NO volverá a cargarse.'
-      : `¿Confirmas eliminar definitivamente los ${count} productos seleccionados? Se borrarán de Supabase y del navegador, y NO volverán a cargarse.`;
+  // CENTRAL EXECUTION: Definitively delete product, bulk products, or category
+  const executeConfirmedDelete = async () => {
+    if (!isAdmin) return;
+    setIsDeletingProcess(true);
 
-    if (!confirm(confirmMessage)) return;
+    try {
+      if (deleteModal.type === 'single_product' && deleteModal.id) {
+        const prodId = deleteModal.id;
+        const prodName = deleteModal.name || 'Producto';
 
-    setIsDeletingBulk(true);
+        // 1. Mark as permanently deleted in localStorage so browser never restores it
+        markProductAsDeleted(prodId);
 
-    // 1. Register IDs in permanent deleted list so browser NEVER restores them
-    markProductAsDeleted(selectedForDelete);
+        // 2. Remove from local state
+        const updated = products.filter((p) => p.id !== prodId);
+        onSaveProducts(updated);
+        setSelectedForDelete((prev) => prev.filter((id) => id !== prodId));
 
-    // 2. Delete all from Supabase
-    await deleteProductsBatchFromSupabase(selectedForDelete);
+        // 3. Delete from Supabase
+        await deleteProductFromSupabase(prodId);
 
-    // 3. Remove from local state
-    const remaining = products.filter((p) => !selectedForDelete.includes(p.id));
-    onSaveProducts(remaining);
+        showToast(`✓ Producto "${prodName}" eliminado permanentemente del catálogo y Supabase.`);
+      } else if (deleteModal.type === 'bulk_products' && selectedForDelete.length > 0) {
+        const count = selectedForDelete.length;
+        const toDelete = [...selectedForDelete];
 
-    setIsDeletingBulk(false);
-    setSelectedForDelete([]);
-    setIsBulkDeleteMode(false);
+        // 1. Register in permanent deleted list in localStorage
+        markProductAsDeleted(toDelete);
 
-    showToast(`✓ ${count} producto(s) borrados definitivamente del navegador y Supabase`);
+        // 2. Delete all from Supabase
+        await deleteProductsBatchFromSupabase(toDelete);
+
+        // 3. Remove from local state
+        const remaining = products.filter((p) => !toDelete.includes(p.id));
+        onSaveProducts(remaining);
+
+        setSelectedForDelete([]);
+        setIsBulkDeleteMode(false);
+
+        showToast(`✓ ${count} producto(s) borrados definitivamente del catálogo y Supabase.`);
+      } else if (deleteModal.type === 'category' && deleteModal.id) {
+        const catId = deleteModal.id;
+        const catLabel = deleteModal.name || 'Categoría';
+
+        // 1. Mark category as deleted in localStorage
+        markCategoryAsDeleted(catId);
+
+        // 2. Reassign any existing products in this category to avoid orphans
+        const fallbackCat = categoriesList.find((c) => c.id !== catId)?.id || 'foto_estudio';
+        const updatedProducts = products.map((p) => (p.category === catId ? { ...p, category: fallbackCat } : p));
+        onSaveProducts(updatedProducts);
+
+        // Sync remapped products to Supabase
+        const remapped = updatedProducts.filter((p) => p.category === fallbackCat);
+        if (remapped.length > 0) {
+          await saveProductsBatchToSupabase(remapped);
+        }
+
+        // 3. Remove category from local state and localStorage
+        const updatedCategories = categoriesList.filter((c) => c.id !== catId);
+        setCategoriesList(updatedCategories);
+        saveStoredCategories(updatedCategories);
+
+        if (selectedCategory === catId) setSelectedCategory('all');
+        if (formCategory === catId) setFormCategory(fallbackCat);
+
+        // 4. Delete category from Supabase
+        await deleteCategoryFromSupabase(catId);
+
+        showToast(`✓ Categoría "${catLabel}" eliminada definitivamente del sistema y Supabase.`);
+      }
+    } catch (err) {
+      console.error('Error during deletion:', err);
+      showToast('Ocurrió un error al procesar el borrado. Verifica tu conexión.');
+    } finally {
+      setIsDeletingProcess(false);
+      setDeleteModal({ isOpen: false, type: 'single_product' });
+    }
   };
 
   // Batch sync all local products to Supabase
@@ -1201,6 +1266,91 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DE CONFIRMACIÓN DE BORRADO DEFINITIVO (PRODUCTOS Y CATEGORÍAS) */}
+        {deleteModal.isOpen && isAdmin && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in">
+            <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border-2 border-rose-500 overflow-hidden flex flex-col">
+              <div className="p-4 sm:p-5 bg-rose-600 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <Trash2 className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black">
+                    {deleteModal.type === 'single_product' && 'Eliminar Producto'}
+                    {deleteModal.type === 'bulk_products' && `Eliminar (${deleteModal.count}) Productos`}
+                    {deleteModal.type === 'category' && 'Eliminar Categoría'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  disabled={isDeletingProcess}
+                  onClick={() => setDeleteModal({ isOpen: false, type: 'single_product' })}
+                  className="p-1.5 text-white/80 hover:text-white rounded-xl hover:bg-white/10 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 sm:p-6 space-y-4">
+                <div className="flex items-start gap-3 p-3.5 bg-rose-50 rounded-2xl border border-rose-200 text-rose-900 text-xs sm:text-sm">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block">Esta acción es permanente:</span>
+                    <span className="text-xs text-rose-700">
+                      Se eliminará del catálogo de la aplicación y de tu base de datos en <strong>Supabase</strong>.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-sm text-slate-700">
+                  {deleteModal.type === 'single_product' && (
+                    <p>
+                      ¿Confirmas que deseas eliminar definitivamente el producto <strong>"{deleteModal.name}"</strong>?
+                    </p>
+                  )}
+                  {deleteModal.type === 'bulk_products' && (
+                    <p>
+                      ¿Confirmas que deseas eliminar definitivamente los <strong>{deleteModal.count} productos</strong> seleccionados?
+                    </p>
+                  )}
+                  {deleteModal.type === 'category' && (
+                    <div className="space-y-2">
+                      <p>
+                        ¿Confirmas que deseas eliminar la categoría <strong>"{deleteModal.name}"</strong>?
+                      </p>
+                      {deleteModal.extraMessage && (
+                        <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                          ℹ️ {deleteModal.extraMessage}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  disabled={isDeletingProcess}
+                  onClick={() => setDeleteModal({ isOpen: false, type: 'single_product' })}
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeletingProcess}
+                  onClick={executeConfirmedDelete}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-95 disabled:opacity-50 text-white text-xs sm:text-sm font-black rounded-xl shadow-md transition cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>{isDeletingProcess ? 'Borrando...' : 'Sí, Eliminar Definitivamente'}</span>
                 </button>
               </div>
             </div>
