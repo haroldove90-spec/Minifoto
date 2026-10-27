@@ -11,113 +11,265 @@ export const SUPABASE_CONFIG_DATA = {
 
 // Complete SQL Schema Script for the user to run in Supabase SQL Editor
 export const COMPLETE_SUPABASE_SQL = `-- =========================================================================
--- ESQUEMA COMPLETO SUPABASE PARA POS FOTOGRAFÍA
--- Proyecto: minifoto@appdesignsoftware.com's Project
+-- ESQUEMA COMPLETO Y MIGRACIÓN AUTOMÁTICA PARA SUPABASE (IDEMPOTENTE Y SEGURO)
+-- Proyecto: Minifoto POS
 -- Project ID: xqggdnoxvskotwlcuwgd
 -- =========================================================================
 
 -- 1. TABLA DE PRODUCTOS Y SERVICIOS (CATÁLOGO MULTINEGOCIO)
-create table if not exists public.products (
-  id text primary key,
-  name text not null,
-  category text not null,
-  price numeric(10,2) not null default 0.00,
-  description text,
-  unit text default 'pza',
-  image_url text,
-  is_active boolean default true,
-  has_extras boolean default false,
-  default_retoque_price numeric(10,2) default 30.00,
-  default_autoadherible_price numeric(10,2) default 20.00,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+CREATE TABLE IF NOT EXISTS public.products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  description TEXT,
+  unit TEXT DEFAULT 'pza',
+  image_url TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  has_extras BOOLEAN DEFAULT FALSE,
+  default_retoque_price NUMERIC(10,2) DEFAULT 30.00,
+  default_autoadherible_price NUMERIC(10,2) DEFAULT 20.00,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. TABLA DE VENTAS Y TICKETS DE CAJA
-create table if not exists public.sales (
-  id text primary key,
-  folio text not null,
-  date text not null,
-  role text not null default 'cashier',
-  operator_name text not null,
-  client_name text,
-  client_phone text,
-  school_name text,
-  items jsonb not null default '[]'::jsonb,
-  subtotal numeric(10,2) not null default 0.00,
-  discount numeric(10,2) not null default 0.00,
-  total numeric(10,2) not null default 0.00,
-  payment_method text not null default 'efectivo',
-  amount_paid numeric(10,2) not null default 0.00,
-  change numeric(10,2) not null default 0.00,
-  status text not null default 'completado',
-  notes text,
-  created_at timestamptz default now()
+-- 2. CATEGORÍAS DINÁMICAS DEL CATÁLOGO
+CREATE TABLE IF NOT EXISTS public.categories (
+  id TEXT PRIMARY KEY,
+  label TEXT NOT NULL,
+  icon TEXT,
+  color TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. TABLA DE ALUMNOS Y PAQUETES DE GRADUACIÓN
-create table if not exists public.graduation_students (
-  id text primary key,
-  folio text not null,
-  student_name text not null,
-  school_id text,
-  school_name text not null,
-  season_year text default '2026',
-  grade_group text,
-  package_name text,
-  total_photos text,
-  total_amount numeric(10,2) not null default 0.00,
-  deposit_amount numeric(10,2) not null default 0.00,
-  remaining_amount numeric(10,2) not null default 0.00,
-  delivery_status text default 'pendiente',
-  delivery_date text,
-  contact_phone text,
-  notes text,
-  created_at timestamptz default now()
+-- 3. TABLA DE VENTAS Y TICKETS DE CAJA
+CREATE TABLE IF NOT EXISTS public.sales (
+  id TEXT PRIMARY KEY,
+  folio TEXT NOT NULL,
+  date TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'cashier',
+  operator_name TEXT NOT NULL,
+  client_name TEXT,
+  client_phone TEXT,
+  client_email TEXT,
+  school_name TEXT,
+  items JSONB NOT NULL DEFAULT '[]'::jsonb,
+  subtotal NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  discount NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  total NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  payment_method TEXT NOT NULL DEFAULT 'efectivo',
+  amount_paid NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  change NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  deposit_amount NUMERIC(10,2) DEFAULT 0.00,
+  remaining_amount NUMERIC(10,2) DEFAULT 0.00,
+  status TEXT NOT NULL DEFAULT 'completado',
+  notes TEXT,
+  photo_specs JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. TABLA DE ESCUELAS Y CONVENIOS
-create table if not exists public.schools (
-  id text primary key,
-  name text not null,
-  season_year text default '2026',
-  active boolean default true,
-  representative text,
-  phone text,
-  created_at timestamptz default now()
+-- 4. CONFIGURACIÓN DE FOLIOS PERSONALIZADOS (ROL ADMIN)
+CREATE TABLE IF NOT EXISTS public.folio_config (
+  id TEXT PRIMARY KEY,
+  prefix TEXT NOT NULL DEFAULT 'TK-',
+  next_number INTEGER NOT NULL DEFAULT 1001,
+  padding INTEGER NOT NULL DEFAULT 6,
+  suffix TEXT DEFAULT '',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. TABLA DE CATEGORÍAS DEL CATÁLOGO (DINÁMICAS)
-create table if not exists public.categories (
-  id text primary key,
-  label text not null,
-  icon text,
-  color text,
-  created_at timestamptz default now()
+-- 5. TABLA DE ALUMNOS Y PAQUETES DE GRADUACIÓN
+CREATE TABLE IF NOT EXISTS public.graduation_students (
+  id TEXT PRIMARY KEY,
+  folio TEXT NOT NULL,
+  student_name TEXT NOT NULL,
+  school_id TEXT,
+  school_name TEXT NOT NULL,
+  season_year TEXT DEFAULT '2026',
+  grade_group TEXT,
+  grade TEXT,
+  group_name TEXT,
+  matricula TEXT,
+  tutor_name TEXT,
+  tutor_whatsapp TEXT,
+  tutor_phone TEXT,
+  consent_whatsapp BOOLEAN DEFAULT TRUE,
+  package_name TEXT,
+  total_photos TEXT,
+  total_amount NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  deposit_amount NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  remaining_amount NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  santander_reference TEXT,
+  delivery_status TEXT DEFAULT 'pendiente',
+  delivery_date TEXT,
+  next_due_date TEXT,
+  next_due_amount NUMERIC(10,2) DEFAULT 0.00,
+  payment_history JSONB DEFAULT '[]'::jsonb,
+  whatsapp_logs JSONB DEFAULT '[]'::jsonb,
+  contact_phone TEXT,
+  notes TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 6. TABLA DE PERFILES DE USUARIO (MULTI-ROL)
-create table if not exists public.user_profiles (
-  id text primary key,
-  role text not null,
-  name text not null,
-  email text,
-  phone text,
-  avatar_url text,
-  notes text,
-  address text,
-  updated_at timestamptz default now()
+-- 6. TABLA DE ESCUELAS Y CONVENIOS
+CREATE TABLE IF NOT EXISTS public.schools (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  season_year TEXT DEFAULT '2026',
+  active BOOLEAN DEFAULT TRUE,
+  representative TEXT,
+  phone TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ÍNDICES DE RENDIMIENTO PARA FILTRADO RÁPIDO DE CATEGORÍAS Y PRODUCTOS
-create index if not exists idx_products_category on public.products (category);
-create index if not exists idx_products_active on public.products (is_active);
-create index if not exists idx_sales_date on public.sales (date);
-create index if not exists idx_sales_folio on public.sales (folio);
-create index if not exists idx_students_folio on public.graduation_students (folio);
+-- 7. TABLA DE PERFILES DE USUARIO (MULTI-ROL)
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+  id TEXT PRIMARY KEY,
+  role TEXT NOT NULL,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  avatar_url TEXT,
+  notes TEXT,
+  address TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
--- POBLAR O ACTUALIZAR CATEGORÍAS BASE AUTOMÁTICAMENTE
-insert into public.categories (id, label, icon, color) values
+-- 8. TRANSFERENCIAS BANCARIAS SANTANDER
+CREATE TABLE IF NOT EXISTS public.bank_transfers (
+  id TEXT PRIMARY KEY,
+  date TEXT NOT NULL,
+  student_id TEXT,
+  student_name TEXT,
+  school_name TEXT,
+  santander_reference TEXT,
+  amount NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  status TEXT NOT NULL DEFAULT 'pendiente',
+  terminal_id TEXT,
+  operator_name TEXT,
+  confirmed_at TIMESTAMPTZ,
+  confirmed_by TEXT,
+  bank_transaction_folio TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 9. LOGS DE AUDITORÍA
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+  id TEXT PRIMARY KEY,
+  timestamp TIMESTAMPTZ DEFAULT NOW(),
+  operator TEXT,
+  role TEXT,
+  terminal_id TEXT,
+  action TEXT,
+  details TEXT,
+  student_folio TEXT
+);
+
+-- =========================================================================
+-- MIGRACIÓN AUTOMÁTICA DE COLUMNAS (AGREGA CAMPOS A TABLAS PREVIAS)
+-- =========================================================================
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS santander_reference TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS package_name TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS total_photos TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS matricula TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS grade TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS group_name TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS grade_group TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS tutor_name TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS tutor_whatsapp TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS tutor_phone TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS consent_whatsapp BOOLEAN DEFAULT TRUE;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS next_due_date TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS next_due_amount NUMERIC(10,2) DEFAULT 0.00;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS payment_history JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS whatsapp_logs JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS contact_phone TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS delivery_status TEXT DEFAULT 'pendiente';
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS delivery_date TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS client_name TEXT;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS client_phone TEXT;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS client_email TEXT;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS school_name TEXT;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS deposit_amount NUMERIC(10,2) DEFAULT 0.00;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS remaining_amount NUMERIC(10,2) DEFAULT 0.00;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS photo_specs JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completado';
+
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS has_extras BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS default_retoque_price NUMERIC(10,2) DEFAULT 30.00;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS default_autoadherible_price NUMERIC(10,2) DEFAULT 20.00;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS unit TEXT DEFAULT 'pza';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- HABILITAR SEGURIDAD A NIVEL DE FILA (RLS)
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.folio_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.graduation_students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.schools ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bank_transfers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- POLÍTICAS DE ACCESO TOTAL (ANON) PARA LECTURA Y ESCRITURA
+DROP POLICY IF EXISTS "Anon full access products" ON public.products;
+CREATE POLICY "Anon full access products" ON public.products FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access categories" ON public.categories;
+CREATE POLICY "Anon full access categories" ON public.categories FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access sales" ON public.sales;
+CREATE POLICY "Anon full access sales" ON public.sales FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access folio_config" ON public.folio_config;
+CREATE POLICY "Anon full access folio_config" ON public.folio_config FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access students" ON public.graduation_students;
+CREATE POLICY "Anon full access students" ON public.graduation_students FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access schools" ON public.schools;
+CREATE POLICY "Anon full access schools" ON public.schools FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access user_profiles" ON public.user_profiles;
+CREATE POLICY "Anon full access user_profiles" ON public.user_profiles FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access bank_transfers" ON public.bank_transfers;
+CREATE POLICY "Anon full access bank_transfers" ON public.bank_transfers FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access audit_logs" ON public.audit_logs;
+CREATE POLICY "Anon full access audit_logs" ON public.audit_logs FOR ALL USING (true) WITH CHECK (true);
+
+-- ÍNDICES DE ALTO RENDIMIENTO (CON COLUMNAS ASEGURADAS)
+CREATE INDEX IF NOT EXISTS idx_products_category ON public.products (category);
+CREATE INDEX IF NOT EXISTS idx_products_active ON public.products (is_active);
+CREATE INDEX IF NOT EXISTS idx_products_order ON public.products (display_order);
+
+CREATE INDEX IF NOT EXISTS idx_sales_folio ON public.sales (folio);
+CREATE INDEX IF NOT EXISTS idx_sales_date ON public.sales (date);
+CREATE INDEX IF NOT EXISTS idx_sales_created_at ON public.sales (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sales_client_phone ON public.sales (client_phone);
+
+CREATE INDEX IF NOT EXISTS idx_students_folio ON public.graduation_students (folio);
+CREATE INDEX IF NOT EXISTS idx_students_santander ON public.graduation_students (santander_reference);
+CREATE INDEX IF NOT EXISTS idx_students_school ON public.graduation_students (school_id, delivery_status);
+
+CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON public.user_profiles (role);
+
+-- POBLAR CATEGORÍAS INICIALES Y FOLIO
+INSERT INTO public.categories (id, label, icon, color) VALUES
   ('foto_estudio', 'Foto Estudio', 'Camera', 'text-yellow-600'),
   ('ampliaciones', 'Ampliaciones', 'Maximize2', 'text-lime-600'),
   ('minilab', 'Minilab', 'Film', 'text-yellow-500'),
@@ -126,37 +278,14 @@ insert into public.categories (id, label, icon, color) values
   ('salon_seis_party', 'Salón Six Party', 'PartyPopper', 'text-emerald-600'),
   ('fuente_sodas', 'Fuente de Sodas / Cafetería', 'Coffee', 'text-orange-600'),
   ('graduaciones', 'Graduaciones 2026', 'GraduationCap', 'text-teal-600')
-on conflict (id) do update set
-  label = excluded.label,
-  icon = excluded.icon,
-  color = excluded.color;
+ON CONFLICT (id) DO UPDATE SET
+  label = EXCLUDED.label,
+  icon = EXCLUDED.icon,
+  color = EXCLUDED.color;
 
--- HABILITAR SEGURIDAD A NIVEL DE FILA (RLS)
-alter table public.products enable row level security;
-alter table public.sales enable row level security;
-alter table public.graduation_students enable row level security;
-alter table public.schools enable row level security;
-alter table public.categories enable row level security;
-alter table public.user_profiles enable row level security;
-
--- POLÍTICAS DE ACCESO TOTAL PÚBLICO (ANON) PARA LECTURA Y ESCRITURA
-drop policy if exists "Anon full access products" on public.products;
-create policy "Anon full access products" on public.products for all using (true) with check (true);
-
-drop policy if exists "Anon full access sales" on public.sales;
-create policy "Anon full access sales" on public.sales for all using (true) with check (true);
-
-drop policy if exists "Anon full access students" on public.graduation_students;
-create policy "Anon full access students" on public.graduation_students for all using (true) with check (true);
-
-drop policy if exists "Anon full access schools" on public.schools;
-create policy "Anon full access schools" on public.schools for all using (true) with check (true);
-
-drop policy if exists "Anon full access categories" on public.categories;
-create policy "Anon full access categories" on public.categories for all using (true) with check (true);
-
-drop policy if exists "Anon full access user_profiles" on public.user_profiles;
-create policy "Anon full access user_profiles" on public.user_profiles for all using (true) with check (true);
+INSERT INTO public.folio_config (id, prefix, next_number, padding, suffix)
+VALUES ('default', 'TK-', 1001, 6, '')
+ON CONFLICT (id) DO NOTHING;
 `;
 
 // Helper to sanitize URL
