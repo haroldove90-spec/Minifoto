@@ -127,7 +127,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-2 sm:p-4 overflow-hidden print:p-0 print:bg-white animate-in fade-in">
-      <div className="relative w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-[#4E2B01] flex flex-col max-h-[92vh] sm:max-h-[88vh] print:max-h-none print:border-none print:shadow-none print:max-w-none print:w-full print:overflow-visible">
+      <div className="relative w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-[#4E2B01] flex flex-col max-h-[86vh] sm:max-h-[82vh] my-auto print:max-h-none print:border-none print:shadow-none print:max-w-none print:w-full print:overflow-visible">
         
         {/* Top actions (Hidden in print) */}
         <div className="print:hidden bg-[#4E2B01] text-[#FFF3BC] px-4 py-3 border-b-2 border-[#ECB769] flex items-center justify-between shrink-0">
@@ -168,7 +168,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
         </div>
 
         {/* Internal Scrollable Thermal Ticket Content */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-5 bg-slate-100/70 print:p-0 print:overflow-visible print:bg-white">
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 bg-slate-100/70 print:p-0 print:overflow-visible print:bg-white">
           <div className="p-4 sm:p-5 bg-white font-mono text-slate-900 text-xs shadow-xs rounded-2xl border border-slate-200 print:shadow-none print:border-none print:p-2 max-w-sm mx-auto" id="printable-ticket">
             {/* Unencapsulated Full-Size Logo */}
             <div className="flex flex-col items-center mb-3 text-center">

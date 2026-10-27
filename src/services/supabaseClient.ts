@@ -109,6 +109,28 @@ create table if not exists public.user_profiles (
   updated_at timestamptz default now()
 );
 
+-- ÍNDICES DE RENDIMIENTO PARA FILTRADO RÁPIDO DE CATEGORÍAS Y PRODUCTOS
+create index if not exists idx_products_category on public.products (category);
+create index if not exists idx_products_active on public.products (is_active);
+create index if not exists idx_sales_date on public.sales (date);
+create index if not exists idx_sales_folio on public.sales (folio);
+create index if not exists idx_students_folio on public.graduation_students (folio);
+
+-- POBLAR O ACTUALIZAR CATEGORÍAS BASE AUTOMÁTICAMENTE
+insert into public.categories (id, label, icon, color) values
+  ('foto_estudio', 'Foto Estudio', 'Camera', 'text-yellow-600'),
+  ('ampliaciones', 'Ampliaciones', 'Maximize2', 'text-lime-600'),
+  ('minilab', 'Minilab', 'Film', 'text-yellow-500'),
+  ('iglesias', 'Iglesias / Eventos', 'Church', 'text-amber-600'),
+  ('fotoacabado', 'Fotoacabado', 'Sparkles', 'text-lime-500'),
+  ('salon_seis_party', 'Salón Six Party', 'PartyPopper', 'text-emerald-600'),
+  ('fuente_sodas', 'Fuente de Sodas / Cafetería', 'Coffee', 'text-orange-600'),
+  ('graduaciones', 'Graduaciones 2026', 'GraduationCap', 'text-teal-600')
+on conflict (id) do update set
+  label = excluded.label,
+  icon = excluded.icon,
+  color = excluded.color;
+
 -- HABILITAR SEGURIDAD A NIVEL DE FILA (RLS)
 alter table public.products enable row level security;
 alter table public.sales enable row level security;

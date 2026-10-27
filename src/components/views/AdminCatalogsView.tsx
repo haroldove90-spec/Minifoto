@@ -143,6 +143,10 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
   const [newCatColor, setNewCatColor] = useState('text-teal-600');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
 
+  // Bulk Category Assignment state
+  const [showBulkCategoryModal, setShowBulkCategoryModal] = useState(false);
+  const [isBulkAssigning, setIsBulkAssigning] = useState(false);
+
   // Helper to resolve icon for any category
   const getCategoryIcon = (catId: string) => {
     switch (catId) {
@@ -218,6 +222,56 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
       setFormCategory(updated[0]?.id || 'foto_estudio');
     }
     showToast(`Categoría "${catLabel}" eliminada del sistema y Supabase.`);
+  };
+
+  // Asignar o cambiar categoría directamente a un producto
+  const handleQuickAssignCategory = async (productId: string, newCategory: Category) => {
+    if (!isAdmin) return;
+    const catObj = categoriesList.find((c) => c.id === newCategory);
+    const catLabel = catObj?.label || newCategory;
+
+    let targetName = '';
+    const updated = products.map((p) => {
+      if (p.id === productId) {
+        targetName = p.name;
+        const modified = { ...p, category: newCategory };
+        // Sincronizar en segundo plano con Supabase
+        saveProductToSupabase(modified);
+        return modified;
+      }
+      return p;
+    });
+
+    onSaveProducts(updated);
+    showToast(`✓ "${targetName}" asignado a la categoría "${catLabel}" y sincronizado con Supabase.`);
+  };
+
+  // Asignar categoría en lote a todos los productos seleccionados
+  const handleBulkAssignCategory = async (targetCategory: Category) => {
+    if (!isAdmin || selectedForDelete.length === 0) return;
+    const catObj = categoriesList.find((c) => c.id === targetCategory);
+    const catLabel = catObj?.label || targetCategory;
+    const count = selectedForDelete.length;
+
+    setIsBulkAssigning(true);
+    const updated = products.map((p) => {
+      if (selectedForDelete.includes(p.id)) {
+        return { ...p, category: targetCategory };
+      }
+      return p;
+    });
+
+    onSaveProducts(updated);
+
+    // Sincronizar lote con Supabase
+    const changed = updated.filter((p) => selectedForDelete.includes(p.id));
+    await saveProductsBatchToSupabase(changed);
+
+    setIsBulkAssigning(false);
+    setShowBulkCategoryModal(false);
+    setSelectedForDelete([]);
+    setIsBulkDeleteMode(false);
+    showToast(`✓ Se asignaron ${count} productos a la categoría "${catLabel}" y se sincronizó con Supabase.`);
   };
 
   // Test Supabase on mount
@@ -635,7 +689,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
           {/* ADMIN CONTROLS: Solo el admin puede subir fotos, seleccionar para borrar o gestionar */}
           {isAdmin && (
             <div className="flex flex-wrap items-center gap-2.5">
-              {/* Botón Seleccionar Varios para Borrar */}
+              {/* Botón Seleccionar Varios para Asignar Categoría o Borrar */}
               <button
                 type="button"
                 onClick={() => {
@@ -645,13 +699,13 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                 }}
                 className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-black transition cursor-pointer ${
                   isBulkDeleteMode
-                    ? 'bg-rose-600 text-white shadow-md'
-                    : 'bg-white hover:bg-rose-50 text-rose-700 border-2 border-rose-200'
+                    ? 'bg-[#4E2B01] text-[#FFF3BC] shadow-md border-2 border-[#ECB769]'
+                    : 'bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-300'
                 }`}
-                title="Seleccionar uno o varios productos para eliminarlos permanentemente"
+                title="Seleccionar múltiples productos para asignar categoría en lote o eliminarlos"
               >
-                <Trash2 className="w-4 h-4" />
-                <span>{isBulkDeleteMode ? 'Terminar Selección' : 'Seleccionar para Borrar'}</span>
+                <Tag className="w-4 h-4 text-[#ECB769]" />
+                <span>{isBulkDeleteMode ? 'Terminar Selección' : 'Selección Múltiple'}</span>
               </button>
 
               {/* Botón Gestionar Categorías */}
@@ -702,25 +756,25 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
         </div>
 
         {/* =========================================================================
-            BARRA DE ACCIÓN CUANDO ESTÁ ACTIVO EL MODO DE BORRADO MÚLTIPLE (ADMIN)
+            BARRA DE ACCIÓN CUANDO ESTÁ ACTIVO EL MODO DE ACCIONES EN LOTE (ADMIN)
             ========================================================================= */}
         {isAdmin && (isBulkDeleteMode || selectedForDelete.length > 0) && (
-          <div className="bg-rose-50 border-2 border-rose-300 p-4 rounded-3xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 animate-in slide-in-from-top">
+          <div className="bg-[#FFF3BC]/60 border-2 border-[#4E2B01] p-4 rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in slide-in-from-top">
             <div className="flex items-center gap-3.5">
-              <div className="p-3 bg-rose-600 text-white rounded-2xl shrink-0 shadow-sm">
-                <Trash2 className="w-6 h-6" />
+              <div className="p-3 bg-[#4E2B01] text-[#FFF3BC] rounded-2xl shrink-0 shadow-sm">
+                <Tag className="w-6 h-6 text-[#ECB769]" />
               </div>
               <div>
-                <span className="text-xs font-black text-rose-900 block uppercase tracking-wide">
-                  Modo de Borrado Múltiple Activo
+                <span className="text-xs font-black text-[#4E2B01] block uppercase tracking-wide">
+                  Gestión en Lote ({selectedForDelete.length} seleccionados)
                 </span>
-                <span className="text-xs text-rose-700 font-medium">
-                  Has marcado <strong>{selectedForDelete.length}</strong> de {filteredProducts.length} producto(s). Los productos eliminados <strong>no volverán a cargarse en el navegador</strong> y se borrarán de Supabase.
+                <span className="text-xs text-slate-700 font-medium">
+                  Puedes <strong>asignar una categoría en lote</strong> o eliminar los productos seleccionados permanentemente.
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
               <button
                 type="button"
                 onClick={handleSelectAllForDelete}
@@ -731,14 +785,28 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   : 'Seleccionar Todos'}
               </button>
 
+              {/* Botón Asignar Categoría a Seleccionados */}
+              <button
+                type="button"
+                disabled={selectedForDelete.length === 0}
+                onClick={() => setShowBulkCategoryModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#4E2B01] hover:bg-[#381e01] active:scale-95 disabled:opacity-50 text-[#FFF3BC] text-xs sm:text-sm font-black rounded-2xl shadow-md border-2 border-[#ECB769] transition cursor-pointer"
+                title="Asignar una categoría a todos los productos seleccionados"
+              >
+                <Tag className="w-4 h-4 text-[#ECB769]" />
+                <span>Asignar Categoría ({selectedForDelete.length})</span>
+              </button>
+
+              {/* Botón Eliminar Seleccionados */}
               <button
                 type="button"
                 disabled={selectedForDelete.length === 0 || isDeletingBulk}
                 onClick={handleDeleteSelected}
-                className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs sm:text-sm font-black rounded-2xl shadow-md transition cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs sm:text-sm font-black rounded-2xl shadow-md transition cursor-pointer"
+                title="Eliminar definitivamente los productos seleccionados"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>{isDeletingBulk ? 'Borrando...' : `Eliminar (${selectedForDelete.length}) Seleccionados`}</span>
+                <span>{isDeletingBulk ? 'Borrando...' : `Borrar (${selectedForDelete.length})`}</span>
               </button>
 
               <button
@@ -747,8 +815,8 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   setIsBulkDeleteMode(false);
                   setSelectedForDelete([]);
                 }}
-                className="p-2 text-rose-600 hover:text-rose-800 hover:bg-rose-100 rounded-xl"
-                title="Cerrar modo de borrado"
+                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-white/80 rounded-xl cursor-pointer"
+                title="Cerrar selección múltiple"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1019,15 +1087,28 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                             </div>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCategory(cat.id, cat.label)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer shrink-0"
-                            title={`Eliminar categoría "${cat.label}"`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Borrar</span>
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedCategory(cat.id);
+                                setShowCategoryModal(false);
+                              }}
+                              className="px-2.5 py-1.5 bg-[#FFF3BC] hover:bg-[#ffeaa7] text-[#4E2B01] font-bold text-xs rounded-xl border border-[#ECB769] transition cursor-pointer"
+                              title={`Ver productos de ${cat.label}`}
+                            >
+                              Ver
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCategory(cat.id, cat.label)}
+                              className="flex items-center gap-1 px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer"
+                              title={`Eliminar categoría "${cat.label}"`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Borrar</span>
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -1043,6 +1124,83 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                   className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL ASIGNAR CATEGORÍA EN LOTE (ADMIN) */}
+        {showBulkCategoryModal && isAdmin && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-5 animate-in fade-in">
+            <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border-2 border-[#4E2B01] overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="p-4 sm:p-5 bg-[#4E2B01] text-[#FFF3BC] flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-[#ECB769] text-[#202020] rounded-xl shadow-xs">
+                    <Tag className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black">Asignar Categoría en Lote</h3>
+                    <p className="text-[11px] text-[#FFF3BC]/80">
+                      Mover {selectedForDelete.length} producto(s) seleccionados a una nueva categoría
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBulkCategoryModal(false)}
+                  className="p-1.5 text-white/80 hover:text-white rounded-xl hover:bg-white/10 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto space-y-4">
+                <p className="text-xs text-slate-600 font-medium">
+                  Elige la categoría a la que deseas asignar los <strong>{selectedForDelete.length} productos</strong> seleccionados. Se actualizarán inmediatamente tanto en el sistema como en tu base de datos de <strong>Supabase</strong>.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-80 overflow-y-auto pr-1">
+                  {categoriesList.map((cat) => {
+                    const Icon = getCategoryIcon(cat.id);
+                    const prodsCount = products.filter((p) => p.category === cat.id).length;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        disabled={isBulkAssigning}
+                        onClick={() => handleBulkAssignCategory(cat.id)}
+                        className="flex items-center gap-3 p-3 bg-slate-50 hover:bg-[#FFF3BC]/40 border-2 border-slate-200 hover:border-[#4E2B01] rounded-2xl transition cursor-pointer text-left group shadow-xs active:scale-95 disabled:opacity-50"
+                      >
+                        <div className="p-2.5 rounded-xl bg-white group-hover:bg-[#4E2B01] group-hover:text-[#FFF3BC] text-[#4E2B01] border border-slate-200 transition shrink-0">
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="font-black text-xs text-slate-800 group-hover:text-[#4E2B01] block truncate">
+                            {cat.label}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono block">
+                            {prodsCount} producto(s) actuales
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-3.5 bg-slate-100 border-t border-slate-200 flex justify-between items-center">
+                <span className="text-xs text-slate-500 font-medium">
+                  {selectedForDelete.length} seleccionados
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowBulkCategoryModal(false)}
+                  className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Cancelar
                 </button>
               </div>
             </div>
@@ -1858,9 +2016,32 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
                     {/* Contenido */}
                     <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#4E2B01] block mb-0.5">
-                          {prod.category.replace('_', ' ')}
-                        </span>
+                        {isAdmin ? (
+                          <div className="flex items-center justify-between gap-1 mb-1.5" onClick={(e) => e.stopPropagation()}>
+                            <div className="relative inline-flex items-center">
+                              <select
+                                value={prod.category}
+                                onChange={(e) => handleQuickAssignCategory(prod.id, e.target.value as Category)}
+                                className="text-[11px] font-black uppercase tracking-wider text-[#4E2B01] bg-[#FFF3BC] hover:bg-[#ffeaa7] border border-[#ECB769] rounded-lg px-2 py-0.5 pr-5 cursor-pointer appearance-none transition focus:outline-none focus:ring-1 focus:ring-[#4E2B01] shadow-2xs"
+                                title="Cambiar categoría de esta foto/producto"
+                              >
+                                {categoriesList.map((c) => (
+                                  <option key={c.id} value={c.id}>
+                                    📁 {c.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronDown className="w-3 h-3 text-[#4E2B01] absolute right-1.5 pointer-events-none" />
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {prod.unit || 'pza'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#4E2B01] block mb-0.5">
+                            {prod.category.replace('_', ' ')}
+                          </span>
+                        )}
                         <h3 className="font-black text-xs sm:text-sm text-slate-900 leading-snug line-clamp-2">
                           {prod.name}
                         </h3>
