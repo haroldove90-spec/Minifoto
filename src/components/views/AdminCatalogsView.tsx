@@ -51,7 +51,9 @@ import {
   COMPLETE_SUPABASE_SQL, 
   SUPABASE_CONFIG_DATA,
   saveCategoryToSupabase,
-  deleteCategoryFromSupabase
+  saveCategoriesBatchToSupabase,
+  deleteCategoryFromSupabase,
+  fetchCategoriesFromSupabase
 } from '../../services/supabaseClient';
 import { markProductAsDeleted, markCategoryAsDeleted, getStoredCategories, saveStoredCategories } from '../../services/storage';
 import { CategoryItem } from '../../types';
@@ -208,10 +210,38 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     const updated = [...categoriesList, newCat];
     setCategoriesList(updated);
     saveStoredCategories(updated);
-    await saveCategoryToSupabase(newCat);
+
+    const res = await saveCategoryToSupabase(newCat);
     setIsAddingCategory(false);
     setNewCatName('');
-    showToast(`¡Categoría "${trimmed}" agregada y sincronizada con Supabase!`);
+
+    if (res.success) {
+      showToast(`¡Categoría "${trimmed}" guardada en Supabase y navegador!`);
+    } else {
+      if (res.error?.includes('Could not find the table') || res.error?.includes('PGRST205')) {
+        setShowSqlModal(true);
+        showToast(`Categoría guardada localmente. Debes ejecutar el script SQL en Supabase para crear la tabla categories.`);
+      } else {
+        showToast(`Categoría guardada localmente. Aviso Supabase: ${res.error || 'Verifica la conexión'}`);
+      }
+    }
+  };
+
+  // Sincronizar todas las categorías existentes a Supabase
+  const handleSyncCategoriesToSupabase = async () => {
+    setIsAddingCategory(true);
+    const res = await saveCategoriesBatchToSupabase(categoriesList);
+    setIsAddingCategory(false);
+    if (res.error) {
+      if (res.error.includes('Could not find the table') || res.error.includes('PGRST205')) {
+        setShowSqlModal(true);
+        showToast('Falta crear la tabla categories en Supabase');
+      } else {
+        alert(`Error al sincronizar categorías: ${res.error}`);
+      }
+    } else {
+      showToast(`¡${res.savedCount} categorías sincronizadas exitosamente en Supabase!`);
+    }
   };
 
   // Delete category
@@ -227,7 +257,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     const updated = categoriesList.filter((c) => c.id !== catId);
     setCategoriesList(updated);
     saveStoredCategories(updated);
-    await deleteCategoryFromSupabase(catId);
+    const res = await deleteCategoryFromSupabase(catId);
 
     if (selectedCategory === catId) {
       setSelectedCategory('all');
@@ -235,7 +265,12 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     if (formCategory === catId) {
       setFormCategory(updated[0]?.id || 'foto_estudio');
     }
-    showToast(`Categoría "${catLabel}" eliminada del sistema y Supabase.`);
+
+    if (res.success) {
+      showToast(`Categoría "${catLabel}" eliminada del sistema y Supabase.`);
+    } else {
+      showToast(`Categoría "${catLabel}" eliminada localmente (Aviso Supabase: ${res.error || 'Verificar'})`);
+    }
   };
 
   // Asignar o cambiar categoría directamente a un producto
@@ -288,9 +323,29 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     showToast(`✓ Se asignaron ${count} productos a la categoría "${catLabel}" y se sincronizó con Supabase.`);
   };
 
-  // Test Supabase on mount
+  // Test Supabase on mount and load categories from Supabase
   useEffect(() => {
     checkSupabase();
+    fetchCategoriesFromSupabase().then((remoteCats) => {
+      if (remoteCats && remoteCats.length > 0) {
+        setCategoriesList((prev) => {
+          const map = new Map(prev.map((c) => [c.id, c]));
+          remoteCats.forEach((rc) => {
+            if (!map.has(rc.id)) {
+              map.set(rc.id, {
+                id: rc.id,
+                label: rc.label,
+                color: rc.color || 'text-teal-600',
+                createdAt: new Date().toISOString(),
+              });
+            }
+          });
+          const merged = Array.from(map.values());
+          saveStoredCategories(merged);
+          return merged;
+        });
+      }
+    });
   }, []);
 
   const checkSupabase = async () => {
@@ -1182,7 +1237,17 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
               </div>
 
               {/* Footer */}
-              <div className="p-3.5 bg-slate-100 border-t border-slate-200 flex justify-end">
+              <div className="p-3.5 bg-slate-100 border-t border-slate-200 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  disabled={isAddingCategory}
+                  onClick={handleSyncCategoriesToSupabase}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-xs"
+                  title="Enviar todas las categorías actuales a Supabase"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isAddingCategory ? 'animate-spin' : ''}`} />
+                  <span>{isAddingCategory ? 'Sincronizando...' : 'Sincronizar Todas a Supabase'}</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowCategoryModal(false)}

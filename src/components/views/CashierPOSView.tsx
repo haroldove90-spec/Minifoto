@@ -1254,11 +1254,11 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
                           )}
                         </div>
 
-                        <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between">
-                          <span className="text-[10px] font-black text-[#ECB769] uppercase">
+                        <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1">
+                          <span className="text-[10px] font-black text-[#ECB769] uppercase truncate">
                             {isStudioPhotoProduct(prod) ? 'Opciones y Ticket' : '+ Agregar'}
                           </span>
-                          <span className="text-sm font-black text-[#4E2B01] font-mono">
+                          <span className="text-sm font-black text-[#4E2B01] font-mono whitespace-nowrap shrink-0">
                             ${prod.price.toFixed(2)}
                           </span>
                         </div>
@@ -1275,16 +1275,17 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
         {/* =======================================================================
             RIGHT COLUMN: PERSISTENT TICKET + INTEGRATED TOUCH CALCULATOR
             ALWAYS VISIBLE - NEVER DISAPPEARS SO ELDERLY USERS NEVER GET LOST
+            RESPONSIVE & NEVER CLIPS ON TABLETS OR PC
             ======================================================================= */}
-        <div className={`w-full lg:w-[410px] xl:w-[460px] bg-white border-t-2 lg:border-t-0 border-[#ECB769] flex-col justify-between shadow-2xl shrink-0 ${
+        <div className={`w-full lg:w-[410px] xl:w-[460px] bg-white border-t-2 lg:border-t-0 border-[#ECB769] flex flex-col shadow-2xl shrink-0 h-full overflow-y-auto ${
           mobileTab === 'calculator' ? 'flex' : 'hidden lg:flex'
         }`}>
           
           {/* 1. TICKET HEADER & LIVE ITEMS LIST */}
-          <div className="flex-1 flex flex-col overflow-hidden p-3 sm:p-4">
+          <div className="p-3 pb-2 shrink-0">
             
             {/* Ticket Title & Clear Button */}
-            <div className="flex items-center justify-between pb-2 mb-2 border-b-2 border-slate-100 shrink-0">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b-2 border-slate-100">
               <div className="flex items-center gap-2">
                 <Receipt className="w-5 h-5 text-[#4E2B01]" />
                 <span className="font-black text-sm text-[#4E2B01] uppercase">
@@ -1308,7 +1309,7 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
             </div>
 
             {/* Optional Client Name Input */}
-            <div className="mb-2 shrink-0">
+            <div>
               <input
                 type="text"
                 placeholder="Nombre del cliente (Opcional)..."
@@ -1317,89 +1318,87 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
                 className="w-full text-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#4E2B01]"
               />
             </div>
+          </div>
 
-            {/* Live Cart Items Table */}
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-100 max-h-44 sm:max-h-52 pr-1">
-              {cart.length === 0 ? (
-                <div className="h-28 flex flex-col items-center justify-center text-slate-400 text-center">
-                  <ShoppingBag className="w-8 h-8 text-[#ECB769] mb-1" />
-                  <p className="font-bold text-xs text-[#4E2B01]">Ticket vacío</p>
-                  <p className="text-[11px] text-slate-500">Toca cualquier producto a la izquierda para agregarlo</p>
-                </div>
-              ) : (
-                cart.map((item) => (
-                  <div key={item.id} className="py-2 flex items-center justify-between text-xs gap-2">
-                    <div className="flex-1 pr-1">
-                      <span className="font-black text-[#202020] block leading-tight">{item.name}</span>
-                      {(item.options.retoque || item.options.autoAdherible) && (
-                        <div className="text-[10px] text-[#4E2B01] font-bold">
-                          {item.options.retoque && <span>+Retoque($30) </span>}
-                          {item.options.autoAdherible && <span>+Adherible($20)</span>}
-                        </div>
-                      )}
-                      <span className="text-[11px] font-mono text-slate-500">${item.unitPrice.toFixed(2)} c/u</span>
-                    </div>
-
-                    {/* Quantity controls (+ / -) */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => updateQuantity(item.id, -1)}
-                        className="w-6 h-6 rounded-lg bg-[#FFF3BC] hover:bg-[#ECB769] text-[#4E2B01] font-black flex items-center justify-center cursor-pointer active:scale-95"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="font-black font-mono w-5 text-center text-sm text-[#4E2B01]">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => updateQuantity(item.id, 1)}
-                        className="w-6 h-6 rounded-lg bg-[#FFF3BC] hover:bg-[#ECB769] text-[#4E2B01] font-black flex items-center justify-center cursor-pointer active:scale-95"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
-
-                    <div className="text-right shrink-0 min-w-[65px]">
-                      <span className="font-mono font-black text-sm text-[#4E2B01] block">
-                        ${item.totalPrice.toFixed(2)}
-                      </span>
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className="text-slate-300 hover:text-rose-600 p-0.5 cursor-pointer text-[10px]"
-                      >
-                        Quitar
-                      </button>
-                    </div>
+          {/* Live Cart Items Table */}
+          <div className="px-3 divide-y divide-slate-100 max-h-44 sm:max-h-52 overflow-y-auto shrink-0 pr-1">
+            {cart.length === 0 ? (
+              <div className="py-2.5 px-3 my-1 flex items-center justify-center gap-2 text-slate-500 bg-amber-50/60 rounded-xl border border-dashed border-[#ECB769]/60 text-xs font-bold text-center">
+                <ShoppingBag className="w-4 h-4 text-[#ECB769] shrink-0" />
+                <span>Ticket vacío • Toca productos a la izquierda</span>
+              </div>
+            ) : (
+              cart.map((item) => (
+                <div key={item.id} className="py-2 flex items-center justify-between text-xs gap-2">
+                  <div className="flex-1 min-w-0 pr-1">
+                    <span className="font-black text-[#202020] block leading-tight truncate">{item.name}</span>
+                    {(item.options.retoque || item.options.autoAdherible) && (
+                      <div className="text-[10px] text-[#4E2B01] font-bold">
+                        {item.options.retoque && <span>+Retoque($30) </span>}
+                        {item.options.autoAdherible && <span>+Adherible($20)</span>}
+                      </div>
+                    )}
+                    <span className="text-[11px] font-mono text-slate-500 whitespace-nowrap">${item.unitPrice.toFixed(2)} c/u</span>
                   </div>
-                ))
-              )}
-            </div>
 
-            {/* 2. GIANT TOTAL BOX (High visual prominence for seniors) */}
-            <div className="mt-2 p-3 bg-[#FFF3BC] border-2 border-[#ECB769] rounded-2xl flex items-center justify-between shrink-0 shadow-xs">
-              <div>
-                <span className="text-[10px] font-black uppercase text-slate-600 block">
-                  Total a Cobrar:
-                </span>
-                <span className="text-[11px] font-bold text-[#4E2B01]">
-                  {totalItemsCount} productos en ticket
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="text-2xl sm:text-3xl font-black text-[#4E2B01] font-mono">
-                  ${total.toFixed(2)}
-                </span>
-                <span className="text-xs font-black text-[#ECB769] ml-1">MXN</span>
-              </div>
-            </div>
+                  {/* Quantity controls (+ / -) */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => updateQuantity(item.id, -1)}
+                      className="w-6 h-6 rounded-lg bg-[#FFF3BC] hover:bg-[#ECB769] text-[#4E2B01] font-black flex items-center justify-center cursor-pointer active:scale-95"
+                    >
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <span className="font-black font-mono w-5 text-center text-sm text-[#4E2B01]">
+                      {item.quantity}
+                    </span>
+                    <button
+                      onClick={() => updateQuantity(item.id, 1)}
+                      className="w-6 h-6 rounded-lg bg-[#FFF3BC] hover:bg-[#ECB769] text-[#4E2B01] font-black flex items-center justify-center cursor-pointer active:scale-95"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
 
+                  <div className="text-right shrink-0 min-w-[75px] whitespace-nowrap">
+                    <span className="font-mono font-black text-sm text-[#4E2B01] block whitespace-nowrap">
+                      ${item.totalPrice.toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="text-slate-400 hover:text-rose-600 p-0.5 cursor-pointer text-[10px] font-bold"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* 2. DEDICATED PROMINENT TOTAL BANNER (Always 100% visible, never clipped) */}
+          <div className="mx-3 my-2 p-3 bg-[#FFF3BC] border-2 border-[#ECB769] rounded-2xl flex items-center justify-between shrink-0 shadow-xs">
+            <div className="min-w-0 pr-2">
+              <span className="text-[10px] font-black uppercase text-[#4E2B01]/80 block tracking-wide">
+                TOTAL A COBRAR:
+              </span>
+              <span className="text-xs font-bold text-[#4E2B01] truncate block">
+                {totalItemsCount} {totalItemsCount === 1 ? 'producto' : 'productos'} en ticket
+              </span>
+            </div>
+            <div className="text-right shrink-0 whitespace-nowrap">
+              <span className="text-2xl sm:text-3xl font-black text-[#4E2B01] font-mono leading-none inline-block whitespace-nowrap">
+                ${total.toFixed(2)}
+              </span>
+              <span className="text-xs font-black text-[#4E2B01]/70 ml-1">MXN</span>
+            </div>
           </div>
 
           {/* =====================================================================
               3. INTEGRATED TOUCH CALCULATOR & CHECKOUT CONTROLS
               ALWAYS VISIBLE AT THE BOTTOM OF THE RIGHT COLUMN
               ===================================================================== */}
-          <div className="p-3 sm:p-4 bg-slate-50 border-t-2 border-[#ECB769]/50 flex flex-col space-y-2.5 shrink-0">
+          <div className="p-3 bg-slate-50 border-t-2 border-[#ECB769]/50 flex flex-col space-y-2 shrink-0">
             
             {/* Payment Method Switcher */}
             <div className="grid grid-cols-3 gap-1.5">
@@ -1454,7 +1453,7 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
 
             {/* Quick Bill Denominations for Cash (Single-Touch for Elderly) */}
             {paymentMethod === 'efectivo' && (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between text-[10px] font-black uppercase text-slate-500">
                   <span>Billetes Rápidos (1 Toque):</span>
                   <button
@@ -1462,7 +1461,7 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
                     onClick={handleSetExactAmount}
                     className="text-[#4E2B01] font-black underline hover:text-[#ECB769] cursor-pointer"
                   >
-                    Exacto (${total.toFixed(0)})
+                    Exacto (${total.toFixed(2)})
                   </button>
                 </div>
 
@@ -1472,7 +1471,7 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
                       key={denom}
                       type="button"
                       onClick={() => handleSetDenomination(denom)}
-                      className={`py-2 text-xs font-black rounded-xl border cursor-pointer active:scale-95 transition ${
+                      className={`py-1.5 text-xs font-black rounded-xl border cursor-pointer active:scale-95 transition ${
                         calcInput === denom.toString()
                           ? 'bg-[#4E2B01] text-[#FFF3BC] border-[#ECB769]'
                           : 'bg-white hover:bg-[#FFF3BC] text-[#4E2B01] border-[#ECB769]/50 shadow-2xs'
@@ -1485,19 +1484,19 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
               </div>
             )}
 
-            {/* Cash Given & Change Display (High contrast green for clarity) */}
+            {/* Cash Given & Change Display (High contrast for clarity) */}
             {paymentMethod === 'efectivo' ? (
-              <div className="bg-white p-2.5 rounded-2xl border-2 border-[#ECB769] shadow-xs flex items-center justify-between">
+              <div className="bg-white p-2 rounded-2xl border-2 border-[#ECB769] shadow-xs flex items-center justify-between">
                 <div>
                   <span className="text-[10px] uppercase font-bold text-slate-500 block">Efectivo Recibido</span>
-                  <span className="text-lg font-black font-mono text-[#202020]">
+                  <span className="text-base sm:text-lg font-black font-mono text-[#202020] whitespace-nowrap">
                     ${cashGiven.toFixed(2)}
                   </span>
                 </div>
 
                 <div className="text-right">
                   <span className="text-[10px] uppercase font-bold text-slate-500 block">Cambio a Entregar</span>
-                  <span className={`text-xl font-black font-mono ${
+                  <span className={`text-lg sm:text-xl font-black font-mono whitespace-nowrap ${
                     changeDue > 0 ? 'text-emerald-600' : 'text-slate-700'
                   }`}>
                     ${changeDue.toFixed(2)}
@@ -1506,7 +1505,7 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
               </div>
             ) : (
               /* Terminal Clip status banner if electronic */
-              <div className="bg-white p-2.5 rounded-2xl border border-[#ECB769] flex items-center justify-between text-xs">
+              <div className="bg-white p-2 rounded-2xl border border-[#ECB769] flex items-center justify-between text-xs">
                 {terminalSimStatus === 'idle' ? (
                   <>
                     <span className="text-slate-600 font-bold">Simulación de terminal Clip:</span>
@@ -1537,13 +1536,13 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
 
             {/* Giant Touch Numeric Keypad for Seniors (Large Buttons) */}
             {paymentMethod === 'efectivo' && (
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
                 {['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '.'].map((key) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => handleCalcKeyPress(key)}
-                    className={`h-11 sm:h-12 rounded-xl font-black text-lg sm:text-xl shadow-2xs border-2 cursor-pointer active:scale-95 transition flex items-center justify-center ${
+                    className={`h-9 sm:h-10 rounded-xl font-black text-base sm:text-lg shadow-2xs border-2 cursor-pointer active:scale-95 transition flex items-center justify-center ${
                       key === 'C'
                         ? 'bg-slate-800 text-[#FFF3BC] border-slate-900'
                         : 'bg-white hover:bg-[#FFF3BC] text-[#4E2B01] border-slate-200 hover:border-[#ECB769]'
@@ -1571,10 +1570,10 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
               type="button"
               disabled={cart.length === 0 || isProcessing || isCashInsufficient}
               onClick={handleConfirmCheckoutSale}
-              className="w-full py-4 sm:py-4.5 bg-[#ECB769] hover:bg-[#fad88b] active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed text-[#4E2B01] font-black text-lg sm:text-xl rounded-2xl shadow-xl border-3 border-[#4E2B01] transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 sm:py-3.5 bg-[#ECB769] hover:bg-[#fad88b] active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed text-[#4E2B01] font-black text-base sm:text-lg rounded-2xl shadow-xl border-2 border-[#4E2B01] transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Printer className="w-6 h-6 text-[#4E2B01]" />
-              <span>
+              <Printer className="w-5 h-5 text-[#4E2B01]" />
+              <span className="whitespace-nowrap">
                 {isProcessing
                   ? 'EMITIENDO TICKET...'
                   : `CONTINUAR / COBRAR (${cart.length > 0 ? `$${total.toFixed(2)}` : '$0.00'})`}

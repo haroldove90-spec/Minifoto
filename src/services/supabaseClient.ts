@@ -466,6 +466,7 @@ export const saveSaleToSupabase = async (sale: Sale): Promise<boolean> => {
       operator_name: sale.operatorName,
       client_name: sale.clientName || null,
       client_phone: sale.clientPhone || null,
+      client_email: sale.clientEmail || null,
       school_name: sale.schoolName || null,
       items: sale.items,
       subtotal: sale.subtotal,
@@ -474,8 +475,11 @@ export const saveSaleToSupabase = async (sale: Sale): Promise<boolean> => {
       payment_method: sale.paymentMethod,
       amount_paid: sale.amountPaid,
       change: sale.change,
+      deposit_amount: sale.depositAmount || 0,
+      remaining_amount: sale.remainingAmount || 0,
       status: sale.status,
       notes: sale.notes || null,
+      photo_specs: sale.photoSpecs || {},
     };
 
     const { error } = await supabase.from('sales').upsert(payload, { onConflict: 'id' });
@@ -616,6 +620,7 @@ export const fetchSalesFromSupabase = async (): Promise<Sale[] | null> => {
       operatorName: row.operator_name,
       clientName: row.client_name || undefined,
       clientPhone: row.client_phone || undefined,
+      clientEmail: row.client_email || undefined,
       schoolName: row.school_name || undefined,
       items: row.items || [],
       subtotal: Number(row.subtotal),
@@ -624,8 +629,11 @@ export const fetchSalesFromSupabase = async (): Promise<Sale[] | null> => {
       paymentMethod: row.payment_method,
       amountPaid: Number(row.amount_paid),
       change: Number(row.change),
+      depositAmount: row.deposit_amount ? Number(row.deposit_amount) : undefined,
+      remainingAmount: row.remaining_amount ? Number(row.remaining_amount) : undefined,
       status: row.status,
       notes: row.notes || undefined,
+      photoSpecs: row.photo_specs || undefined,
     }));
   } catch {
     return null;
@@ -725,7 +733,7 @@ export const deleteProductsBatchFromSupabase = async (ids: string[]): Promise<{ 
 };
 
 // Save category to Supabase
-export const saveCategoryToSupabase = async (cat: { id: string; label: string; icon?: string; color?: string }): Promise<boolean> => {
+export const saveCategoryToSupabase = async (cat: { id: string; label: string; icon?: string; color?: string }): Promise<{ success: boolean; error?: string }> => {
   try {
     const supabase = getSupabaseClient();
     const { error } = await supabase.from('categories').upsert({
@@ -734,22 +742,50 @@ export const saveCategoryToSupabase = async (cat: { id: string; label: string; i
       icon: cat.icon || null,
       color: cat.color || null,
     }, { onConflict: 'id' });
-    if (error) return false;
-    return true;
-  } catch {
-    return false;
+    if (error) {
+      console.warn('Supabase category save error:', error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (e: any) {
+    console.warn('Supabase category save exception:', e);
+    return { success: false, error: e.message || 'Error de red' };
+  }
+};
+
+// Batch save categories to Supabase
+export const saveCategoriesBatchToSupabase = async (cats: { id: string; label: string; icon?: string; color?: string }[]): Promise<{ savedCount: number; error?: string }> => {
+  try {
+    if (!cats || cats.length === 0) return { savedCount: 0 };
+    const supabase = getSupabaseClient();
+    const rows = cats.map((c) => ({
+      id: c.id,
+      label: c.label,
+      icon: c.icon || null,
+      color: c.color || null,
+    }));
+    const { error } = await supabase.from('categories').upsert(rows, { onConflict: 'id' });
+    if (error) {
+      return { savedCount: 0, error: error.message };
+    }
+    return { savedCount: rows.length };
+  } catch (e: any) {
+    return { savedCount: 0, error: e.message || 'Error de red' };
   }
 };
 
 // Delete category from Supabase
-export const deleteCategoryFromSupabase = async (id: string): Promise<boolean> => {
+export const deleteCategoryFromSupabase = async (id: string): Promise<{ success: boolean; error?: string }> => {
   try {
     const supabase = getSupabaseClient();
     const { error } = await supabase.from('categories').delete().eq('id', id);
-    if (error) return false;
-    return true;
-  } catch {
-    return false;
+    if (error) {
+      console.warn('Supabase category delete error:', error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message || 'Error de red' };
   }
 };
 

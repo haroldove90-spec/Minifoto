@@ -38,7 +38,9 @@ import {
   saveStoredSupabaseConfig,
   isSampleDataCleared,
   clearSampleDataSystem,
-  restoreSampleDataSystem
+  restoreSampleDataSystem,
+  getStoredCategories,
+  saveStoredCategories
 } from './services/storage';
 
 import {
@@ -49,7 +51,8 @@ import {
   fetchProductsFromSupabase,
   fetchStudentsFromSupabase,
   fetchSalesFromSupabase,
-  fetchSchoolsFromSupabase
+  fetchSchoolsFromSupabase,
+  fetchCategoriesFromSupabase
 } from './services/supabaseClient';
 
 import { RoleSelector } from './components/RoleSelector';
@@ -139,6 +142,23 @@ export default function App() {
       if (remoteSchools && remoteSchools.length > 0) {
         setSchools(remoteSchools);
         saveStoredSchools(remoteSchools);
+      }
+    });
+    fetchCategoriesFromSupabase().then((remoteCats) => {
+      if (remoteCats && remoteCats.length > 0) {
+        const localCats = getStoredCategories();
+        const map = new Map(localCats.map((c) => [c.id, c]));
+        remoteCats.forEach((rc) => {
+          if (!map.has(rc.id)) {
+            map.set(rc.id, {
+              id: rc.id,
+              label: rc.label,
+              color: rc.color || 'text-teal-600',
+              createdAt: new Date().toISOString(),
+            });
+          }
+        });
+        saveStoredCategories(Array.from(map.values()));
       }
     });
   }, []);
