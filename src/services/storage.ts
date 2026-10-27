@@ -14,7 +14,8 @@ import {
   AuditLogItem,
   PaymentMethod,
   CategoryItem,
-  UserProfile
+  UserProfile,
+  FolioConfig
 } from '../types';
 import { 
   INITIAL_PRODUCTS, 
@@ -30,6 +31,8 @@ import {
 const KEYS = {
   SAMPLE_CLEARED: 'pos_photo_sample_data_cleared_v1',
   PRODUCTS: 'pos_photo_products_v1',
+  PRODUCT_ORDER: 'pos_photo_product_order_v1',
+  FOLIO_CONFIG: 'pos_photo_folio_config_v1',
   SCHOOLS: 'pos_photo_schools_v1',
   STUDENTS: 'pos_photo_students_v1',
   SALES: 'pos_photo_sales_v1',
@@ -675,6 +678,67 @@ export const logStudentWhatsApp = (
 
   students[index].whatsappLogs = [newLog, ...(students[index].whatsappLogs || [])];
   saveStoredStudents(students);
+};
+
+// ==========================================
+// FOLIO CONFIGURATION (CUSTOMIZABLE BY ADMIN)
+// ==========================================
+const DEFAULT_FOLIO_CONFIG: FolioConfig = {
+  prefix: 'TK-',
+  nextNumber: 149444,
+  padding: 6,
+  suffix: '',
+};
+
+export const getStoredFolioConfig = (): FolioConfig => {
+  const data = localStorage.getItem(KEYS.FOLIO_CONFIG);
+  if (data) {
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed && typeof parsed.prefix === 'string') {
+        return {
+          prefix: parsed.prefix,
+          nextNumber: Number(parsed.nextNumber) || 100001,
+          padding: Number(parsed.padding) || 6,
+          suffix: parsed.suffix || '',
+        };
+      }
+    } catch {}
+  }
+  return DEFAULT_FOLIO_CONFIG;
+};
+
+export const saveStoredFolioConfig = (config: FolioConfig) => {
+  localStorage.setItem(KEYS.FOLIO_CONFIG, JSON.stringify(config));
+};
+
+export const generateNextSaleFolio = (): string => {
+  const config = getStoredFolioConfig();
+  const numStr = String(config.nextNumber).padStart(config.padding || 6, '0');
+  const folio = `${config.prefix || 'TK-'}${numStr}${config.suffix || ''}`;
+  
+  // Increment nextNumber for next sale
+  config.nextNumber += 1;
+  saveStoredFolioConfig(config);
+  return folio;
+};
+
+// ==========================================
+// CUSTOM PRODUCT ORDERING (DRAG & DROP PERSISTENCE)
+// ==========================================
+export const getStoredProductsOrder = (): string[] => {
+  const data = localStorage.getItem(KEYS.PRODUCT_ORDER);
+  if (data) {
+    try {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
+};
+
+export const saveStoredProductsOrder = (order: string[]) => {
+  localStorage.setItem(KEYS.PRODUCT_ORDER, JSON.stringify(order));
 };
 
 

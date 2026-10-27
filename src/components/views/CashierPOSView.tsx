@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Product, CartItem, Category, PaymentMethod, Sale } from '../../types';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Product, CartItem, Category, PaymentMethod, Sale, PhotoStudioSpecs } from '../../types';
 import { 
   Camera, 
   Church, 
@@ -38,10 +38,21 @@ import {
   Clock, 
   Calculator,
   User,
-  Sparkle
+  Sparkle,
+  GripVertical,
+  Move,
+  CheckSquare,
+  Square,
+  Mail,
+  Phone
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { getStoredCategories } from '../../services/storage';
+import { 
+  getStoredCategories, 
+  generateNextSaleFolio, 
+  getStoredProductsOrder, 
+  saveStoredProductsOrder 
+} from '../../services/storage';
 import { printTicketElement } from '../../services/printService';
 
 interface CashierPOSViewProps {
@@ -78,11 +89,28 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
   const [clientName, setClientName] = useState('');
   const [mobileTab, setMobileTab] = useState<'products' | 'calculator'>('products');
 
-  // Selected item modal for studio photo extras (Retoque / Autoadherible)
+  // Selected item modal for studio photo form (Retoque, Color, Vestimenta, Datos Cliente, etc.)
   const [activeModalProduct, setActiveModalProduct] = useState<Product | null>(null);
   const [extraRetoque, setExtraRetoque] = useState(false);
   const [extraAutoAdherible, setExtraAutoAdherible] = useState(false);
+  const [extraAColor, setExtraAColor] = useState(true);
+  const [extraBlancoNegro, setExtraBlancoNegro] = useState(false);
+  const [extraEnvioEmail, setExtraEnvioEmail] = useState(false);
+  const [extraSacoCorbata, setExtraSacoCorbata] = useState(false);
+  const [extraBlazerMascada, setExtraBlazerMascada] = useState(false);
+  const [extraCambioCamisa, setExtraCambioCamisa] = useState(false);
+  const [inputColorVestimenta, setInputColorVestimenta] = useState('');
+  const [inputObservacionesEditor, setInputObservacionesEditor] = useState('');
+  const [inputClientFullName, setInputClientFullName] = useState('');
+  const [inputClientPhone, setInputClientPhone] = useState('');
+  const [inputClientEmail, setInputClientEmail] = useState('');
   const [modalQuantity, setModalQuantity] = useState(1);
+
+  // Drag and Drop & Touch Reordering of Products
+  const [customProductOrder, setCustomProductOrder] = useState<string[]>(() => getStoredProductsOrder());
+  const [draggedProductId, setDraggedProductId] = useState<string | null>(null);
+  const [dragOverProductId, setDragOverProductId] = useState<string | null>(null);
+  const touchStartProductRef = useRef<string | null>(null);
 
   // Live Calculator & Payment State (Permanently visible on right)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('efectivo');
@@ -112,6 +140,82 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
 
   // Filter only active products for POS operations
   const activeProducts = products.filter((p) => p.isActive !== false);
+
+  // Apply custom ordering saved by user via drag and drop
+  const sortedProducts = useMemo(() => {
+    if (!customProductOrder || customProductOrder.length === 0) return activeProducts;
+    const orderMap = new Map(customProductOrder.map((id, index) => [id, index]));
+    return [...activeProducts].sort((a, b) => {
+      const indexA = orderMap.has(a.id) ? orderMap.get(a.id)! : 9999;
+      const indexB = orderMap.has(b.id) ? orderMap.get(b.id)! : 9999;
+      return indexA - indexB;
+    });
+  }, [activeProducts, customProductOrder]);
+
+  const handleReorderProducts = (sourceId: string, targetId: string) => {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    const currentList = sortedProducts.map((p) => p.id);
+    const fromIdx = currentList.indexOf(sourceId);
+    const toIdx = currentList.indexOf(targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const newOrder = [...currentList];
+    const [moved] = newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, moved);
+
+    setCustomProductOrder(newOrder);
+    saveStoredProductsOrder(newOrder);
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedProductId(id);
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverProductId !== id) {
+      setDragOverProductId(id);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain') || draggedProductId;
+    if (sourceId) {
+      handleReorderProducts(sourceId, targetId);
+    }
+    setDraggedProductId(null);
+    setDragOverProductId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedProductId(null);
+    setDragOverProductId(null);
+  };
+
+  const handleTouchStartCard = (id: string) => {
+    touchStartProductRef.current = id;
+  };
+
+  const handleTouchEndCard = (e: React.TouchEvent) => {
+    const sourceId = touchStartProductRef.current;
+    if (!sourceId) return;
+
+    const touch = e.changedTouches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    const cardElement = element?.closest('[data-product-card-id]') as HTMLElement;
+    if (cardElement && cardElement.dataset.productCardId) {
+      const targetId = cardElement.dataset.productCardId;
+      if (targetId && targetId !== sourceId) {
+        handleReorderProducts(sourceId, targetId);
+      }
+    }
+    touchStartProductRef.current = null;
+    setDragOverProductId(null);
+  };
 
   // Dynamic categories list from storage
   const storedCategories = getStoredCategories();
@@ -253,25 +357,175 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
     setCheckoutError(null);
   };
 
-  // Product card click handler
+  // Detect studio photo products requested by client: Titulo, diploma, pasaporte, infantil, cartilla, ovalo, filiacion, visa, etc.
+  const isStudioPhotoProduct = (product: Product) => {
+    const name = (product.name || '').toLowerCase();
+    return (
+      product.category === 'foto_estudio' ||
+      Boolean(product.hasExtras) ||
+      name.includes('titulo') ||
+      name.includes('título') ||
+      name.includes('diploma') ||
+      name.includes('pasaporte') ||
+      name.includes('infantil') ||
+      name.includes('cartilla') ||
+      name.includes('ovalo') ||
+      name.includes('óvalo') ||
+      name.includes('ovalada') ||
+      name.includes('filiacion') ||
+      name.includes('filiación') ||
+      name.includes('visa')
+    );
+  };
+
+  // Product card click handler - opens rich studio options form
   const handleProductCardClick = (product: Product) => {
-    if (product.category === 'foto_estudio' || product.hasExtras) {
+    if (isStudioPhotoProduct(product)) {
       setActiveModalProduct(product);
       setExtraRetoque(false);
       setExtraAutoAdherible(false);
+      setExtraAColor(true);
+      setExtraBlancoNegro(false);
+      setExtraEnvioEmail(false);
+      setExtraSacoCorbata(false);
+      setExtraBlazerMascada(false);
+      setExtraCambioCamisa(false);
+      setInputColorVestimenta('');
+      setInputObservacionesEditor('');
+      setInputClientFullName(clientName || '');
+      setInputClientPhone('');
+      setInputClientEmail('');
       setModalQuantity(1);
     } else {
       addProductToCart(product);
     }
   };
 
-  // Confirm studio photo extras modal
-  const handleConfirmExtras = () => {
+  // Primary Action in Modal: GENERAR TICKET (Immediate direct checkout & ticket emission with barcode)
+  const handleGenerateTicketDirect = () => {
     if (!activeModalProduct) return;
-    addProductToCart(activeModalProduct, {
+
+    const retoqueP = extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0;
+    const autoAdhP = extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0;
+    const unitPrice = activeModalProduct.price + retoqueP + autoAdhP;
+    const qty = modalQuantity || 1;
+    const itemTotal = unitPrice * qty;
+
+    const photoSpecs: PhotoStudioSpecs = {
       retoque: extraRetoque,
       autoAdherible: extraAutoAdherible,
-    }, modalQuantity);
+      aColor: extraAColor,
+      blancoNegro: extraBlancoNegro,
+      envioEmail: extraEnvioEmail,
+      sacoCorbata: extraSacoCorbata,
+      blazerMascada: extraBlazerMascada,
+      cambioCamisa: extraCambioCamisa,
+      colorVestimenta: inputColorVestimenta.trim() || undefined,
+      observacionesEditor: inputObservacionesEditor.trim() || undefined,
+      clientFullName: inputClientFullName.trim() || undefined,
+      clientPhone: inputClientPhone.trim() || undefined,
+      clientEmail: inputClientEmail.trim() || undefined,
+    };
+
+    const cartItem: CartItem = {
+      id: `${activeModalProduct.id}-${Date.now()}`,
+      productId: activeModalProduct.id,
+      name: activeModalProduct.name,
+      category: activeModalProduct.category,
+      unitPrice,
+      quantity: qty,
+      options: {
+        retoque: extraRetoque,
+        retoquePrice: retoqueP,
+        autoAdherible: extraAutoAdherible,
+        autoAdheriblePrice: autoAdhP,
+        notes: inputObservacionesEditor.trim() || undefined,
+        photoSpecs,
+      },
+      totalPrice: itemTotal,
+    };
+
+    // Custom folio generated automatically
+    const folio = generateNextSaleFolio();
+    const now = new Date();
+    const dateStr = `${now.toLocaleDateString('es-MX')} ${now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+
+    const directSale: Sale = {
+      id: `sale-${Date.now()}`,
+      folio,
+      date: dateStr,
+      role: 'cashier',
+      operatorName: operatorName || 'Cajero de Mostrador',
+      clientName: inputClientFullName.trim() || clientName.trim() || 'Cliente Mostrador',
+      clientPhone: inputClientPhone.trim() || undefined,
+      clientEmail: inputClientEmail.trim() || undefined,
+      items: [cartItem],
+      subtotal: itemTotal,
+      discount: 0,
+      total: itemTotal,
+      paymentMethod: 'efectivo',
+      amountPaid: itemTotal,
+      change: 0,
+      status: 'completado',
+      notes: `Ticket emitido desde POS Estudio Fotográfico`,
+      photoSpecs,
+    };
+
+    onCompleteSale(directSale, { autoPrint: autoPrintTicket });
+    try {
+      confetti({ particleCount: 75, spread: 70, origin: { y: 0.6 } });
+    } catch {}
+    setActiveModalProduct(null);
+  };
+
+  // Secondary Action in Modal: Agregar al ticket para seguir seleccionando
+  const handleAddStudioProductToCart = () => {
+    if (!activeModalProduct) return;
+
+    const retoqueP = extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0;
+    const autoAdhP = extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0;
+    const unitPrice = activeModalProduct.price + retoqueP + autoAdhP;
+    const qty = modalQuantity || 1;
+    const itemTotal = unitPrice * qty;
+
+    const photoSpecs: PhotoStudioSpecs = {
+      retoque: extraRetoque,
+      autoAdherible: extraAutoAdherible,
+      aColor: extraAColor,
+      blancoNegro: extraBlancoNegro,
+      envioEmail: extraEnvioEmail,
+      sacoCorbata: extraSacoCorbata,
+      blazerMascada: extraBlazerMascada,
+      cambioCamisa: extraCambioCamisa,
+      colorVestimenta: inputColorVestimenta.trim() || undefined,
+      observacionesEditor: inputObservacionesEditor.trim() || undefined,
+      clientFullName: inputClientFullName.trim() || undefined,
+      clientPhone: inputClientPhone.trim() || undefined,
+      clientEmail: inputClientEmail.trim() || undefined,
+    };
+
+    const newItem: CartItem = {
+      id: `${activeModalProduct.id}-${Date.now()}`,
+      productId: activeModalProduct.id,
+      name: activeModalProduct.name,
+      category: activeModalProduct.category,
+      unitPrice,
+      quantity: qty,
+      options: {
+        retoque: extraRetoque,
+        retoquePrice: retoqueP,
+        autoAdherible: extraAutoAdherible,
+        autoAdheriblePrice: autoAdhP,
+        notes: inputObservacionesEditor.trim() || undefined,
+        photoSpecs,
+      },
+      totalPrice: itemTotal,
+    };
+
+    setCart([...cart, newItem]);
+    if (inputClientFullName.trim() && !clientName) {
+      setClientName(inputClientFullName.trim());
+    }
     setActiveModalProduct(null);
   };
 
@@ -318,7 +572,7 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
     setIsProcessing(true);
     setCheckoutError(null);
 
-    const folio = `TK-${Math.floor(100000 + Math.random() * 900000)}`;
+    const folio = generateNextSaleFolio();
     const now = new Date();
     const dateStr = `${now.toLocaleDateString('es-MX')} ${now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
 
@@ -555,8 +809,8 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
     printTicketElement('corte-thermal-printable');
   };
 
-  // Products to display: filtered by active category or general search
-  const displayProducts = activeProducts.filter((p) => {
+  // Products to display: sorted by custom drag & drop order, filtered by active category or general search
+  const displayProducts = sortedProducts.filter((p) => {
     if (productSearch.trim()) {
       const q = productSearch.toLowerCase();
       return (
@@ -763,6 +1017,28 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
           </div>
 
           {/* 3. Products Grid with Photos and Prices (Matches official Minifoto photos) */}
+          {/* Reordering helper banner */}
+          <div className="bg-amber-50/80 border border-[#ECB769]/60 px-3 py-1.5 rounded-xl mb-2 flex items-center justify-between text-[11px] text-[#4E2B01]">
+            <span className="flex items-center gap-1.5 font-medium">
+              <Move className="w-3.5 h-3.5 text-[#4E2B01]" />
+              <strong>Organizar Productos:</strong> Jala cualquier producto con el mouse o con el dedo para ponerlo en el orden que gustes.
+            </span>
+            {customProductOrder.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomProductOrder([]);
+                  saveStoredProductsOrder([]);
+                }}
+                className="text-[10px] font-bold text-slate-500 hover:text-slate-800 underline ml-2 cursor-pointer"
+                title="Restablecer orden inicial de productos"
+              >
+                Restablecer orden
+              </button>
+            )}
+          </div>
+
+          {/* 3. Products Grid with Drag and Drop Reordering */}
           <div className="flex-1 overflow-y-auto pr-1">
             {displayProducts.length === 0 ? (
               <div className="h-48 flex flex-col items-center justify-center text-slate-400 p-6 bg-white rounded-3xl border border-dashed border-[#ECB769]/60 text-center my-4">
@@ -772,66 +1048,90 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {displayProducts.map((prod) => (
-                  <button
-                    key={prod.id}
-                    onClick={() => handleProductCardClick(prod)}
-                    type="button"
-                    className="rounded-2xl bg-white hover:bg-[#FFF3BC]/20 border-2 border-[#ECB769] hover:border-[#4E2B01] shadow-sm hover:shadow-lg active:scale-95 transition-all flex flex-col overflow-hidden text-left cursor-pointer group"
-                  >
-                    {/* Product Photo */}
-                    <div className="relative w-full h-28 sm:h-34 bg-slate-100 overflow-hidden flex items-center justify-center">
-                      {prod.imageUrl ? (
-                        <img
-                          src={prod.imageUrl}
-                          alt={prod.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-[#FCF9F2] text-slate-400 p-2">
-                          <Camera className="w-8 h-8 text-[#ECB769] mb-1" />
-                          <span className="text-[10px] font-bold text-[#4E2B01]">Foto Minifoto</span>
-                        </div>
-                      )}
-
-                      {/* Extras Badge */}
-                      {prod.hasExtras && (
-                        <span className="absolute top-2 left-2 bg-[#FFF3BC] text-[#4E2B01] font-black text-[10px] px-2 py-0.5 rounded-md shadow-xs border border-[#ECB769]">
-                          +Extras
-                        </span>
-                      )}
-
-                      {/* Large Legible Price Badge */}
-                      <span className="absolute bottom-2 right-2 bg-[#000000]/90 text-[#FFF3BC] font-mono font-black text-xs sm:text-sm px-2.5 py-0.5 rounded-lg shadow-md border border-[#ECB769]/50">
-                        ${prod.price.toFixed(2)}
-                      </span>
-                    </div>
-
-                    {/* Content: Title & Action */}
-                    <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="font-black text-xs sm:text-sm text-[#202020] leading-tight line-clamp-2">
-                          {prod.name}
-                        </h3>
-                        {prod.description && (
-                          <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
-                            {prod.description}
-                          </p>
+                {displayProducts.map((prod) => {
+                  const isBeingDragged = draggedProductId === prod.id;
+                  const isDragTarget = dragOverProductId === prod.id && !isBeingDragged;
+                  return (
+                    <div
+                      key={prod.id}
+                      data-product-card-id={prod.id}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, prod.id)}
+                      onDragOver={(e) => handleDragOver(e, prod.id)}
+                      onDrop={(e) => handleDrop(e, prod.id)}
+                      onDragEnd={handleDragEnd}
+                      onTouchStart={() => handleTouchStartCard(prod.id)}
+                      onTouchEnd={handleTouchEndCard}
+                      onClick={() => handleProductCardClick(prod)}
+                      className={`relative rounded-2xl bg-white hover:bg-[#FFF3BC]/20 border-2 transition-all flex flex-col overflow-hidden text-left cursor-grab active:cursor-grabbing group select-none shadow-sm hover:shadow-lg active:scale-95 ${
+                        isDragTarget
+                          ? 'border-[#4E2B01] ring-4 ring-[#ECB769] scale-102 bg-amber-50 z-20'
+                          : 'border-[#ECB769] hover:border-[#4E2B01]'
+                      } ${isBeingDragged ? 'opacity-40 scale-95 border-dashed border-slate-400' : 'opacity-100'}`}
+                      title="Haz clic para seleccionar o jala para mover de posición"
+                    >
+                      {/* Product Photo */}
+                      <div className="relative w-full h-28 sm:h-34 bg-slate-100 overflow-hidden flex items-center justify-center">
+                        {prod.imageUrl ? (
+                          <img
+                            src={prod.imageUrl}
+                            alt={prod.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-[#FCF9F2] text-slate-400 p-2">
+                            <Camera className="w-8 h-8 text-[#ECB769] mb-1" />
+                            <span className="text-[10px] font-bold text-[#4E2B01]">Foto Minifoto</span>
+                          </div>
                         )}
-                      </div>
 
-                      <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-[10px] font-black text-[#ECB769] uppercase">
-                          {prod.hasExtras ? 'Con Opciones' : '+ Agregar'}
-                        </span>
-                        <span className="text-sm font-black text-[#4E2B01] font-mono">
+                        {/* Drag Handle Icon in corner */}
+                        <div
+                          className="absolute top-2 right-2 p-1 rounded-md bg-black/60 text-white opacity-60 group-hover:opacity-100 transition shadow-xs z-10"
+                          title="Arrastra con el mouse o dedo para mover"
+                        >
+                          <GripVertical className="w-3.5 h-3.5 text-[#FFF3BC]" />
+                        </div>
+
+                        {/* Extras Badge */}
+                        {(prod.hasExtras || isStudioPhotoProduct(prod)) && (
+                          <span className="absolute top-2 left-2 bg-[#FFF3BC] text-[#4E2B01] font-black text-[10px] px-2 py-0.5 rounded-md shadow-xs border border-[#ECB769]">
+                            +Opciones
+                          </span>
+                        )}
+
+                        {/* Large Legible Price Badge */}
+                        <span className="absolute bottom-2 right-2 bg-[#000000]/90 text-[#FFF3BC] font-mono font-black text-xs sm:text-sm px-2.5 py-0.5 rounded-lg shadow-md border border-[#ECB769]/50">
                           ${prod.price.toFixed(2)}
                         </span>
                       </div>
+
+                      {/* Content: Title & Action */}
+                      <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between">
+                        <div>
+                          <h3 className="font-black text-xs sm:text-sm text-[#202020] leading-tight line-clamp-2">
+                            {prod.name}
+                          </h3>
+                          {prod.description && (
+                            <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                              {prod.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between">
+                          <span className="text-[10px] font-black text-[#ECB769] uppercase">
+                            {isStudioPhotoProduct(prod) ? 'Opciones y Ticket' : '+ Agregar'}
+                          </span>
+                          <span className="text-sm font-black text-[#4E2B01] font-mono">
+                            ${prod.price.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1156,83 +1456,320 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
       {/* =========================================================================
           MODAL: PRODUCT EXTRAS (Retoque Digital / Autoadherible)
           ========================================================================= */}
+      {/* =========================================================================
+          MODAL: FORMULARIO FLOTANTE ESTUDIO FOTOGRÁFICO Y GENERACIÓN DE TICKET
+          (Retoque, Autoadherible, Color/BN, Vestimenta, Datos Cliente, etc.)
+          ========================================================================= */}
       {activeModalProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border-3 border-[#4E2B01] text-[#202020]">
-            <div className="flex items-center justify-between mb-3 border-b pb-2">
-              <div className="flex items-center gap-2.5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-3 sm:p-5 overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border-3 border-[#4E2B01] text-[#202020] flex flex-col max-h-[92vh] overflow-hidden my-auto">
+            
+            {/* Header: Product Photo, Title, Base Price */}
+            <div className="bg-[#4E2B01] text-[#FFF3BC] p-4 sm:p-5 flex items-center justify-between border-b-2 border-[#ECB769] shrink-0">
+              <div className="flex items-center gap-3">
                 {activeModalProduct.imageUrl ? (
                   <img
                     src={activeModalProduct.imageUrl}
                     alt={activeModalProduct.name}
-                    className="w-12 h-12 rounded-xl object-cover border-2 border-[#ECB769] shrink-0"
+                    className="w-14 h-14 rounded-2xl object-cover border-2 border-[#ECB769] shadow-sm shrink-0"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-[#FFF3BC] border-2 border-[#ECB769] flex items-center justify-center shrink-0">
-                    <Camera className="w-6 h-6 text-[#4E2B01]" />
+                  <div className="w-14 h-14 rounded-2xl bg-[#FFF3BC] border-2 border-[#ECB769] flex items-center justify-center shrink-0">
+                    <Camera className="w-7 h-7 text-[#4E2B01]" />
                   </div>
                 )}
                 <div>
-                  <h3 className="text-sm font-black text-[#4E2B01] leading-tight">{activeModalProduct.name}</h3>
-                  <span className="text-xs text-slate-500 font-mono font-bold">Precio base: ${activeModalProduct.price.toFixed(2)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-[#FFF3BC] text-[#4E2B01]">
+                      Estudio Fotográfico
+                    </span>
+                    <span className="text-xs font-mono font-bold text-[#FFF3BC]/90">
+                      Base: ${activeModalProduct.price.toFixed(2)}
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-[#FFF3BC] leading-tight mt-0.5">
+                    {activeModalProduct.name}
+                  </h3>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setActiveModalProduct(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="p-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                title="Cerrar ventana"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-2 mb-4">
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border-2 border-slate-200 hover:border-[#4E2B01] bg-[#FCF9F2] cursor-pointer transition">
-                <div className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    checked={extraRetoque}
-                    onChange={(e) => setExtraRetoque(e.target.checked)}
-                    className="w-5 h-5 text-[#4E2B01] rounded accent-[#4E2B01]"
-                  />
-                  <span className="text-sm font-bold text-[#202020]">Lleva Retoque Digital</span>
+            {/* Scrollable Form Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 bg-[#FCF9F2] flex-1">
+              
+              {/* SECTION 1: ESPECIFICACIONES FOTOGRÁFICAS (CHECKBOXES EXACTOS DE LA IMAGEN) */}
+              <div className="bg-white p-4 rounded-2xl border-2 border-[#ECB769]/60 shadow-xs space-y-3">
+                <div className="flex items-center justify-between border-b pb-2 border-slate-100">
+                  <span className="text-xs font-black uppercase text-[#4E2B01] tracking-wide flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-[#ECB769]" />
+                    Opciones y Acabados de la Fotografía
+                  </span>
+                  <span className="text-[11px] font-mono font-bold text-slate-500">
+                    Total producto: ${(
+                      (activeModalProduct.price +
+                        (extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0) +
+                        (extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0)) * modalQuantity
+                    ).toFixed(2)}
+                  </span>
                 </div>
-                <span className="text-sm font-black text-[#4E2B01]">
-                  +${activeModalProduct.defaultRetoquePrice || 30}
-                </span>
-              </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border-2 border-slate-200 hover:border-[#4E2B01] bg-[#FCF9F2] cursor-pointer transition">
-                <div className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    checked={extraAutoAdherible}
-                    onChange={(e) => setExtraAutoAdherible(e.target.checked)}
-                    className="w-5 h-5 text-[#4E2B01] rounded accent-[#4E2B01]"
-                  />
-                  <span className="text-sm font-bold text-[#202020]">Lleva Autoadherible</span>
+                {/* 2-Column Checkboxes grid matching image_63161e7c.png */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {/* Row 1 */}
+                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                    <input
+                      type="checkbox"
+                      checked={extraRetoque}
+                      onChange={(e) => setExtraRetoque(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                    />
+                    <span className="font-bold text-slate-800">Retoque profesional</span>
+                    {activeModalProduct.defaultRetoquePrice && (
+                      <span className="text-[10px] font-mono text-[#4E2B01] ml-auto font-bold">
+                        +${activeModalProduct.defaultRetoquePrice}
+                      </span>
+                    )}
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                    <input
+                      type="checkbox"
+                      checked={extraAutoAdherible}
+                      onChange={(e) => setExtraAutoAdherible(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                    />
+                    <span className="font-bold text-slate-800">Fotografías autoadheribles</span>
+                    {activeModalProduct.defaultAutoAdheriblePrice && (
+                      <span className="text-[10px] font-mono text-[#4E2B01] ml-auto font-bold">
+                        +${activeModalProduct.defaultAutoAdheriblePrice}
+                      </span>
+                    )}
+                  </label>
+
+                  {/* Row 2 */}
+                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                    <input
+                      type="checkbox"
+                      checked={extraAColor}
+                      onChange={(e) => {
+                        setExtraAColor(e.target.checked);
+                        if (e.target.checked) setExtraBlancoNegro(false);
+                      }}
+                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                    />
+                    <span className="font-bold text-slate-800">A color</span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                    <input
+                      type="checkbox"
+                      checked={extraBlancoNegro}
+                      onChange={(e) => {
+                        setExtraBlancoNegro(e.target.checked);
+                        if (e.target.checked) setExtraAColor(false);
+                      }}
+                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                    />
+                    <span className="font-bold text-slate-800">Blanco y negro</span>
+                  </label>
+
+                  {/* Row 3 */}
+                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                    <input
+                      type="checkbox"
+                      checked={extraEnvioEmail}
+                      onChange={(e) => setExtraEnvioEmail(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                    />
+                    <span className="font-bold text-slate-800">Envío por correo electrónico</span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                    <input
+                      type="checkbox"
+                      checked={extraSacoCorbata}
+                      onChange={(e) => setExtraSacoCorbata(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                    />
+                    <span className="font-bold text-slate-800">Saco y corbata</span>
+                  </label>
+
+                  {/* Row 4 */}
+                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                    <input
+                      type="checkbox"
+                      checked={extraBlazerMascada}
+                      onChange={(e) => setExtraBlazerMascada(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                    />
+                    <span className="font-bold text-slate-800">Blazer y mascada</span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                    <input
+                      type="checkbox"
+                      checked={extraCambioCamisa}
+                      onChange={(e) => setExtraCambioCamisa(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                    />
+                    <span className="font-bold text-slate-800">Solo cambio de camisa</span>
+                  </label>
                 </div>
-                <span className="text-sm font-black text-[#4E2B01]">
-                  +${activeModalProduct.defaultAutoAdheriblePrice || 20}
+
+                {/* Text fields from image_63161e7c.png */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Color de vestimenta
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Saco negro, camisa blanca, corbata roja..."
+                      value={inputColorVestimenta}
+                      onChange={(e) => setInputColorVestimenta(e.target.value)}
+                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Observaciones para el editor
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Quitar brillo en frente, fondo blanco liso, orejas descubiertas..."
+                      value={inputObservacionesEditor}
+                      onChange={(e) => setInputObservacionesEditor(e.target.value)}
+                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: DATOS DEL CLIENTE (EXACTOS DE LA IMAGEN 008d90ce.png) */}
+              <div className="bg-white p-4 rounded-2xl border-2 border-[#ECB769]/60 shadow-xs space-y-3">
+                <span className="text-xs font-black uppercase text-[#4E2B01] tracking-wide flex items-center gap-1.5 border-b pb-1.5 border-slate-100">
+                  <User className="w-4 h-4 text-[#ECB769]" />
+                  Datos del cliente: Nombre completo / Teléfono / Correo electrónico
                 </span>
-              </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="sm:col-span-1">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Nombre completo
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nombre del cliente"
+                      value={inputClientFullName}
+                      onChange={(e) => setInputClientFullName(e.target.value)}
+                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-1">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="10 dígitos (ej. 555-123-4567)"
+                      value={inputClientPhone}
+                      onChange={(e) => setInputClientPhone(e.target.value)}
+                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-1">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Correo electrónico
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="cliente@ejemplo.com"
+                      value={inputClientEmail}
+                      onChange={(e) => setInputClientEmail(e.target.value)}
+                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Quantity selector */}
+              <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200">
+                <span className="text-xs font-bold text-slate-700">Cantidad de juegos / fotos:</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalQuantity(Math.max(1, modalQuantity - 1))}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold flex items-center justify-center cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center font-mono font-black text-sm text-[#4E2B01]">
+                    {modalQuantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setModalQuantity(modalQuantity + 1)}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold flex items-center justify-center cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
             </div>
 
-            <div className="flex gap-2">
+            {/* Footer with GENERAR TICKET (Action requested by client) */}
+            <div className="bg-white p-3.5 sm:p-5 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+              
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setActiveModalProduct(null)}
+                  className="py-2.5 px-4 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer transition w-full sm:w-auto"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddStudioProductToCart}
+                  className="py-2.5 px-4 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition cursor-pointer w-full sm:w-auto border border-slate-300"
+                  title="Añadir a la cuenta y seguir seleccionando productos"
+                >
+                  Agregar al Carrito
+                </button>
+              </div>
+
+              {/* Main Primary Button: GENERAR TICKET */}
               <button
                 type="button"
-                onClick={() => setActiveModalProduct(null)}
-                className="flex-1 py-3 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+                onClick={handleGenerateTicketDirect}
+                className="w-full sm:w-auto flex-1 py-3.5 px-6 text-sm font-black bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] rounded-2xl shadow-xl cursor-pointer border-2 border-[#ECB769] transition flex items-center justify-center gap-2 active:scale-95"
+                title="Generar ticket térmico oficial con código de barras y datos del cliente"
               >
-                Cancelar
+                <Printer className="w-5 h-5 text-[#ECB769]" />
+                <span>Generar ticket</span>
+                <span className="font-mono text-xs text-[#FFF3BC]/90 font-bold ml-1">
+                  (${(
+                    (activeModalProduct.price +
+                      (extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0) +
+                      (extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0)) * modalQuantity
+                  ).toFixed(2)})
+                </span>
               </button>
-              <button
-                type="button"
-                onClick={handleConfirmExtras}
-                className="flex-2 py-3 text-sm font-black bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] rounded-xl shadow-md cursor-pointer border-2 border-[#ECB769]"
-              >
-                Agregar al Ticket
-              </button>
+
             </div>
+
           </div>
         </div>
       )}

@@ -43,6 +43,22 @@ export interface Product {
   defaultAutoAdheriblePrice?: number;
 }
 
+export interface PhotoStudioSpecs {
+  retoque?: boolean;
+  autoAdherible?: boolean;
+  aColor?: boolean;
+  blancoNegro?: boolean;
+  envioEmail?: boolean;
+  sacoCorbata?: boolean;
+  blazerMascada?: boolean;
+  cambioCamisa?: boolean;
+  colorVestimenta?: string;
+  observacionesEditor?: string;
+  clientFullName?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+}
+
 export interface CartItemOption {
   retoque?: boolean;
   retoquePrice?: number;
@@ -50,6 +66,7 @@ export interface CartItemOption {
   autoAdheriblePrice?: number;
   notes?: string;
   size?: string;
+  photoSpecs?: PhotoStudioSpecs;
 }
 
 export interface CartItem {
@@ -65,6 +82,13 @@ export interface CartItem {
 
 export type PaymentMethod = 'efectivo' | 'clip' | 'mercadopago' | 'transferencia' | 'stripe';
 
+export interface FolioConfig {
+  prefix: string;
+  nextNumber: number;
+  padding: number;
+  suffix?: string;
+}
+
 export interface Sale {
   id: string;
   folio: string;
@@ -73,6 +97,7 @@ export interface Sale {
   operatorName: string;
   clientName?: string;
   clientPhone?: string;
+  clientEmail?: string;
   schoolName?: string;
   items: CartItem[];
   subtotal: number;
@@ -85,6 +110,7 @@ export interface Sale {
   remainingAmount?: number;
   status: 'completado' | 'anticipo' | 'liquidado' | 'cancelado';
   notes?: string;
+  photoSpecs?: PhotoStudioSpecs;
 }
 
 export interface School {

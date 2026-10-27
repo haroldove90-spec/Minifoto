@@ -43,15 +43,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           />
         </div>
 
-        {/* App Icon badge with glowing warm palette */}
-        <div className="w-16 h-16 rounded-2xl bg-white p-2.5 shadow-md border-2 border-[#ECB769]/50 flex items-center justify-center mb-6">
-          <img
-            src="https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotoicono.png"
-            alt="Minifoto Icon"
-            className="w-full h-full object-contain"
-          />
-        </div>
-
         {/* Subtle animated bar in official brand colors */}
         <div className="w-48 h-1.5 bg-[#FFF3BC] rounded-full overflow-hidden mb-3 border border-[#ECB769]/30">
           <div className="h-full bg-gradient-to-r from-[#4E2B01] via-[#ECB769] to-[#4E2B01] rounded-full animate-pulse w-full"></div>

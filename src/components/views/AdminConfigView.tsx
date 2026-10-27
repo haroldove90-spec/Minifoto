@@ -12,8 +12,12 @@ import {
   Database,
   ExternalLink,
   ShieldAlert,
-  Smartphone
+  Smartphone,
+  Receipt,
+  Hash
 } from 'lucide-react';
+import { getStoredFolioConfig, saveStoredFolioConfig } from '../../services/storage';
+import { BarcodeSVG } from '../BarcodeAndQR';
 
 interface AdminConfigViewProps {
   brand: BrandConfig;
@@ -38,7 +42,10 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
   onRestoreSampleData,
   isSampleCleared,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'terminals' | 'gateways' | 'sync' | 'brand' | 'data'>('terminals');
+  const [activeSubTab, setActiveSubTab] = useState<'terminals' | 'gateways' | 'sync' | 'brand' | 'folios' | 'data'>('terminals');
+
+  // Folio configuration state
+  const [folioConfig, setFolioConfig] = useState(getStoredFolioConfig());
 
   // Brand form state
   const [bName, setBName] = useState(brand.businessName);
@@ -215,6 +222,18 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
           >
             <Palette className="w-4 h-4" />
             <span>Identidad & Colores</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('folios')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              activeSubTab === 'folios'
+                ? 'bg-[#4E2B01] text-[#FFF3BC] shadow-xs'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            <Receipt className="w-4 h-4" />
+            <span>Personalizar Folios</span>
           </button>
 
           <button
@@ -599,6 +618,158 @@ export const AdminConfigView: React.FC<AdminConfigViewProps> = ({
               </button>
             </div>
           </form>
+        )}
+
+        {/* 3.5. FOLIOS PERSONALIZADOS (ROL ADMIN) */}
+        {activeSubTab === 'folios' && (
+          <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 space-y-6">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+              <div>
+                <h2 className="text-base font-bold text-slate-800">
+                  Personalización de Folios de Venta y Tickets
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Define el formato, prefijo y numeración consecutiva para los tickets emitidos en el POS
+                </p>
+              </div>
+              <div className="p-2.5 bg-[#FFF3BC] text-[#4E2B01] rounded-2xl border border-[#ECB769]">
+                <Receipt className="w-6 h-6" />
+              </div>
+            </div>
+
+            {/* Live Preview Card */}
+            <div className="bg-gradient-to-br from-[#FCF9F2] to-amber-50/70 p-4 sm:p-5 rounded-2xl border-2 border-[#ECB769] shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#4E2B01] px-2.5 py-0.5 bg-[#FFF3BC] rounded-md border border-[#ECB769]/70">
+                  Vista Previa del Próximo Folio
+                </span>
+                <div className="text-2xl sm:text-3xl font-black font-mono text-[#4E2B01] mt-1.5">
+                  #{folioConfig.prefix}{String(folioConfig.nextNumber).padStart(folioConfig.padding, '0')}{folioConfig.suffix || ''}
+                </div>
+                <p className="text-xs text-slate-600 mt-1">
+                  Este es el identificador único que aparecerá en el ticket físico, código de barras y base de datos.
+                </p>
+              </div>
+
+              {/* Barcode Preview */}
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col items-center">
+                <BarcodeSVG
+                  value={`${folioConfig.prefix}${String(folioConfig.nextNumber).padStart(folioConfig.padding, '0')}${folioConfig.suffix || ''}`}
+                  width={210}
+                  height={45}
+                />
+                <span className="text-[9px] text-slate-400 font-mono mt-0.5">
+                  Lectura directa con pistola escáner
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 block">
+                Formatos preconfigurados rápidos:
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFolioConfig({ prefix: 'TK-', nextNumber: 149444, padding: 6, suffix: '' })}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-[#FFF3BC] hover:text-[#4E2B01] text-slate-700 rounded-lg text-xs font-bold border border-slate-200 transition cursor-pointer"
+                >
+                  Oficial: TK-149444
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFolioConfig({ prefix: 'MF-', nextNumber: 1001, padding: 6, suffix: '' })}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-[#FFF3BC] hover:text-[#4E2B01] text-slate-700 rounded-lg text-xs font-bold border border-slate-200 transition cursor-pointer"
+                >
+                  Minifoto: MF-001001
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFolioConfig({ prefix: 'FOTO-', nextNumber: 500, padding: 5, suffix: '-26' })}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-[#FFF3BC] hover:text-[#4E2B01] text-slate-700 rounded-lg text-xs font-bold border border-slate-200 transition cursor-pointer"
+                >
+                  Estudio con Año: FOTO-00500-26
+                </button>
+              </div>
+            </div>
+
+            {/* Folio Form */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveStoredFolioConfig(folioConfig);
+                showSuccessToast();
+              }}
+              className="space-y-4 pt-2 border-t border-slate-100"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Prefijo del Folio:</label>
+                  <input
+                    type="text"
+                    value={folioConfig.prefix}
+                    onChange={(e) => setFolioConfig({ ...folioConfig, prefix: e.target.value.toUpperCase() })}
+                    placeholder="Ej. TK- o MF-"
+                    className="w-full text-xs font-mono font-bold px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#4E2B01] focus:ring-1 focus:ring-[#4E2B01]"
+                  />
+                  <span className="text-[10px] text-slate-400">Letras antes del número</span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Número Consecutivo Siguiente:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={folioConfig.nextNumber}
+                    onChange={(e) => setFolioConfig({ ...folioConfig, nextNumber: Math.max(1, parseInt(e.target.value) || 1) })}
+                    className="w-full text-xs font-mono font-bold px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#4E2B01] focus:ring-1 focus:ring-[#4E2B01]"
+                  />
+                  <span className="text-[10px] text-slate-400">Próximo ticket que se emitirá</span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Cantidad de Dígitos (Relleno):</label>
+                  <select
+                    value={folioConfig.padding}
+                    onChange={(e) => setFolioConfig({ ...folioConfig, padding: parseInt(e.target.value) || 6 })}
+                    className="w-full text-xs font-bold px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#4E2B01]"
+                  >
+                    <option value={4}>4 dígitos (ej. 0001)</option>
+                    <option value={5}>5 dígitos (ej. 00001)</option>
+                    <option value={6}>6 dígitos (ej. 000001)</option>
+                    <option value={8}>8 dígitos (ej. 00000001)</option>
+                  </select>
+                  <span className="text-[10px] text-slate-400">Ceros a la izquierda</span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Sufijo Opcional:</label>
+                  <input
+                    type="text"
+                    value={folioConfig.suffix || ''}
+                    onChange={(e) => setFolioConfig({ ...folioConfig, suffix: e.target.value.toUpperCase() })}
+                    placeholder="Ej. -OFI o /2026"
+                    className="w-full text-xs font-mono px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#4E2B01]"
+                  />
+                  <span className="text-[10px] text-slate-400">Texto al final (opcional)</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3">
+                <span className="text-xs text-slate-500">
+                  Al registrar una venta en el POS, el folio se incrementará automáticamente de forma consecutiva.
+                </span>
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#4E2B01] hover:bg-[#202020] text-[#FFF3BC] text-xs font-bold rounded-xl shadow-md border-2 border-[#ECB769] transition cursor-pointer active:scale-95"
+                >
+                  <Save className="w-4 h-4 text-[#ECB769]" />
+                  <span>Guardar Formato de Folio</span>
+                </button>
+              </div>
+            </form>
+          </div>
         )}
 
         {/* 4. DATA MANAGEMENT TAB */}

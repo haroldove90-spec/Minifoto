@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Sale, GraduationStudent, BrandConfig } from '../types';
-import { Printer, Share2, X, CheckCircle, Copy, Check, Receipt } from 'lucide-react';
+import { Sale, GraduationStudent, BrandConfig, PaymentRecord } from '../types';
+import { Printer, Share2, X, CheckCircle, Copy, Check, Receipt, QrCode } from 'lucide-react';
 import { printTicketElement } from '../services/printService';
-
-import { PaymentRecord } from '../types';
+import { BarcodeSVG, QRCodeSVG, TicketScannerCodes } from './BarcodeAndQR';
 
 interface TicketModalProps {
   sale?: Sale | null;
@@ -276,8 +275,20 @@ export const TicketModal: React.FC<TicketModalProps> = ({
               </div>
               {sale.clientName && (
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Cliente:</span>
-                  <span className="font-bold">{sale.clientName}</span>
+                  <span className="text-slate-500 font-bold">Cliente:</span>
+                  <span className="font-bold text-slate-800">{sale.clientName}</span>
+                </div>
+              )}
+              {sale.clientPhone && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500">Teléfono:</span>
+                  <span className="font-medium text-slate-700">{sale.clientPhone}</span>
+                </div>
+              )}
+              {sale.clientEmail && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500">Email:</span>
+                  <span className="font-medium text-slate-700 break-all">{sale.clientEmail}</span>
                 </div>
               )}
               {sale.schoolName && (
@@ -289,30 +300,84 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
               <div className="border-t border-dashed border-slate-400 my-2"></div>
 
-              {/* Items List */}
-              <div className="space-y-2 my-2">
+              {/* Items List with detailed studio photo options */}
+              <div className="space-y-2.5 my-2">
                 <div className="text-[11px] font-bold text-slate-400 uppercase flex justify-between">
                   <span>Cant / Concepto</span>
                   <span>Importe</span>
                 </div>
-                {sale.items.map((item, idx) => (
-                  <div key={idx} className="space-y-0.5 text-xs">
-                    <div className="flex justify-between items-start font-medium">
-                      <span className="pr-2 leading-tight">
-                        {item.quantity}x {item.name}
-                      </span>
-                      <span className="shrink-0 font-bold">${item.totalPrice.toFixed(2)}</span>
-                    </div>
-
-                    {/* Extras: Retoque o Autoadherible */}
-                    {(item.options.retoque || item.options.autoAdherible) && (
-                      <div className="text-[11px] text-[#4E2B01] pl-3 flex flex-wrap gap-x-2">
-                        {item.options.retoque && <span>+ Retoque (+${item.options.retoquePrice})</span>}
-                        {item.options.autoAdherible && <span>+ Autoadherible (+${item.options.autoAdheriblePrice})</span>}
+                {sale.items.map((item, idx) => {
+                  const specs = item.options.photoSpecs;
+                  return (
+                    <div key={idx} className="space-y-1 text-xs bg-slate-50/70 p-2 rounded-xl border border-slate-200">
+                      <div className="flex justify-between items-start font-bold text-slate-900">
+                        <span className="pr-2 leading-tight">
+                          {item.quantity}x {item.name}
+                        </span>
+                        <span className="shrink-0 font-mono text-[#4E2B01]">${item.totalPrice.toFixed(2)}</span>
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {/* Studio photo specifications checklist */}
+                      <div className="text-[10px] text-slate-600 pl-1 space-y-0.5">
+                        {/* Checkbox tags */}
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {(item.options.retoque || specs?.retoque) && (
+                            <span className="px-1.5 py-0.2 bg-amber-100 text-[#4E2B01] font-bold rounded">
+                              ✓ Retoque profesional {item.options.retoquePrice ? `(+$${item.options.retoquePrice})` : ''}
+                            </span>
+                          )}
+                          {(item.options.autoAdherible || specs?.autoAdherible) && (
+                            <span className="px-1.5 py-0.2 bg-amber-100 text-[#4E2B01] font-bold rounded">
+                              ✓ Autoadherible {item.options.autoAdheriblePrice ? `(+$${item.options.autoAdheriblePrice})` : ''}
+                            </span>
+                          )}
+                          {specs?.aColor && (
+                            <span className="px-1.5 py-0.2 bg-blue-100 text-blue-900 font-bold rounded">
+                              ✓ A color
+                            </span>
+                          )}
+                          {specs?.blancoNegro && (
+                            <span className="px-1.5 py-0.2 bg-slate-200 text-slate-800 font-bold rounded">
+                              ✓ Blanco y negro
+                            </span>
+                          )}
+                          {specs?.envioEmail && (
+                            <span className="px-1.5 py-0.2 bg-purple-100 text-purple-900 font-bold rounded">
+                              ✓ Envío por correo
+                            </span>
+                          )}
+                          {specs?.sacoCorbata && (
+                            <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-900 font-bold rounded">
+                              ✓ Saco y corbata
+                            </span>
+                          )}
+                          {specs?.blazerMascada && (
+                            <span className="px-1.5 py-0.2 bg-pink-100 text-pink-900 font-bold rounded">
+                              ✓ Blazer y mascada
+                            </span>
+                          )}
+                          {specs?.cambioCamisa && (
+                            <span className="px-1.5 py-0.2 bg-amber-100 text-amber-900 font-bold rounded">
+                              ✓ Solo cambio de camisa
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Vestimenta & Observaciones */}
+                        {specs?.colorVestimenta && (
+                          <div className="text-[10px] text-slate-700">
+                            <strong>Color vestimenta:</strong> {specs.colorVestimenta}
+                          </div>
+                        )}
+                        {(specs?.observacionesEditor || item.options.notes) && (
+                          <div className="text-[10px] text-[#4E2B01] bg-amber-50 p-1 rounded border border-amber-200 mt-1">
+                            <strong>Obs. Editor:</strong> {specs?.observacionesEditor || item.options.notes}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="border-t border-dashed border-slate-400 my-2"></div>
@@ -353,30 +418,59 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
           <div className="border-t border-dashed border-slate-400 my-3"></div>
 
-          {/* QR Code / Barcode (matches Mockup 10) */}
-          <div className="flex flex-col items-center justify-center my-3 space-y-2">
+          {/* Genuine 1D Barcode & 2D QR Code for Scanner Guns */}
+          <div className="flex flex-col items-center justify-center my-2 space-y-2">
             {studentTicket ? (
-              <div className="flex flex-col items-center">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(`MINIFOTO:${studentTicket.folio}:${studentTicket.santanderReference || ''}:SALDO:${studentTicket.remainingAmount}`)}`}
-                  alt="Código QR de validación"
-                  className="w-24 h-24 sm:w-28 sm:h-28 border-2 border-slate-900 p-1 rounded-lg"
-                />
-                <span className="text-[10px] font-mono tracking-widest text-slate-500 mt-1">
-                  {studentTicket.folio}
-                </span>
-                <p className="font-bold text-xs text-slate-800 mt-2 font-sans">
+              <div className="flex flex-col items-center w-full">
+                <BarcodeSVG value={studentTicket.folio} width={220} height={50} />
+                <div className="mt-2">
+                  <QRCodeSVG
+                    data={`MINIFOTO:${studentTicket.folio}:ALUMNO:${studentTicket.studentName}:ESCUELA:${studentTicket.schoolName}:RESTO:$${studentTicket.remainingAmount}`}
+                    size={110}
+                    label="Escanear Comprobante"
+                  />
+                </div>
+                <p className="font-bold text-xs text-slate-800 mt-2 font-sans text-center">
                   ¡Gracias por su confianza!
                 </p>
               </div>
-            ) : (
-              <div className="flex flex-col items-center space-y-1">
-                <div className="h-9 w-44 bg-repeating-linear-to-r from-black via-black via-2px to-transparent to-4px"></div>
-                <span className="text-[10px] tracking-widest text-slate-500">
-                  *{sale?.folio}*
+            ) : sale ? (
+              <div className="flex flex-col items-center w-full">
+                {/* 1D Laser Barcode */}
+                <BarcodeSVG value={sale.folio} width={240} height={52} />
+                <span className="text-[9px] text-slate-500 font-mono tracking-wider -mt-0.5">
+                  CÓDIGO DE BARRAS OFICIAL
+                </span>
+
+                {/* 2D QR Code with all sale, client and product specs */}
+                <div className="mt-2.5">
+                  <QRCodeSVG
+                    data={JSON.stringify({
+                      folio: sale.folio,
+                      fecha: sale.date,
+                      cliente: sale.clientName || 'Cliente Mostrador',
+                      tel: sale.clientPhone || '',
+                      email: sale.clientEmail || '',
+                      total: sale.total,
+                      articulos: sale.items.map(i => ({
+                        n: i.name,
+                        q: i.quantity,
+                        p: i.totalPrice,
+                        r: i.options.retoque || i.options.photoSpecs?.retoque ? 1 : 0,
+                        c: i.options.photoSpecs?.aColor ? 'Color' : i.options.photoSpecs?.blancoNegro ? 'BN' : '',
+                        v: i.options.photoSpecs?.colorVestimenta || '',
+                        obs: i.options.photoSpecs?.observacionesEditor || '',
+                      })),
+                    })}
+                    size={115}
+                    label="QR Completo de Venta"
+                  />
+                </div>
+                <span className="text-[9px] text-slate-400 text-center max-w-[220px] mt-0.5">
+                  Lectura directa con escáner de código de barras o cámara QR
                 </span>
               </div>
-            )}
+            ) : null}
           </div>
 
           <p className="text-center text-[10px] text-slate-500 mt-2 leading-relaxed">
