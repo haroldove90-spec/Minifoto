@@ -52,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     switch (currentRole) {
       case 'admin':
         return [
+          { id: 'pos_cashier' as ActiveTab, label: 'Punto de Venta Touch (POS)', icon: ShoppingBag, color: 'text-[#ECB769]' },
           { id: 'tablet_pos' as ActiveTab, label: 'Cobranza Escolar (8 Tablets)', icon: Smartphone, color: 'text-[#ECB769]' },
           { id: 'schools' as ActiveTab, label: 'Gestión Escolar & Alumnos', icon: GraduationCap, color: 'text-[#FFF3BC]' },
           { id: 'catalogs' as ActiveTab, label: 'Catálogo & Fotos', icon: Layers, color: 'text-[#ECB769]' },

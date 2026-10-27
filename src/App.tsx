@@ -20,6 +20,8 @@ import {
   saveStoredRole, 
   getStoredOperator, 
   saveStoredOperator,
+  getStoredActiveTab,
+  saveStoredActiveTab,
   getStoredProducts, 
   saveStoredProducts,
   getDeletedProductIds,
@@ -74,16 +76,23 @@ import { TabletPOSCobroView } from './components/views/TabletPOSCobroView';
 import { SplashScreen } from './components/SplashScreen';
 
 export default function App() {
-  // Session & Role state
+  // Session & Role state (Preserved across browser refresh)
   const [currentRole, setCurrentRole] = useState<Role | null>(() => getStoredRole());
   const [operatorName, setOperatorName] = useState<string>(() => getStoredOperator());
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    const savedTab = getStoredActiveTab() as ActiveTab | null;
+    if (savedTab) return savedTab;
     const role = getStoredRole();
     if (role === 'cashier') return 'pos_cashier';
     if (role === 'client') return 'catalogs';
     return 'tablet_pos'; // admin and field default to tablet_pos
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+
+  const handleSelectTab = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    saveStoredActiveTab(tab);
+  };
 
   // App data states
   const [products, setProducts] = useState<Product[]>([]);
@@ -103,7 +112,7 @@ export default function App() {
 
   const handleGoToPOSWithItems = (items: CartItem[]) => {
     setPendingCartItems(items);
-    setActiveTab('pos_cashier');
+    handleSelectTab('pos_cashier');
   };
 
   // Load stored data on mount & background sync with Supabase
@@ -170,12 +179,15 @@ export default function App() {
     saveStoredRole(role);
     saveStoredOperator(opName);
 
-    if (role === 'cashier') {
-      setActiveTab('pos_cashier');
+    const savedTab = getStoredActiveTab() as ActiveTab | null;
+    if (savedTab) {
+      handleSelectTab(savedTab);
+    } else if (role === 'cashier') {
+      handleSelectTab('pos_cashier');
     } else if (role === 'client') {
-      setActiveTab('catalogs');
+      handleSelectTab('catalogs');
     } else {
-      setActiveTab('tablet_pos');
+      handleSelectTab('tablet_pos');
     }
   };
 
@@ -343,9 +355,9 @@ export default function App() {
           onClearPendingCart={() => setPendingCartItems([])}
           operatorName={operatorName}
           onCompleteSale={handleCompleteSale}
-          onExitToDashboard={() => setActiveTab('home')}
+          onExitToDashboard={() => handleSelectTab('home')}
           onSwitchRole={handleLogout}
-          onNavigateToReports={() => setActiveTab('reports')}
+          onNavigateToReports={() => handleSelectTab('reports')}
           brandLogo={brand.logoUrl}
         />
 
@@ -380,7 +392,7 @@ export default function App() {
         isSampleCleared={isSampleCleared}
         logoUrl={brand.logoUrl}
         onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-        onOpenProfile={() => setActiveTab('profile')}
+        onOpenProfile={() => handleSelectTab('profile')}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -388,7 +400,7 @@ export default function App() {
         <Sidebar
           currentRole={currentRole}
           activeTab={activeTab}
-          onSelectTab={setActiveTab}
+          onSelectTab={handleSelectTab}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           onLogout={handleLogout}
@@ -400,7 +412,7 @@ export default function App() {
             <DashboardHomeView
               currentRole={currentRole}
               operatorName={operatorName}
-              onSelectTab={setActiveTab}
+              onSelectTab={handleSelectTab}
               sales={sales}
               students={students}
               brandLogo={brand.logoUrl}
@@ -507,7 +519,7 @@ export default function App() {
       <BottomBar
         currentRole={currentRole}
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={handleSelectTab}
       />
 
       {/* Thermal Ticket / WhatsApp Receipt Modal */}

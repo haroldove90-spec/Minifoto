@@ -51,7 +51,13 @@ import {
   getStoredCategories, 
   generateNextSaleFolio, 
   getStoredProductsOrder, 
-  saveStoredProductsOrder 
+  saveStoredProductsOrder,
+  getStoredPOSCart,
+  saveStoredPOSCart,
+  getStoredPOSClientName,
+  saveStoredPOSClientName,
+  getStoredPOSCategory,
+  saveStoredPOSCategory
 } from '../../services/storage';
 import { printTicketElement } from '../../services/printService';
 
@@ -80,13 +86,33 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
   onNavigateToReports,
   brandLogo = 'https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotologo.png',
 }) => {
-  // Active Category & Search (Everything on the same screen)
-  const [activeCategory, setActiveCategory] = useState<Category>('foto_estudio');
+  // Active Category & Search (Everything on the same screen, persisted on refresh)
+  const [activeCategory, setActiveCategoryState] = useState<Category>(() => (getStoredPOSCategory() as Category) || 'foto_estudio');
+  const setActiveCategory = (cat: Category) => {
+    setActiveCategoryState(cat);
+    saveStoredPOSCategory(cat);
+  };
   const [productSearch, setProductSearch] = useState('');
 
-  // Cart state
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [clientName, setClientName] = useState('');
+  // Cart state (Preserved across browser refresh)
+  const [cart, setCartState] = useState<CartItem[]>(() => {
+    if (initialCart && initialCart.length > 0) return initialCart;
+    return getStoredPOSCart();
+  });
+
+  const setCart = (action: CartItem[] | ((prev: CartItem[]) => CartItem[])) => {
+    setCartState((prev) => {
+      const nextCart = typeof action === 'function' ? action(prev) : action;
+      saveStoredPOSCart(nextCart);
+      return nextCart;
+    });
+  };
+
+  const [clientName, setClientNameState] = useState(() => getStoredPOSClientName());
+  const setClientName = (name: string) => {
+    setClientNameState(name);
+    saveStoredPOSClientName(name);
+  };
   const [mobileTab, setMobileTab] = useState<'products' | 'calculator'>('products');
 
   // Selected item modal for studio photo form (Caritas, Ampliaciones, Cambios de Fondo, etc.)
@@ -378,6 +404,9 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
 
   const clearAllCart = () => {
     setCart([]);
+    saveStoredPOSCart([]);
+    setClientName('');
+    saveStoredPOSClientName('');
     setCalcInput('');
     setCheckoutError(null);
   };

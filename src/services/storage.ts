@@ -41,6 +41,11 @@ const KEYS = {
   BRAND: 'pos_photo_brand_v1',
   ROLE: 'pos_photo_active_role_v1',
   OPERATOR: 'pos_photo_operator_name_v1',
+  ACTIVE_TAB: 'pos_photo_active_tab_v1',
+  EXPLICIT_LOGOUT: 'pos_photo_explicit_logout_v1',
+  POS_CART: 'pos_photo_cart_v1',
+  POS_CLIENT_NAME: 'pos_photo_client_name_v1',
+  POS_ACTIVE_CATEGORY: 'pos_photo_pos_category_v1',
   DELETED_PRODUCT_IDS: 'pos_photo_deleted_product_ids_v1',
   CATEGORIES: 'pos_photo_categories_v1',
   USER_PROFILES: 'pos_photo_user_profiles_v1',
@@ -282,23 +287,81 @@ export const saveStoredBrandConfig = (config: BrandConfig) => {
 };
 
 export const getStoredRole = (): Role | null => {
-  return (localStorage.getItem(KEYS.ROLE) as Role) || null;
+  const isExplicitLogout = localStorage.getItem(KEYS.EXPLICIT_LOGOUT) === 'true';
+  if (isExplicitLogout) {
+    return null;
+  }
+  const role = (localStorage.getItem(KEYS.ROLE) as Role) || null;
+  if (role && ['admin', 'cashier', 'field', 'client'].includes(role)) {
+    return role;
+  }
+  // Default to admin so browser refresh NEVER accidentally logs out the user
+  localStorage.setItem(KEYS.ROLE, 'admin');
+  return 'admin';
 };
 
 export const saveStoredRole = (role: Role | null) => {
   if (role) {
     localStorage.setItem(KEYS.ROLE, role);
+    localStorage.removeItem(KEYS.EXPLICIT_LOGOUT);
   } else {
     localStorage.removeItem(KEYS.ROLE);
+    localStorage.setItem(KEYS.EXPLICIT_LOGOUT, 'true');
   }
 };
 
 export const getStoredOperator = (): string => {
-  return localStorage.getItem(KEYS.OPERATOR) || '';
+  const op = localStorage.getItem(KEYS.OPERATOR);
+  if (op) return op;
+  const role = localStorage.getItem(KEYS.ROLE);
+  if (role === 'admin') return 'Uriel';
+  if (role === 'cashier') return 'Cajero Mostrador';
+  if (role === 'field') return 'Cobrador Móvil';
+  if (role === 'client') return 'Cliente Invitado';
+  return 'Uriel';
 };
 
 export const saveStoredOperator = (name: string) => {
   localStorage.setItem(KEYS.OPERATOR, name);
+};
+
+export const getStoredActiveTab = (): string | null => {
+  return localStorage.getItem(KEYS.ACTIVE_TAB) || null;
+};
+
+export const saveStoredActiveTab = (tab: string) => {
+  localStorage.setItem(KEYS.ACTIVE_TAB, tab);
+};
+
+export const getStoredPOSCart = (): any[] => {
+  try {
+    const data = localStorage.getItem(KEYS.POS_CART);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveStoredPOSCart = (cart: any[]) => {
+  try {
+    localStorage.setItem(KEYS.POS_CART, JSON.stringify(cart));
+  } catch {}
+};
+
+export const getStoredPOSClientName = (): string => {
+  return localStorage.getItem(KEYS.POS_CLIENT_NAME) || '';
+};
+
+export const saveStoredPOSClientName = (name: string) => {
+  localStorage.setItem(KEYS.POS_CLIENT_NAME, name);
+};
+
+export const getStoredPOSCategory = (): string => {
+  return localStorage.getItem(KEYS.POS_ACTIVE_CATEGORY) || 'foto_estudio';
+};
+
+export const saveStoredPOSCategory = (cat: string) => {
+  localStorage.setItem(KEYS.POS_ACTIVE_CATEGORY, cat);
 };
 
 // Clear sample data and permanently flag it so the browser NEVER shows demo data again
