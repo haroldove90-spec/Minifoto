@@ -44,6 +44,10 @@ export interface Product {
 }
 
 export interface PhotoStudioSpecs {
+  // Form categorization
+  formType?: 'estudio' | 'caritas' | 'ampliaciones' | 'cambios_fondo';
+
+  // Common / Studio 01 (Infantil, Óvalo, Diploma, Título, Pasaporte, Cartilla, Filiación, Visa)
   retoque?: boolean;
   autoAdherible?: boolean;
   aColor?: boolean;
@@ -57,6 +61,26 @@ export interface PhotoStudioSpecs {
   clientFullName?: string;
   clientPhone?: string;
   clientEmail?: string;
+
+  // 02 CARITAS (image_1ad9e5f9.png)
+  childName?: string;
+  caritaModel?: string;
+  promo8Plus8x10?: boolean;
+  orderReferenceTicket?: boolean;
+  linkPhotos?: boolean;
+  sendToLab?: boolean;
+
+  // 03 AMPLIACIONES (image_63151215.png)
+  ampliacionFormat?: string; // '8 x 10' | '8 x 12' | '11 x 14' | '11 x 16' | '12 x 18' | '16 x 20' | '16 x 24'
+  photoCount?: number;
+
+  // 04 CAMBIOS DE FONDO (image_8f803678.png)
+  cambioFondo?: boolean;
+  cambioVestimenta?: boolean;
+  agregarTextoPersonalizado?: boolean;
+  cambioFondoSize?: string; // '8 x 10' | '8 x 12' | '11 x 14' | '11 x 16' | '12 x 18' | '16 x 20' | '16 x 24'
+  customText?: string;
+  editionNotes?: string;
 }
 
 export interface CartItemOption {

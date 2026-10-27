@@ -174,6 +174,30 @@ export const INITIAL_PRODUCTS: Product[] = [
     defaultRetoquePrice: 30,
     defaultAutoAdheriblePrice: 20,
   },
+  {
+    id: 'car-1',
+    name: 'Caritas',
+    category: 'foto_estudio',
+    price: 100,
+    description: 'Fotografía Caritas Tamaño: 16 x 20. Opciones y ticket',
+    imageUrl: '/assets/aistudio/image_484f212e.png',
+    isActive: true,
+    hasExtras: true,
+    defaultRetoquePrice: 30,
+    defaultAutoAdheriblePrice: 20,
+  },
+  {
+    id: 'cf-1',
+    name: 'Cambios de Fondo',
+    category: 'foto_estudio',
+    price: 120,
+    description: 'Servicio de cambio de fondo, vestimenta y texto personalizado',
+    imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
+    isActive: true,
+    hasExtras: true,
+    defaultRetoquePrice: 30,
+    defaultAutoAdheriblePrice: 20,
+  },
 
   // 2. Iglesias / Eventos Religiosos
   {
@@ -232,14 +256,16 @@ export const INITIAL_PRODUCTS: Product[] = [
   },
 
   // 3. Ampliaciones
+  { id: 'amp-selector', name: 'Ampliaciones', category: 'ampliaciones', price: 85, description: 'Seleccionar formato del menor al mayor (8x10 a 16x24)', imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80', isActive: true, hasExtras: true },
   { id: 'amp-1', name: 'Ampliación 4x6"', category: 'ampliaciones', price: 25, imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80', isActive: true },
   { id: 'amp-2', name: 'Ampliación 6x8.5"', category: 'ampliaciones', price: 55, imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80', isActive: true },
-  { id: 'amp-3', name: 'Ampliación 8x10"', category: 'ampliaciones', price: 85, imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80', isActive: true },
-  { id: 'amp-4', name: 'Ampliación 8x12"', category: 'ampliaciones', price: 110, imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80', isActive: true },
-  { id: 'amp-5', name: 'Ampliación 11x14"', category: 'ampliaciones', price: 180, imageUrl: 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?w=600&auto=format&fit=crop&q=80', isActive: true },
-  { id: 'amp-6', name: 'Ampliación 12x18"', category: 'ampliaciones', price: 260, imageUrl: 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?w=600&auto=format&fit=crop&q=80', isActive: true },
-  { id: 'amp-7', name: 'Ampliación 16x20"', category: 'ampliaciones', price: 390, imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80', isActive: true },
-  { id: 'amp-8', name: 'Ampliación 16x24"', category: 'ampliaciones', price: 480, imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80', isActive: true },
+  { id: 'amp-3', name: 'Ampliación 8x10"', category: 'ampliaciones', price: 85, imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80', isActive: true, hasExtras: true },
+  { id: 'amp-4', name: 'Ampliación 8x12"', category: 'ampliaciones', price: 110, imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80', isActive: true, hasExtras: true },
+  { id: 'amp-5', name: 'Ampliación 11x14"', category: 'ampliaciones', price: 180, imageUrl: 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?w=600&auto=format&fit=crop&q=80', isActive: true, hasExtras: true },
+  { id: 'amp-11x16', name: 'Ampliación 11x16"', category: 'ampliaciones', price: 210, imageUrl: 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?w=600&auto=format&fit=crop&q=80', isActive: true, hasExtras: true },
+  { id: 'amp-6', name: 'Ampliación 12x18"', category: 'ampliaciones', price: 260, imageUrl: 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?w=600&auto=format&fit=crop&q=80', isActive: true, hasExtras: true },
+  { id: 'amp-7', name: 'Ampliación 16x20"', category: 'ampliaciones', price: 390, imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80', isActive: true, hasExtras: true },
+  { id: 'amp-8', name: 'Ampliación 16x24"', category: 'ampliaciones', price: 480, imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80', isActive: true, hasExtras: true },
 
   // 4. Minilab
   { id: 'mini-1', name: 'Minilab 4x6" Estándar', category: 'minilab', price: 15, imageUrl: 'https://images.unsplash.com/photo-1526045612212-70caf35c14df?w=600&auto=format&fit=crop&q=80', isActive: true },

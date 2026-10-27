@@ -70,12 +70,16 @@ export const TicketModal: React.FC<TicketModalProps> = ({
     }
     if (sale) {
       const itemsList = sale.items
-        .map(
-          (it) =>
-            `${it.quantity}x ${it.name} - $${it.totalPrice.toFixed(2)}` +
-            (it.options.retoque ? ' (+Retoque)' : '') +
-            (it.options.autoAdherible ? ' (+Autoadherible)' : '')
-        )
+        .map((it) => {
+          const sp = it.options.photoSpecs;
+          let extraInfo = '';
+          if (it.options.retoque) extraInfo += ' (+Retoque)';
+          if (it.options.autoAdherible) extraInfo += ' (+Autoadherible)';
+          if (sp?.childName) extraInfo += ` [Niño: ${sp.childName}, Mod: ${sp.caritaModel || 'N/A'}]`;
+          if (sp?.ampliacionFormat) extraInfo += ` [Formato: ${sp.ampliacionFormat}, Fotos: ${sp.photoCount || it.quantity}]`;
+          if (sp?.cambioFondoSize) extraInfo += ` [Tamaño: ${sp.cambioFondoSize}${sp.customText ? `, Texto: ${sp.customText}` : ''}]`;
+          return `${it.quantity}x ${it.name} - $${it.totalPrice.toFixed(2)}${extraInfo}`;
+        })
         .join('\n');
 
       return (
@@ -318,8 +322,97 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                       </div>
 
                       {/* Studio photo specifications checklist */}
-                      <div className="text-[10px] text-slate-600 pl-1 space-y-0.5">
-                        {/* Checkbox tags */}
+                      <div className="text-[10px] text-slate-600 pl-1 space-y-1">
+                        
+                        {/* 02 CARITAS SPECS */}
+                        {(specs?.childName || specs?.formType === 'caritas') && (
+                          <div className="bg-amber-50/90 border border-[#ECB769]/60 p-1.5 rounded-lg space-y-0.5 text-[#4E2B01]">
+                            <div className="font-black text-[11px] text-[#4E2B01] flex items-center justify-between">
+                              <span>★ 02 CARITAS</span>
+                              <span className="text-[10px] text-slate-600 font-mono">16x20</span>
+                            </div>
+                            {specs?.childName && (
+                              <div><strong>Nombre del niño:</strong> {specs.childName}</div>
+                            )}
+                            {specs?.caritaModel && (
+                              <div><strong>Modelo:</strong> {specs.caritaModel}</div>
+                            )}
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {specs?.promo8Plus8x10 && (
+                                <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-900 font-bold rounded">
+                                  ✓ Promoción 8 + 8 x 10
+                                </span>
+                              )}
+                              {specs?.orderReferenceTicket && (
+                                <span className="px-1.5 py-0.2 bg-blue-100 text-blue-900 font-bold rounded">
+                                  ✓ Orden con ref. y ticket
+                                </span>
+                              )}
+                              {specs?.linkPhotos && (
+                                <span className="px-1.5 py-0.2 bg-purple-100 text-purple-900 font-bold rounded">
+                                  ✓ Vincular fotografías
+                                </span>
+                              )}
+                              {specs?.sendToLab && (
+                                <span className="px-1.5 py-0.2 bg-orange-100 text-orange-900 font-bold rounded">
+                                  ✓ Enviar al laboratorio
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 03 AMPLIACIONES SPECS */}
+                        {(specs?.ampliacionFormat || specs?.formType === 'ampliaciones') && (
+                          <div className="bg-lime-50/90 border border-lime-300 p-1.5 rounded-lg space-y-0.5 text-lime-950">
+                            <div className="font-black text-[11px] text-lime-900">
+                              ★ 03 AMPLIACIONES
+                            </div>
+                            {specs?.ampliacionFormat && (
+                              <div><strong>Formato seleccionado:</strong> {specs.ampliacionFormat}</div>
+                            )}
+                            <div><strong>Cantidad de fotografías:</strong> {specs?.photoCount || item.quantity}</div>
+                          </div>
+                        )}
+
+                        {/* 04 CAMBIOS DE FONDO SPECS */}
+                        {(specs?.cambioFondoSize || specs?.formType === 'cambios_fondo' || specs?.cambioFondo) && (
+                          <div className="bg-sky-50/90 border border-sky-300 p-1.5 rounded-lg space-y-0.5 text-sky-950">
+                            <div className="font-black text-[11px] text-sky-900 flex items-center justify-between">
+                              <span>★ 04 CAMBIOS DE FONDO</span>
+                              {specs?.cambioFondoSize && (
+                                <span className="font-bold text-[10px] bg-sky-200 px-1 rounded">{specs.cambioFondoSize}</span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-1 mt-0.5">
+                              {specs?.cambioFondo && (
+                                <span className="px-1.5 py-0.2 bg-sky-100 text-sky-900 font-bold rounded">
+                                  ✓ Cambio de fondo
+                                </span>
+                              )}
+                              {specs?.cambioVestimenta && (
+                                <span className="px-1.5 py-0.2 bg-indigo-100 text-indigo-900 font-bold rounded">
+                                  ✓ Cambio de vestimenta
+                                </span>
+                              )}
+                              {specs?.agregarTextoPersonalizado && (
+                                <span className="px-1.5 py-0.2 bg-amber-100 text-amber-900 font-bold rounded">
+                                  ✓ Agregar texto personalizado
+                                </span>
+                              )}
+                            </div>
+                            {specs?.customText && (
+                              <div><strong>Texto personalizado:</strong> {specs.customText}</div>
+                            )}
+                            {specs?.editionNotes && (
+                              <div className="text-[10px] text-slate-700 bg-white/80 p-1 rounded border border-sky-200">
+                                <strong>Obs. edición/fondo/vestimenta:</strong> {specs.editionNotes}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* General Studio Extras (Retoque, Autoadherible, etc.) */}
                         <div className="flex flex-wrap gap-1 mt-0.5">
                           {(item.options.retoque || specs?.retoque) && (
                             <span className="px-1.5 py-0.2 bg-amber-100 text-[#4E2B01] font-bold rounded">
@@ -369,7 +462,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                             <strong>Color vestimenta:</strong> {specs.colorVestimenta}
                           </div>
                         )}
-                        {(specs?.observacionesEditor || item.options.notes) && (
+                        {(specs?.observacionesEditor || item.options.notes) && !specs?.editionNotes && (
                           <div className="text-[10px] text-[#4E2B01] bg-amber-50 p-1 rounded border border-amber-200 mt-1">
                             <strong>Obs. Editor:</strong> {specs?.observacionesEditor || item.options.notes}
                           </div>

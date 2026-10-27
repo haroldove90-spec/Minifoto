@@ -286,6 +286,30 @@ ON CONFLICT (id) DO UPDATE SET
 INSERT INTO public.folio_config (id, prefix, next_number, padding, suffix)
 VALUES ('default', 'TK-', 1001, 6, '')
 ON CONFLICT (id) DO NOTHING;
+
+-- POBLAR O ACTUALIZAR PRODUCTOS PRINCIPALES CON FORMULARIOS ACTIVOS (CARITAS, FOTO ESTUDIO, AMPLIACIONES, CAMBIOS DE FONDO)
+INSERT INTO public.products (id, name, category, price, description, unit, is_active, has_extras, default_retoque_price, default_autoadherible_price, display_order)
+VALUES
+  ('car-1', 'Caritas', 'foto_estudio', 100.00, 'Fotografía Caritas Tamaño: 16 x 20. Opciones y ticket', 'pza', true, true, 30.00, 20.00, 1),
+  ('cf-1', 'Cambios de Fondo', 'foto_estudio', 120.00, 'Servicio de cambio de fondo, vestimenta y texto personalizado (8x10 a 16x24)', 'pza', true, true, 30.00, 20.00, 2),
+  ('amp-selector', 'Ampliaciones', 'ampliaciones', 85.00, 'Seleccionar formato del menor al mayor (8x10 a 16x24)', 'pza', true, true, 30.00, 20.00, 3),
+  ('amp-11x16', 'Ampliación 11x16"', 'ampliaciones', 210.00, 'Formato oficial de ampliación fotográfica 11x16 pulgadas', 'pza', true, true, 30.00, 20.00, 4),
+  ('fe-1', 'Foto Infantil (x6 pzas)', 'foto_estudio', 110.00, 'Fotografía infantil b/n o color con papel mate', 'pza', true, true, 30.00, 20.00, 5),
+  ('fe-2', 'Foto Óvalos (x4 pzas)', 'foto_estudio', 140.00, 'Tamaño mignon u óvalo institucional', 'pza', true, true, 30.00, 20.00, 6),
+  ('fe-3', 'Foto Diploma (x4 pzas)', 'foto_estudio', 150.00, 'Formato oficial para certificado o diploma', 'pza', true, true, 30.00, 20.00, 7),
+  ('fe-4', 'Foto Título Profesional (x6 pzas)', 'foto_estudio', 220.00, 'Papel mate 6x9cm, retoque digital fino', 'pza', true, true, 30.00, 20.00, 8),
+  ('fe-5', 'Foto Cartilla Militar (x4 pzas)', 'foto_estudio', 120.00, 'Fondo blanco mate sin brillo reglamentaria', 'pza', true, true, 30.00, 20.00, 9),
+  ('fe-6', 'Foto Pasaporte Mexicano (x4 pzas)', 'foto_estudio', 130.00, 'Medidas oficiales Secretaría de Relaciones Exteriores', 'pza', true, true, 30.00, 20.00, 10),
+  ('fe-7', 'Foto Visa Americana / Internacional (x2 pzas)', 'foto_estudio', 140.00, 'Fondo 100% blanco 2x2 pulgadas 5x5cm', 'pza', true, true, 30.00, 20.00, 11)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  category = EXCLUDED.category,
+  price = EXCLUDED.price,
+  description = EXCLUDED.description,
+  is_active = EXCLUDED.is_active,
+  has_extras = EXCLUDED.has_extras,
+  default_retoque_price = EXCLUDED.default_retoque_price,
+  default_autoadherible_price = EXCLUDED.default_autoadherible_price;
 `;
 
 // Helper to sanitize URL

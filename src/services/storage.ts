@@ -98,9 +98,16 @@ export const getStoredProducts = (): Product[] => {
       const parsed: Product[] = JSON.parse(data);
       if (Array.isArray(parsed)) {
         // Exclude any product ID marked as deleted
+        const existingIds = new Set(parsed.map((p) => p.id));
         const filtered = parsed.filter((p) => !deletedIds.has(p.id));
         const initialMap = new Map(INITIAL_PRODUCTS.map((p) => [p.id, p]));
-        return filtered.map((p) => ({
+        
+        // Auto-merge newly added core studio products (e.g. Caritas, Cambios de Fondo)
+        const missingInitial = INITIAL_PRODUCTS.filter(
+          (p) => !existingIds.has(p.id) && !deletedIds.has(p.id)
+        );
+
+        return [...filtered, ...missingInitial].map((p) => ({
           ...p,
           imageUrl: p.imageUrl || initialMap.get(p.id)?.imageUrl || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
           isActive: p.isActive !== false,

@@ -89,8 +89,11 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
   const [clientName, setClientName] = useState('');
   const [mobileTab, setMobileTab] = useState<'products' | 'calculator'>('products');
 
-  // Selected item modal for studio photo form (Retoque, Color, Vestimenta, Datos Cliente, etc.)
+  // Selected item modal for studio photo form (Caritas, Ampliaciones, Cambios de Fondo, etc.)
   const [activeModalProduct, setActiveModalProduct] = useState<Product | null>(null);
+  const [activeModalType, setActiveModalType] = useState<'estudio' | 'caritas' | 'ampliaciones' | 'cambios_fondo'>('estudio');
+
+  // 01 Studio Standard Form State
   const [extraRetoque, setExtraRetoque] = useState(false);
   const [extraAutoAdherible, setExtraAutoAdherible] = useState(false);
   const [extraAColor, setExtraAColor] = useState(true);
@@ -101,6 +104,28 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
   const [extraCambioCamisa, setExtraCambioCamisa] = useState(false);
   const [inputColorVestimenta, setInputColorVestimenta] = useState('');
   const [inputObservacionesEditor, setInputObservacionesEditor] = useState('');
+
+  // 02 Caritas Form State (image_1ad9e5f9.png)
+  const [inputChildName, setInputChildName] = useState('');
+  const [inputCaritaModel, setInputCaritaModel] = useState('');
+  const [checkPromo8Plus8x10, setCheckPromo8Plus8x10] = useState(false);
+  const [checkOrderRefTicket, setCheckOrderRefTicket] = useState(true);
+  const [checkLinkPhotos, setCheckLinkPhotos] = useState(true);
+  const [checkSendToLab, setCheckSendToLab] = useState(false);
+
+  // 03 Ampliaciones Form State (image_63151215.png)
+  const [selectedAmpliacionFormat, setSelectedAmpliacionFormat] = useState('8 x 10');
+  const [inputPhotoCount, setInputPhotoCount] = useState(1);
+
+  // 04 Cambios de Fondo Form State (image_8f803678.png)
+  const [checkCambioFondo, setCheckCambioFondo] = useState(true);
+  const [checkCambioVestimenta, setCheckCambioVestimenta] = useState(false);
+  const [checkTextoPersonalizado, setCheckTextoPersonalizado] = useState(false);
+  const [selectedCambioFondoSize, setSelectedCambioFondoSize] = useState('8 x 10');
+  const [inputCustomText, setInputCustomText] = useState('');
+  const [inputEditionNotes, setInputEditionNotes] = useState('');
+
+  // Client Data Fields
   const [inputClientFullName, setInputClientFullName] = useState('');
   const [inputClientPhone, setInputClientPhone] = useState('');
   const [inputClientEmail, setInputClientEmail] = useState('');
@@ -357,11 +382,41 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
     setCheckoutError(null);
   };
 
-  // Detect studio photo products requested by client: Titulo, diploma, pasaporte, infantil, cartilla, ovalo, filiacion, visa, etc.
-  const isStudioPhotoProduct = (product: Product) => {
+  // Studio Formats table for Ampliaciones and Cambios de Fondo (exact from images 63151215.png and 8f803678.png)
+  const STUDIO_FORMATS = [
+    { label: '8 x 10', price: 85 },
+    { label: '8 x 12', price: 110 },
+    { label: '11 x 14', price: 180 },
+    { label: '11 x 16', price: 210 },
+    { label: '12 x 18', price: 260 },
+    { label: '16 x 20', price: 390 },
+    { label: '16 x 24', price: 480 },
+  ];
+
+  // Detect studio photo products requested by client: Caritas, Ampliaciones, Cambios de Fondo, Titulo, diploma, pasaporte, etc.
+  const getProductStudioFormType = (product: Product): 'estudio' | 'caritas' | 'ampliaciones' | 'cambios_fondo' | null => {
     const name = (product.name || '').toLowerCase();
-    return (
-      product.category === 'foto_estudio' ||
+    const id = (product.id || '').toLowerCase();
+    const cat = (product.category || '').toLowerCase();
+
+    // 1. Caritas (02 CARITAS - image_1ad9e5f9.png / image_484f212e.png)
+    if (name.includes('carita') || id.startsWith('car-')) {
+      return 'caritas';
+    }
+
+    // 2. Cambios de Fondo (04 CAMBIOS DE FONDO - image_8f803678.png)
+    if (name.includes('cambio de fondo') || name.includes('cambios de fondo') || id.startsWith('cf-')) {
+      return 'cambios_fondo';
+    }
+
+    // 3. Ampliaciones (03 AMPLIACIONES - image_63151215.png)
+    if (cat === 'ampliaciones' || name.includes('ampliaci') || id.startsWith('amp-')) {
+      return 'ampliaciones';
+    }
+
+    // 4. Estudio standard (Título, diploma, pasaporte, infantil, cartilla, óvalo, filiación, visa, etc.)
+    if (
+      cat === 'foto_estudio' ||
       Boolean(product.hasExtras) ||
       name.includes('titulo') ||
       name.includes('título') ||
@@ -375,71 +430,170 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
       name.includes('filiacion') ||
       name.includes('filiación') ||
       name.includes('visa')
-    );
+    ) {
+      return 'estudio';
+    }
+
+    return null;
   };
 
-  // Product card click handler - opens rich studio options form
+  const isStudioPhotoProduct = (product: Product) => getProductStudioFormType(product) !== null;
+
+  // Product card click handler - opens the exact floating modal for each product
   const handleProductCardClick = (product: Product) => {
-    if (isStudioPhotoProduct(product)) {
+    const formType = getProductStudioFormType(product);
+    if (formType) {
       setActiveModalProduct(product);
-      setExtraRetoque(false);
-      setExtraAutoAdherible(false);
-      setExtraAColor(true);
-      setExtraBlancoNegro(false);
-      setExtraEnvioEmail(false);
-      setExtraSacoCorbata(false);
-      setExtraBlazerMascada(false);
-      setExtraCambioCamisa(false);
-      setInputColorVestimenta('');
-      setInputObservacionesEditor('');
+      setActiveModalType(formType);
+
+      // Preload current client name if typed
       setInputClientFullName(clientName || '');
       setInputClientPhone('');
       setInputClientEmail('');
       setModalQuantity(1);
+
+      if (formType === 'caritas') {
+        setInputChildName('');
+        setInputCaritaModel('16x20');
+        setCheckPromo8Plus8x10(false);
+        setCheckOrderRefTicket(true);
+        setCheckLinkPhotos(true);
+        setCheckSendToLab(false);
+        setExtraRetoque(false);
+        setExtraAutoAdherible(false);
+      } else if (formType === 'ampliaciones') {
+        const name = product.name || '';
+        const matchedFmt = STUDIO_FORMATS.find(f => name.includes(f.label) || name.includes(f.label.replace(' x ', 'x')));
+        setSelectedAmpliacionFormat(matchedFmt ? matchedFmt.label : '8 x 10');
+        setInputPhotoCount(1);
+      } else if (formType === 'cambios_fondo') {
+        setCheckCambioFondo(true);
+        setCheckCambioVestimenta(false);
+        setCheckTextoPersonalizado(false);
+        setSelectedCambioFondoSize('8 x 10');
+        setInputCustomText('');
+        setInputEditionNotes('');
+      } else {
+        setExtraRetoque(false);
+        setExtraAutoAdherible(false);
+        setExtraAColor(true);
+        setExtraBlancoNegro(false);
+        setExtraEnvioEmail(false);
+        setExtraSacoCorbata(false);
+        setExtraBlazerMascada(false);
+        setExtraCambioCamisa(false);
+        setInputColorVestimenta('');
+        setInputObservacionesEditor('');
+      }
     } else {
       addProductToCart(product);
     }
+  };
+
+  // Helper: compute effective price, name, specs, and totals for the active modal
+  const getModalEffectiveItem = () => {
+    if (!activeModalProduct) {
+      return { unitPrice: 0, itemName: '', total: 0, photoSpecs: {} as PhotoStudioSpecs, qty: 1 };
+    }
+
+    let unitPrice = activeModalProduct.price;
+    let itemName = activeModalProduct.name;
+    const qty = activeModalType === 'ampliaciones' ? (inputPhotoCount || 1) : (modalQuantity || 1);
+
+    if (activeModalType === 'caritas') {
+      const retoqueP = extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0;
+      const autoAdhP = extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0;
+      unitPrice = (activeModalProduct.price || 100) + retoqueP + autoAdhP;
+      itemName = activeModalProduct.name.toLowerCase().includes('carita') 
+        ? activeModalProduct.name 
+        : `Caritas - ${activeModalProduct.name}`;
+    } else if (activeModalType === 'ampliaciones') {
+      const fmt = STUDIO_FORMATS.find((f) => f.label === selectedAmpliacionFormat);
+      unitPrice = fmt ? fmt.price : (activeModalProduct.price || 85);
+      itemName = `Ampliación ${selectedAmpliacionFormat}`;
+    } else if (activeModalType === 'cambios_fondo') {
+      const fmt = STUDIO_FORMATS.find((f) => f.label === selectedCambioFondoSize);
+      unitPrice = fmt ? fmt.price : (activeModalProduct.price || 120);
+      itemName = `Cambio de Fondo (${selectedCambioFondoSize})`;
+    } else {
+      const retoqueP = extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0;
+      const autoAdhP = extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0;
+      unitPrice = activeModalProduct.price + retoqueP + autoAdhP;
+    }
+
+    const photoSpecs: PhotoStudioSpecs = {
+      formType: activeModalType,
+      clientFullName: inputClientFullName.trim() || undefined,
+      clientPhone: inputClientPhone.trim() || undefined,
+      clientEmail: inputClientEmail.trim() || undefined,
+
+      ...(activeModalType === 'caritas' ? {
+        childName: inputChildName.trim() || undefined,
+        caritaModel: inputCaritaModel.trim() || undefined,
+        promo8Plus8x10: checkPromo8Plus8x10,
+        orderReferenceTicket: checkOrderRefTicket,
+        linkPhotos: checkLinkPhotos,
+        sendToLab: checkSendToLab,
+        retoque: extraRetoque,
+        autoAdherible: extraAutoAdherible,
+      } : {}),
+
+      ...(activeModalType === 'ampliaciones' ? {
+        ampliacionFormat: selectedAmpliacionFormat,
+        photoCount: qty,
+      } : {}),
+
+      ...(activeModalType === 'cambios_fondo' ? {
+        cambioFondo: checkCambioFondo,
+        cambioVestimenta: checkCambioVestimenta,
+        agregarTextoPersonalizado: checkTextoPersonalizado,
+        cambioFondoSize: selectedCambioFondoSize,
+        customText: inputCustomText.trim() || undefined,
+        editionNotes: inputEditionNotes.trim() || undefined,
+      } : {}),
+
+      ...(activeModalType === 'estudio' ? {
+        retoque: extraRetoque,
+        autoAdherible: extraAutoAdherible,
+        aColor: extraAColor,
+        blancoNegro: extraBlancoNegro,
+        envioEmail: extraEnvioEmail,
+        sacoCorbata: extraSacoCorbata,
+        blazerMascada: extraBlazerMascada,
+        cambioCamisa: extraCambioCamisa,
+        colorVestimenta: inputColorVestimenta.trim() || undefined,
+        observacionesEditor: inputObservacionesEditor.trim() || undefined,
+      } : {}),
+    };
+
+    return {
+      unitPrice,
+      itemName,
+      qty,
+      total: unitPrice * qty,
+      photoSpecs,
+    };
   };
 
   // Primary Action in Modal: GENERAR TICKET (Immediate direct checkout & ticket emission with barcode)
   const handleGenerateTicketDirect = () => {
     if (!activeModalProduct) return;
 
-    const retoqueP = extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0;
-    const autoAdhP = extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0;
-    const unitPrice = activeModalProduct.price + retoqueP + autoAdhP;
-    const qty = modalQuantity || 1;
-    const itemTotal = unitPrice * qty;
-
-    const photoSpecs: PhotoStudioSpecs = {
-      retoque: extraRetoque,
-      autoAdherible: extraAutoAdherible,
-      aColor: extraAColor,
-      blancoNegro: extraBlancoNegro,
-      envioEmail: extraEnvioEmail,
-      sacoCorbata: extraSacoCorbata,
-      blazerMascada: extraBlazerMascada,
-      cambioCamisa: extraCambioCamisa,
-      colorVestimenta: inputColorVestimenta.trim() || undefined,
-      observacionesEditor: inputObservacionesEditor.trim() || undefined,
-      clientFullName: inputClientFullName.trim() || undefined,
-      clientPhone: inputClientPhone.trim() || undefined,
-      clientEmail: inputClientEmail.trim() || undefined,
-    };
+    const { unitPrice, itemName, qty, total: itemTotal, photoSpecs } = getModalEffectiveItem();
 
     const cartItem: CartItem = {
       id: `${activeModalProduct.id}-${Date.now()}`,
       productId: activeModalProduct.id,
-      name: activeModalProduct.name,
+      name: itemName,
       category: activeModalProduct.category,
       unitPrice,
       quantity: qty,
       options: {
         retoque: extraRetoque,
-        retoquePrice: retoqueP,
+        retoquePrice: extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0,
         autoAdherible: extraAutoAdherible,
-        autoAdheriblePrice: autoAdhP,
-        notes: inputObservacionesEditor.trim() || undefined,
+        autoAdheriblePrice: extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0,
+        notes: (inputObservacionesEditor || inputEditionNotes).trim() || undefined,
         photoSpecs,
       },
       totalPrice: itemTotal,
@@ -467,7 +621,7 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
       amountPaid: itemTotal,
       change: 0,
       status: 'completado',
-      notes: `Ticket emitido desde POS Estudio Fotográfico`,
+      notes: `Ticket emitido desde POS: ${itemName}`,
       photoSpecs,
     };
 
@@ -482,41 +636,21 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
   const handleAddStudioProductToCart = () => {
     if (!activeModalProduct) return;
 
-    const retoqueP = extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0;
-    const autoAdhP = extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0;
-    const unitPrice = activeModalProduct.price + retoqueP + autoAdhP;
-    const qty = modalQuantity || 1;
-    const itemTotal = unitPrice * qty;
-
-    const photoSpecs: PhotoStudioSpecs = {
-      retoque: extraRetoque,
-      autoAdherible: extraAutoAdherible,
-      aColor: extraAColor,
-      blancoNegro: extraBlancoNegro,
-      envioEmail: extraEnvioEmail,
-      sacoCorbata: extraSacoCorbata,
-      blazerMascada: extraBlazerMascada,
-      cambioCamisa: extraCambioCamisa,
-      colorVestimenta: inputColorVestimenta.trim() || undefined,
-      observacionesEditor: inputObservacionesEditor.trim() || undefined,
-      clientFullName: inputClientFullName.trim() || undefined,
-      clientPhone: inputClientPhone.trim() || undefined,
-      clientEmail: inputClientEmail.trim() || undefined,
-    };
+    const { unitPrice, itemName, qty, total: itemTotal, photoSpecs } = getModalEffectiveItem();
 
     const newItem: CartItem = {
       id: `${activeModalProduct.id}-${Date.now()}`,
       productId: activeModalProduct.id,
-      name: activeModalProduct.name,
+      name: itemName,
       category: activeModalProduct.category,
       unitPrice,
       quantity: qty,
       options: {
         retoque: extraRetoque,
-        retoquePrice: retoqueP,
+        retoquePrice: extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0,
         autoAdherible: extraAutoAdherible,
-        autoAdheriblePrice: autoAdhP,
-        notes: inputObservacionesEditor.trim() || undefined,
+        autoAdheriblePrice: extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0,
+        notes: (inputObservacionesEditor || inputEditionNotes).trim() || undefined,
         photoSpecs,
       },
       totalPrice: itemTotal,
@@ -1480,15 +1614,18 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
                 )}
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-[#FFF3BC] text-[#4E2B01]">
-                      Estudio Fotográfico
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase bg-[#FFF3BC] text-[#4E2B01] tracking-wide">
+                      {activeModalType === 'caritas' && '02 CARITAS'}
+                      {activeModalType === 'ampliaciones' && '03 AMPLIACIONES'}
+                      {activeModalType === 'cambios_fondo' && '04 CAMBIOS DE FONDO'}
+                      {activeModalType === 'estudio' && '01 FOTO ESTUDIO'}
                     </span>
                     <span className="text-xs font-mono font-bold text-[#FFF3BC]/90">
-                      Base: ${activeModalProduct.price.toFixed(2)}
+                      Precio: ${getModalEffectiveItem().unitPrice.toFixed(2)}
                     </span>
                   </div>
                   <h3 className="text-base sm:text-lg font-black text-[#FFF3BC] leading-tight mt-0.5">
-                    {activeModalProduct.name}
+                    {getModalEffectiveItem().itemName}
                   </h3>
                 </div>
               </div>
@@ -1505,156 +1642,461 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
             {/* Scrollable Form Body */}
             <div className="p-4 sm:p-6 overflow-y-auto space-y-4 bg-[#FCF9F2] flex-1">
               
-              {/* SECTION 1: ESPECIFICACIONES FOTOGRÁFICAS (CHECKBOXES EXACTOS DE LA IMAGEN) */}
-              <div className="bg-white p-4 rounded-2xl border-2 border-[#ECB769]/60 shadow-xs space-y-3">
-                <div className="flex items-center justify-between border-b pb-2 border-slate-100">
-                  <span className="text-xs font-black uppercase text-[#4E2B01] tracking-wide flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-[#ECB769]" />
-                    Opciones y Acabados de la Fotografía
-                  </span>
-                  <span className="text-[11px] font-mono font-bold text-slate-500">
-                    Total producto: ${(
-                      (activeModalProduct.price +
-                        (extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0) +
-                        (extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0)) * modalQuantity
-                    ).toFixed(2)}
-                  </span>
-                </div>
+              {/* ===============================================================
+                  FORM TYPE 02: CARITAS (EXACTO DE LA IMAGEN 1ad9e5f9.png)
+                  =============================================================== */}
+              {activeModalType === 'caritas' && (
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-[#ECB769] shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b pb-2 border-slate-200">
+                    <h4 className="text-base font-black text-[#4E2B01] tracking-tight">
+                      02 CARITAS
+                    </h4>
+                    <span className="text-xs font-bold text-slate-500 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                      Tamaño 16x20 • $100.00
+                    </span>
+                  </div>
 
-                {/* 2-Column Checkboxes grid matching image_63161e7c.png */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  {/* Row 1 */}
-                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
-                    <input
-                      type="checkbox"
-                      checked={extraRetoque}
-                      onChange={(e) => setExtraRetoque(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
-                    />
-                    <span className="font-bold text-slate-800">Retoque profesional</span>
-                    {activeModalProduct.defaultRetoquePrice && (
-                      <span className="text-[10px] font-mono text-[#4E2B01] ml-auto font-bold">
-                        +${activeModalProduct.defaultRetoquePrice}
-                      </span>
-                    )}
-                  </label>
-
-                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
-                    <input
-                      type="checkbox"
-                      checked={extraAutoAdherible}
-                      onChange={(e) => setExtraAutoAdherible(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
-                    />
-                    <span className="font-bold text-slate-800">Fotografías autoadheribles</span>
-                    {activeModalProduct.defaultAutoAdheriblePrice && (
-                      <span className="text-[10px] font-mono text-[#4E2B01] ml-auto font-bold">
-                        +${activeModalProduct.defaultAutoAdheriblePrice}
-                      </span>
-                    )}
-                  </label>
-
-                  {/* Row 2 */}
-                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
-                    <input
-                      type="checkbox"
-                      checked={extraAColor}
-                      onChange={(e) => {
-                        setExtraAColor(e.target.checked);
-                        if (e.target.checked) setExtraBlancoNegro(false);
-                      }}
-                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
-                    />
-                    <span className="font-bold text-slate-800">A color</span>
-                  </label>
-
-                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
-                    <input
-                      type="checkbox"
-                      checked={extraBlancoNegro}
-                      onChange={(e) => {
-                        setExtraBlancoNegro(e.target.checked);
-                        if (e.target.checked) setExtraAColor(false);
-                      }}
-                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
-                    />
-                    <span className="font-bold text-slate-800">Blanco y negro</span>
-                  </label>
-
-                  {/* Row 3 */}
-                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
-                    <input
-                      type="checkbox"
-                      checked={extraEnvioEmail}
-                      onChange={(e) => setExtraEnvioEmail(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
-                    />
-                    <span className="font-bold text-slate-800">Envío por correo electrónico</span>
-                  </label>
-
-                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
-                    <input
-                      type="checkbox"
-                      checked={extraSacoCorbata}
-                      onChange={(e) => setExtraSacoCorbata(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
-                    />
-                    <span className="font-bold text-slate-800">Saco y corbata</span>
-                  </label>
-
-                  {/* Row 4 */}
-                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
-                    <input
-                      type="checkbox"
-                      checked={extraBlazerMascada}
-                      onChange={(e) => setExtraBlazerMascada(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
-                    />
-                    <span className="font-bold text-slate-800">Blazer y mascada</span>
-                  </label>
-
-                  <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
-                    <input
-                      type="checkbox"
-                      checked={extraCambioCamisa}
-                      onChange={(e) => setExtraCambioCamisa(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
-                    />
-                    <span className="font-bold text-slate-800">Solo cambio de camisa</span>
-                  </label>
-                </div>
-
-                {/* Text fields from image_63161e7c.png */}
-                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  {/* Nombre del niño */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Color de vestimenta
+                      Nombre del niño
                     </label>
                     <input
                       type="text"
-                      placeholder="Ej. Saco negro, camisa blanca, corbata roja..."
-                      value={inputColorVestimenta}
-                      onChange={(e) => setInputColorVestimenta(e.target.value)}
-                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
+                      placeholder="Escribe el nombre del niño..."
+                      value={inputChildName}
+                      onChange={(e) => setInputChildName(e.target.value)}
+                      className="w-full text-sm font-bold px-3 py-2 bg-slate-50 border-b-2 border-slate-400 focus:border-[#4E2B01] focus:bg-white focus:outline-none transition rounded-t-lg"
                     />
                   </div>
 
+                  {/* Modelo de Carita */}
                   <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Modelo de Carita
+                      </label>
+                      <div className="flex items-center gap-1">
+                        {['16x20', 'Circo', 'Fantasía', 'Pastel'].map((pill) => (
+                          <button
+                            key={pill}
+                            type="button"
+                            onClick={() => setInputCaritaModel(pill)}
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-bold cursor-pointer transition ${
+                              inputCaritaModel === pill
+                                ? 'bg-[#4E2B01] text-[#FFF3BC]'
+                                : 'bg-slate-100 text-slate-600 hover:bg-amber-100'
+                            }`}
+                          >
+                            {pill}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Ej. Modelo 1, Circo, Fantasía, 16x20..."
+                      value={inputCaritaModel}
+                      onChange={(e) => setInputCaritaModel(e.target.value)}
+                      className="w-full text-sm font-bold px-3 py-2 bg-slate-50 border-b-2 border-slate-400 focus:border-[#4E2B01] focus:bg-white focus:outline-none transition rounded-t-lg"
+                    />
+                  </div>
+
+                  {/* 2-Column Checkboxes from image_1ad9e5f9.png */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-100 text-xs">
+                    <label className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-amber-50 cursor-pointer transition border border-slate-200 hover:border-[#ECB769] select-none bg-slate-50/50">
+                      <input
+                        type="checkbox"
+                        checked={checkPromo8Plus8x10}
+                        onChange={(e) => setCheckPromo8Plus8x10(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Promoción 8 + 8 × 10</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-amber-50 cursor-pointer transition border border-slate-200 hover:border-[#ECB769] select-none bg-slate-50/50">
+                      <input
+                        type="checkbox"
+                        checked={checkOrderRefTicket}
+                        onChange={(e) => setCheckOrderRefTicket(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Orden con referencia y ticket</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-amber-50 cursor-pointer transition border border-slate-200 hover:border-[#ECB769] select-none bg-slate-50/50">
+                      <input
+                        type="checkbox"
+                        checked={checkLinkPhotos}
+                        onChange={(e) => setCheckLinkPhotos(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Vincular fotografías</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-amber-50 cursor-pointer transition border border-slate-200 hover:border-[#ECB769] select-none bg-slate-50/50">
+                      <input
+                        type="checkbox"
+                        checked={checkSendToLab}
+                        onChange={(e) => setCheckSendToLab(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Enviar al laboratorio</span>
+                    </label>
+                  </div>
+
+                  {/* Extra Retoque & Autoadherible options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+                    <label className="flex items-center gap-2 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition border border-transparent hover:border-[#ECB769]">
+                      <input
+                        type="checkbox"
+                        checked={extraRetoque}
+                        onChange={(e) => setExtraRetoque(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Retoque profesional</span>
+                      <span className="text-[10px] font-mono text-[#4E2B01] ml-auto font-bold">+$30</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition border border-transparent hover:border-[#ECB769]">
+                      <input
+                        type="checkbox"
+                        checked={extraAutoAdherible}
+                        onChange={(e) => setExtraAutoAdherible(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Autoadherible</span>
+                      <span className="text-[10px] font-mono text-[#4E2B01] ml-auto font-bold">+$20</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* ===============================================================
+                  FORM TYPE 03: AMPLIACIONES (EXACTO DE LA IMAGEN 63151215.png)
+                  =============================================================== */}
+              {activeModalType === 'ampliaciones' && (
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-[#ECB769] shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b pb-2 border-slate-200">
+                    <h4 className="text-base font-black text-[#4E2B01] tracking-tight">
+                      03 AMPLIACIONES
+                    </h4>
+                    <span className="text-xs font-bold text-slate-600">
+                      Seleccionar formato (del menor al mayor)
+                    </span>
+                  </div>
+
+                  {/* Formats Grid matching image_63151215.png */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {STUDIO_FORMATS.map((fmt) => {
+                      const isSelected = selectedAmpliacionFormat === fmt.label;
+                      return (
+                        <label
+                          key={fmt.label}
+                          onClick={() => setSelectedAmpliacionFormat(fmt.label)}
+                          className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition select-none border-2 ${
+                            isSelected
+                              ? 'bg-amber-50 border-[#4E2B01] text-[#4E2B01] shadow-xs'
+                              : 'bg-slate-50/70 border-slate-200 hover:border-[#ECB769] text-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <input
+                              type="radio"
+                              name="ampliacionFormatRadio"
+                              checked={isSelected}
+                              onChange={() => setSelectedAmpliacionFormat(fmt.label)}
+                              className="w-4 h-4 text-[#4E2B01] accent-[#4E2B01]"
+                            />
+                            <span className="font-black text-sm">{fmt.label}</span>
+                          </div>
+                          <span className="font-mono font-bold text-xs bg-white px-2 py-0.5 rounded border border-slate-200">
+                            ${fmt.price.toFixed(2)}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {/* Cantidad de fotografías */}
+                  <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <label className="text-xs font-bold text-slate-700">
+                      Cantidad de fotografías
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setInputPhotoCount(Math.max(1, inputPhotoCount - 1))}
+                        className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold flex items-center justify-center cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        value={inputPhotoCount}
+                        onChange={(e) => setInputPhotoCount(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-14 text-center font-mono font-black text-sm text-[#4E2B01] bg-slate-50 border border-slate-300 rounded-lg py-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setInputPhotoCount(inputPhotoCount + 1)}
+                        className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold flex items-center justify-center cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ===============================================================
+                  FORM TYPE 04: CAMBIOS DE FONDO (EXACTO DE LA IMAGEN 8f803678.png)
+                  =============================================================== */}
+              {activeModalType === 'cambios_fondo' && (
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-[#ECB769] shadow-xs space-y-4">
+                  <div className="border-b pb-2 border-slate-200">
+                    <h4 className="text-base font-black text-[#4E2B01] tracking-tight">
+                      04 CAMBIOS DE FONDO
+                    </h4>
+                  </div>
+
+                  {/* Servicios que solicita el cliente */}
+                  <div>
+                    <span className="block text-xs font-black uppercase text-[#4E2B01] mb-2 tracking-wide">
+                      Servicios que solicita el cliente
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <label className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-amber-50 cursor-pointer transition border border-slate-200 hover:border-[#ECB769] select-none bg-slate-50/50">
+                        <input
+                          type="checkbox"
+                          checked={checkCambioFondo}
+                          onChange={(e) => setCheckCambioFondo(e.target.checked)}
+                          className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                        />
+                        <span className="font-bold text-slate-800">Cambio de fondo</span>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-amber-50 cursor-pointer transition border border-slate-200 hover:border-[#ECB769] select-none bg-slate-50/50">
+                        <input
+                          type="checkbox"
+                          checked={checkCambioVestimenta}
+                          onChange={(e) => setCheckCambioVestimenta(e.target.checked)}
+                          className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                        />
+                        <span className="font-bold text-slate-800">Cambio de vestimenta</span>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-amber-50 cursor-pointer transition border border-slate-200 hover:border-[#ECB769] select-none bg-slate-50/50 sm:col-span-2">
+                        <input
+                          type="checkbox"
+                          checked={checkTextoPersonalizado}
+                          onChange={(e) => setCheckTextoPersonalizado(e.target.checked)}
+                          className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                        />
+                        <span className="font-bold text-slate-800">Agregar texto personalizado</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Seleccionar tamaño */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <span className="block text-xs font-black uppercase text-[#4E2B01] mb-2 tracking-wide">
+                      Seleccionar tamaño
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      {STUDIO_FORMATS.map((fmt) => {
+                        const isSelected = selectedCambioFondoSize === fmt.label;
+                        return (
+                          <label
+                            key={fmt.label}
+                            onClick={() => setSelectedCambioFondoSize(fmt.label)}
+                            className={`flex items-center gap-2 p-2 rounded-xl cursor-pointer transition select-none border ${
+                              isSelected
+                                ? 'bg-amber-100 border-[#4E2B01] text-[#4E2B01] font-black'
+                                : 'bg-slate-50 border-slate-200 hover:border-[#ECB769] text-slate-700'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="cambioFondoSizeRadio"
+                              checked={isSelected}
+                              onChange={() => setSelectedCambioFondoSize(fmt.label)}
+                              className="w-3.5 h-3.5 text-[#4E2B01] accent-[#4E2B01]"
+                            />
+                            <span>{fmt.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Texto personalizado */}
+                  <div className="pt-2 border-t border-slate-100">
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Observaciones para el editor
+                      Texto personalizado
                     </label>
                     <input
                       type="text"
-                      placeholder="Ej. Quitar brillo en frente, fondo blanco liso, orejas descubiertas..."
-                      value={inputObservacionesEditor}
-                      onChange={(e) => setInputObservacionesEditor(e.target.value)}
-                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
+                      placeholder="Ej. Mi Primer Año, Generación 2026, Recuerdo de Bautizo..."
+                      value={inputCustomText}
+                      onChange={(e) => setInputCustomText(e.target.value)}
+                      className="w-full text-xs font-bold px-3 py-2 bg-slate-50 border-b-2 border-slate-400 focus:border-[#4E2B01] focus:bg-white focus:outline-none transition rounded-t-lg"
+                    />
+                  </div>
+
+                  {/* Observaciones de edición / fondo / vestimenta */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Observaciones de edición / fondo / vestimenta
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Fondo jardín desenfocado, saco azul marino, quitar sombras..."
+                      value={inputEditionNotes}
+                      onChange={(e) => setInputEditionNotes(e.target.value)}
+                      className="w-full text-xs font-bold px-3 py-2 bg-slate-50 border-b-2 border-slate-400 focus:border-[#4E2B01] focus:bg-white focus:outline-none transition rounded-t-lg"
                     />
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* SECTION 2: DATOS DEL CLIENTE (EXACTOS DE LA IMAGEN 008d90ce.png) */}
+              {/* ===============================================================
+                  FORM TYPE 01: FOTO ESTUDIO (TÍTULO, DIPLOMA, PASAPORTE, ETC.)
+                  =============================================================== */}
+              {activeModalType === 'estudio' && (
+                <div className="bg-white p-4 rounded-2xl border-2 border-[#ECB769]/60 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between border-b pb-2 border-slate-100">
+                    <span className="text-xs font-black uppercase text-[#4E2B01] tracking-wide flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-[#ECB769]" />
+                      Opciones y Acabados de la Fotografía
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-slate-500">
+                      Total producto: ${getModalEffectiveItem().total.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                      <input
+                        type="checkbox"
+                        checked={extraRetoque}
+                        onChange={(e) => setExtraRetoque(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Retoque profesional</span>
+                      <span className="text-[10px] font-mono text-[#4E2B01] ml-auto font-bold">+$30</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                      <input
+                        type="checkbox"
+                        checked={extraAutoAdherible}
+                        onChange={(e) => setExtraAutoAdherible(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Fotografías autoadheribles</span>
+                      <span className="text-[10px] font-mono text-[#4E2B01] ml-auto font-bold">+$20</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                      <input
+                        type="checkbox"
+                        checked={extraAColor}
+                        onChange={(e) => {
+                          setExtraAColor(e.target.checked);
+                          if (e.target.checked) setExtraBlancoNegro(false);
+                        }}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">A color</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                      <input
+                        type="checkbox"
+                        checked={extraBlancoNegro}
+                        onChange={(e) => {
+                          setExtraBlancoNegro(e.target.checked);
+                          if (e.target.checked) setExtraAColor(false);
+                        }}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Blanco y negro</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                      <input
+                        type="checkbox"
+                        checked={extraEnvioEmail}
+                        onChange={(e) => setExtraEnvioEmail(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Envío por correo electrónico</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                      <input
+                        type="checkbox"
+                        checked={extraSacoCorbata}
+                        onChange={(e) => setExtraSacoCorbata(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Saco y corbata</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                      <input
+                        type="checkbox"
+                        checked={extraBlazerMascada}
+                        onChange={(e) => setExtraBlazerMascada(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Blazer y mascada</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 cursor-pointer transition select-none border border-transparent hover:border-[#ECB769]">
+                      <input
+                        type="checkbox"
+                        checked={extraCambioCamisa}
+                        onChange={(e) => setExtraCambioCamisa(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#4E2B01] accent-[#4E2B01]"
+                      />
+                      <span className="font-bold text-slate-800">Solo cambio de camisa</span>
+                    </label>
+                  </div>
+
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Color de vestimenta
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Saco negro, camisa blanca, corbata roja..."
+                        value={inputColorVestimenta}
+                        onChange={(e) => setInputColorVestimenta(e.target.value)}
+                        className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Observaciones para el editor
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Quitar brillo en frente, fondo blanco liso, orejas descubiertas..."
+                        value={inputObservacionesEditor}
+                        onChange={(e) => setInputObservacionesEditor(e.target.value)}
+                        className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4E2B01]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: DATOS DEL CLIENTE (EXACTOS DE LA IMAGEN 008d90ce.png) */}
               <div className="bg-white p-4 rounded-2xl border-2 border-[#ECB769]/60 shadow-xs space-y-3">
                 <span className="text-xs font-black uppercase text-[#4E2B01] tracking-wide flex items-center gap-1.5 border-b pb-1.5 border-slate-100">
                   <User className="w-4 h-4 text-[#ECB769]" />
@@ -1703,29 +2145,31 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
                 </div>
               </div>
 
-              {/* Quantity selector */}
-              <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200">
-                <span className="text-xs font-bold text-slate-700">Cantidad de juegos / fotos:</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setModalQuantity(Math.max(1, modalQuantity - 1))}
-                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold flex items-center justify-center cursor-pointer"
-                  >
-                    -
-                  </button>
-                  <span className="w-8 text-center font-mono font-black text-sm text-[#4E2B01]">
-                    {modalQuantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setModalQuantity(modalQuantity + 1)}
-                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold flex items-center justify-center cursor-pointer"
-                  >
-                    +
-                  </button>
+              {/* Quantity selector (for Caritas, Cambios de Fondo, and Estudio) */}
+              {activeModalType !== 'ampliaciones' && (
+                <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200">
+                  <span className="text-xs font-bold text-slate-700">Cantidad:</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setModalQuantity(Math.max(1, modalQuantity - 1))}
+                      className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold flex items-center justify-center cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="w-8 text-center font-mono font-black text-sm text-[#4E2B01]">
+                      {modalQuantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setModalQuantity(modalQuantity + 1)}
+                      className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold flex items-center justify-center cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
             </div>
 
@@ -1760,11 +2204,7 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
                 <Printer className="w-5 h-5 text-[#ECB769]" />
                 <span>Generar ticket</span>
                 <span className="font-mono text-xs text-[#FFF3BC]/90 font-bold ml-1">
-                  (${(
-                    (activeModalProduct.price +
-                      (extraRetoque ? (activeModalProduct.defaultRetoquePrice || 30) : 0) +
-                      (extraAutoAdherible ? (activeModalProduct.defaultAutoAdheriblePrice || 20) : 0)) * modalQuantity
-                  ).toFixed(2)})
+                  (${getModalEffectiveItem().total.toFixed(2)})
                 </span>
               </button>
 
