@@ -52,6 +52,16 @@ export const INITIAL_USER_PROFILES: Record<Role, UserProfile> = {
     notes: 'Cliente registrado para catálogo digital',
     address: '',
   },
+  laboratorio: {
+    id: 'user-laboratorio',
+    role: 'laboratorio',
+    name: 'Técnico de Laboratorio',
+    email: 'laboratorio@minifoto.com',
+    phone: '55 4321 8765',
+    avatarUrl: '',
+    notes: 'Encargado de laboratorio digital, revelado, retoques, impresión y control fotográfico',
+    address: 'Área de Impresión y Laboratorio Minifoto',
+  },
 };
 
 export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {

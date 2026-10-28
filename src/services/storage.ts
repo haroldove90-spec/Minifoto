@@ -15,7 +15,10 @@ import {
   PaymentMethod,
   CategoryItem,
   UserProfile,
-  FolioConfig
+  FolioConfig,
+  ClientPhoto,
+  WorkOrder,
+  LabOrderStatus
 } from '../types';
 import { 
   INITIAL_PRODUCTS, 
@@ -52,6 +55,7 @@ const KEYS = {
   ACTIVE_TERMINAL: 'pos_photo_active_terminal_v1',
   BANK_TRANSFERS: 'pos_photo_bank_transfers_v1',
   AUDIT_LOGS: 'pos_photo_audit_logs_v1',
+  WORK_ORDERS: 'pos_photo_work_orders_v1',
 };
 
 // Check if sample data has been permanently cleared
@@ -292,7 +296,7 @@ export const getStoredRole = (): Role | null => {
     return null;
   }
   const role = (localStorage.getItem(KEYS.ROLE) as Role) || null;
-  if (role && ['admin', 'cashier', 'field', 'client'].includes(role)) {
+  if (role && ['admin', 'cashier', 'field', 'client', 'laboratorio'].includes(role)) {
     return role;
   }
   // Default to admin so browser refresh NEVER accidentally logs out the user
@@ -318,6 +322,7 @@ export const getStoredOperator = (): string => {
   if (role === 'cashier') return 'Cajero Mostrador';
   if (role === 'field') return 'Cobrador Móvil';
   if (role === 'client') return 'Cliente Invitado';
+  if (role === 'laboratorio') return 'Técnico Laboratorio';
   return 'Uriel';
 };
 
@@ -809,6 +814,186 @@ export const getStoredProductsOrder = (): string[] => {
 
 export const saveStoredProductsOrder = (order: string[]) => {
   localStorage.setItem(KEYS.PRODUCT_ORDER, JSON.stringify(order));
+};
+
+// ==========================================
+// WORK ORDERS & CLIENT PHOTOS (LABORATORIO)
+// ==========================================
+export const getStoredWorkOrders = (): WorkOrder[] => {
+  const data = localStorage.getItem(KEYS.WORK_ORDERS);
+  if (data) {
+    try {
+      const parsed: WorkOrder[] = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    } catch {}
+  }
+
+  // If none saved yet, synthesize from current sales so all POS tickets appear in Lab
+  const sales = getStoredSales();
+  if (sales.length > 0) {
+    const synthesized: WorkOrder[] = sales.map((sale) => {
+      // Determine urgency and initial lab status
+      const hasRetoque = sale.items.some((it) => it.options?.retoque);
+      const isCaritaOrAmpliacion = sale.items.some((it) => 
+        it.category === 'ampliaciones' || 
+        it.name.toLowerCase().includes('caritas') || 
+        it.options?.photoSpecs?.childName
+      );
+
+      return {
+        id: `wo-${sale.id}`,
+        saleId: sale.id,
+        folio: sale.folio,
+        clientName: sale.clientName || 'Cliente Mostrador',
+        clientPhone: sale.clientPhone || '',
+        clientEmail: sale.clientEmail || '',
+        schoolName: sale.schoolName || '',
+        date: sale.date,
+        deliveryDate: new Date(Date.now() + 86400000 * 2).toLocaleDateString('es-MX'),
+        items: sale.items,
+        total: sale.total,
+        amountPaid: sale.amountPaid,
+        depositAmount: sale.depositAmount,
+        remainingAmount: sale.remainingAmount ?? Math.max(0, sale.total - sale.amountPaid),
+        paymentMethod: sale.paymentMethod,
+        labStatus: sale.status === 'liquidado' ? 'entregado' : 'pendiente',
+        urgency: hasRetoque || isCaritaOrAmpliacion ? 'urgente' : 'normal',
+        notes: sale.notes || '',
+        photoSpecs: sale.photoSpecs,
+        photos: [],
+        operatorName: sale.operatorName,
+        createdAt: new Date().toISOString(),
+      };
+    });
+
+    saveStoredWorkOrders(synthesized);
+    return synthesized;
+  }
+
+  return [];
+};
+
+export const saveStoredWorkOrders = (orders: WorkOrder[]) => {
+  localStorage.setItem(KEYS.WORK_ORDERS, JSON.stringify(orders));
+};
+
+export const syncSaleToWorkOrder = (sale: Sale): WorkOrder => {
+  const currentOrders = getStoredWorkOrders();
+  const existing = currentOrders.find((wo) => wo.folio === sale.folio || wo.saleId === sale.id);
+
+  const hasRetoque = sale.items.some((it) => it.options?.retoque);
+  const isSpecial = sale.items.some((it) => 
+    it.category === 'ampliaciones' || 
+    it.name.toLowerCase().includes('caritas') || 
+    it.options?.photoSpecs?.childName ||
+    it.options?.photoSpecs?.cambioFondo
+  );
+
+  const workOrder: WorkOrder = {
+    id: existing ? existing.id : `wo-${sale.id}`,
+    saleId: sale.id,
+    folio: sale.folio,
+    clientName: sale.clientName || existing?.clientName || 'Cliente Mostrador',
+    clientPhone: sale.clientPhone || existing?.clientPhone || '',
+    clientEmail: sale.clientEmail || existing?.clientEmail || '',
+    schoolName: sale.schoolName || existing?.schoolName || '',
+    date: sale.date,
+    deliveryDate: existing?.deliveryDate || new Date(Date.now() + 86400000 * 2).toLocaleDateString('es-MX'),
+    items: sale.items,
+    total: sale.total,
+    amountPaid: sale.amountPaid,
+    depositAmount: sale.depositAmount,
+    remainingAmount: sale.remainingAmount ?? Math.max(0, sale.total - sale.amountPaid),
+    paymentMethod: sale.paymentMethod,
+    labStatus: existing?.labStatus || 'pendiente',
+    urgency: existing?.urgency || (hasRetoque || isSpecial ? 'urgente' : 'normal'),
+    notes: sale.notes || existing?.notes || '',
+    photoSpecs: sale.photoSpecs || existing?.photoSpecs,
+    photos: existing?.photos || [],
+    operatorName: sale.operatorName,
+    createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const updatedOrders = [workOrder, ...currentOrders.filter((wo) => wo.folio !== sale.folio && wo.id !== workOrder.id)];
+  saveStoredWorkOrders(updatedOrders);
+  return workOrder;
+};
+
+export const updateWorkOrderStatus = (orderIdOrFolio: string, newStatus: LabOrderStatus): WorkOrder[] => {
+  const current = getStoredWorkOrders();
+  const updated = current.map((wo) => {
+    if (wo.id === orderIdOrFolio || wo.folio === orderIdOrFolio) {
+      return {
+        ...wo,
+        labStatus: newStatus,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    return wo;
+  });
+  saveStoredWorkOrders(updated);
+  return updated;
+};
+
+export const addClientPhotoToWorkOrder = (orderFolio: string, photo: ClientPhoto): WorkOrder | null => {
+  const current = getStoredWorkOrders();
+  let targetOrder: WorkOrder | null = null;
+
+  const updated = current.map((wo) => {
+    if (wo.folio.toUpperCase() === orderFolio.toUpperCase() || wo.id === orderFolio) {
+      const existingPhotos = Array.isArray(wo.photos) ? wo.photos : [];
+      const newPhotos = [photo, ...existingPhotos];
+      targetOrder = {
+        ...wo,
+        photos: newPhotos,
+        updatedAt: new Date().toISOString(),
+      };
+      return targetOrder;
+    }
+    return wo;
+  });
+
+  if (targetOrder) {
+    saveStoredWorkOrders(updated);
+  }
+  return targetOrder;
+};
+
+export const deleteClientPhotoFromWorkOrder = (orderFolio: string, photoId: string): WorkOrder | null => {
+  const current = getStoredWorkOrders();
+  let targetOrder: WorkOrder | null = null;
+
+  const updated = current.map((wo) => {
+    if (wo.folio.toUpperCase() === orderFolio.toUpperCase() || wo.id === orderFolio) {
+      const existingPhotos = Array.isArray(wo.photos) ? wo.photos : [];
+      const newPhotos = existingPhotos.filter((p) => p.id !== photoId);
+      targetOrder = {
+        ...wo,
+        photos: newPhotos,
+        updatedAt: new Date().toISOString(),
+      };
+      return targetOrder;
+    }
+    return wo;
+  });
+
+  if (targetOrder) {
+    saveStoredWorkOrders(updated);
+  }
+  return targetOrder;
+};
+
+export const getWorkOrderByFolio = (folio: string): WorkOrder | undefined => {
+  if (!folio) return undefined;
+  const clean = folio.trim().toUpperCase();
+  const current = getStoredWorkOrders();
+  return current.find((wo) => 
+    wo.folio.toUpperCase() === clean || 
+    wo.folio.toUpperCase().replace(/[^0-9A-Z]/g, '') === clean.replace(/[^0-9A-Z]/g, '')
+  );
 };
 
 

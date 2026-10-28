@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'cashier' | 'field' | 'client';
+export type Role = 'admin' | 'cashier' | 'field' | 'client' | 'laboratorio';
 
 export type Category = string;
 
@@ -258,5 +258,45 @@ export interface BrandConfig {
   ticketFooter: string;
   logoUrl: string;
   iconUrl: string;
+}
+
+export interface ClientPhoto {
+  id: string;
+  clientFolio: string;
+  url: string; // Supabase public URL or persistent Base64 Data URL
+  fileName: string;
+  fileSize?: number;
+  uploadedAt: string;
+  notes?: string;
+  thumbnailUrl?: string;
+  tags?: string[];
+}
+
+export type LabOrderStatus = 'pendiente' | 'en_proceso' | 'listo' | 'entregado';
+
+export interface WorkOrder {
+  id: string;
+  saleId?: string;
+  folio: string; // e.g. TK-001001 or MF-015-0001
+  clientName: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  schoolName?: string;
+  date: string;
+  deliveryDate?: string;
+  items: CartItem[];
+  total: number;
+  amountPaid: number;
+  depositAmount?: number;
+  remainingAmount: number;
+  paymentMethod: PaymentMethod;
+  labStatus: LabOrderStatus;
+  urgency?: 'normal' | 'urgente';
+  notes?: string;
+  photoSpecs?: PhotoStudioSpecs;
+  photos: ClientPhoto[];
+  operatorName?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 

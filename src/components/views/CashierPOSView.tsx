@@ -57,7 +57,8 @@ import {
   getStoredPOSClientName,
   saveStoredPOSClientName,
   getStoredPOSCategory,
-  saveStoredPOSCategory
+  saveStoredPOSCategory,
+  syncSaleToWorkOrder
 } from '../../services/storage';
 import { printTicketElement } from '../../services/printService';
 
@@ -71,6 +72,7 @@ interface CashierPOSViewProps {
   onExitToDashboard?: () => void;
   onSwitchRole?: () => void;
   onNavigateToReports?: () => void;
+  onNavigateToWorkOrders?: () => void;
   brandLogo?: string;
 }
 
@@ -84,6 +86,7 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
   onExitToDashboard,
   onSwitchRole,
   onNavigateToReports,
+  onNavigateToWorkOrders,
   brandLogo = 'https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotologo.png',
 }) => {
   // Active Category & Search (Everything on the same screen, persisted on refresh)
@@ -1023,7 +1026,19 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
 
         {/* Center / Right: Operator and Session Controls */}
         <div className="flex items-center gap-2 sm:gap-3 text-xs">
-          
+          {/* Quick Work Orders Access Button */}
+          {onNavigateToWorkOrders && (
+            <button
+              type="button"
+              onClick={onNavigateToWorkOrders}
+              className="px-3 py-2 bg-white hover:bg-[#FFF3BC] text-[#4E2B01] border-2 border-[#4E2B01] font-black text-xs sm:text-sm rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition"
+              title="Ver y Gestionar Órdenes de Trabajo y Fotos del Laboratorio"
+            >
+              <Camera className="w-4 h-4 text-[#4E2B01]" />
+              <span className="hidden sm:inline">Órdenes de Trabajo</span>
+            </button>
+          )}
+
           {/* Quick Test Purchase Button */}
           <button
             type="button"

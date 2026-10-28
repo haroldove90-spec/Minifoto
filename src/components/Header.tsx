@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   RotateCcw,
   CheckCircle2,
-  User
+  User,
+  FlaskConical
 } from 'lucide-react';
 import { getStoredUserProfile } from '../services/storage';
 
@@ -66,6 +67,11 @@ export const Header: React.FC<HeaderProps> = ({
       title: 'Cliente (Catálogo Digital)',
       color: 'bg-[#202020]/10 text-[#202020] border-[#202020]/30',
       icon: <Store className="w-3.5 h-3.5 text-[#202020]" />,
+    },
+    laboratorio: {
+      title: 'Laboratorio (Técnico de Revelado)',
+      color: 'bg-[#FFF3BC] text-[#4E2B01] border-[#4E2B01]',
+      icon: <FlaskConical className="w-3.5 h-3.5 text-[#4E2B01]" />,
     },
   };
 

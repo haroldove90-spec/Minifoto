@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Product, Sale, GraduationStudent, School } from '../types';
+import { Product, Sale, GraduationStudent, School, WorkOrder, ClientPhoto } from '../types';
 
 export const SUPABASE_CONFIG_DATA = {
   projectName: "minifoto@appdesignsoftware.com's Project",
@@ -168,6 +168,44 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
   student_folio TEXT
 );
 
+-- 10. TABLA DE ÓRDENES DE TRABAJO (MÓDULO LABORATORIO)
+CREATE TABLE IF NOT EXISTS public.work_orders (
+  id TEXT PRIMARY KEY,
+  sale_id TEXT,
+  folio TEXT NOT NULL,
+  client_name TEXT NOT NULL,
+  client_phone TEXT,
+  client_email TEXT,
+  school_name TEXT,
+  date TEXT NOT NULL,
+  delivery_date TEXT,
+  items JSONB NOT NULL DEFAULT '[]'::jsonb,
+  total NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  amount_paid NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  deposit_amount NUMERIC(10,2) DEFAULT 0.00,
+  remaining_amount NUMERIC(10,2) DEFAULT 0.00,
+  payment_method TEXT NOT NULL DEFAULT 'efectivo',
+  lab_status TEXT NOT NULL DEFAULT 'pendiente',
+  urgency TEXT DEFAULT 'normal',
+  notes TEXT,
+  photo_specs JSONB DEFAULT '{}'::jsonb,
+  photos JSONB DEFAULT '[]'::jsonb,
+  operator_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 11. TABLA DE FOTOGRAFÍAS DE CLIENTES
+CREATE TABLE IF NOT EXISTS public.client_photos (
+  id TEXT PRIMARY KEY,
+  client_folio TEXT NOT NULL,
+  url TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  file_size BIGINT,
+  notes TEXT,
+  uploaded_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- =========================================================================
 -- MIGRACIÓN AUTOMÁTICA DE COLUMNAS (AGREGA CAMPOS A TABLAS PREVIAS)
 -- =========================================================================
@@ -223,6 +261,8 @@ ALTER TABLE public.schools ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bank_transfers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.work_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.client_photos ENABLE ROW LEVEL SECURITY;
 
 -- POLÍTICAS DE ACCESO TOTAL (ANON) PARA LECTURA Y ESCRITURA
 DROP POLICY IF EXISTS "Anon full access products" ON public.products;
@@ -251,6 +291,12 @@ CREATE POLICY "Anon full access bank_transfers" ON public.bank_transfers FOR ALL
 
 DROP POLICY IF EXISTS "Anon full access audit_logs" ON public.audit_logs;
 CREATE POLICY "Anon full access audit_logs" ON public.audit_logs FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access work_orders" ON public.work_orders;
+CREATE POLICY "Anon full access work_orders" ON public.work_orders FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access client_photos" ON public.client_photos;
+CREATE POLICY "Anon full access client_photos" ON public.client_photos FOR ALL USING (true) WITH CHECK (true);
 
 -- ÍNDICES DE ALTO RENDIMIENTO (CON COLUMNAS ASEGURADAS)
 CREATE INDEX IF NOT EXISTS idx_products_category ON public.products (category);
@@ -851,5 +897,186 @@ export const fetchUserProfileFromSupabase = async (role: string): Promise<any | 
     };
   } catch {
     return null;
+  }
+};
+
+// ==========================================
+// WORK ORDERS SUPABASE INTEGRATION (LABORATORIO)
+// ==========================================
+export const saveWorkOrderToSupabase = async (order: WorkOrder): Promise<boolean> => {
+  try {
+    const supabase = getSupabaseClient();
+    const payload = {
+      id: order.id,
+      sale_id: order.saleId || null,
+      folio: order.folio,
+      client_name: order.clientName,
+      client_phone: order.clientPhone || null,
+      client_email: order.clientEmail || null,
+      school_name: order.schoolName || null,
+      date: order.date,
+      delivery_date: order.deliveryDate || null,
+      items: order.items || [],
+      total: order.total,
+      amount_paid: order.amountPaid,
+      deposit_amount: order.depositAmount || 0,
+      remaining_amount: order.remainingAmount || 0,
+      payment_method: order.paymentMethod,
+      lab_status: order.labStatus,
+      urgency: order.urgency || 'normal',
+      notes: order.notes || null,
+      photo_specs: order.photoSpecs || {},
+      photos: order.photos || [],
+      operator_name: order.operatorName || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from('work_orders').upsert(payload, { onConflict: 'id' });
+    if (error) {
+      console.warn('Supabase work_order upsert warning:', error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('Error saving work_order to Supabase:', e);
+    return false;
+  }
+};
+
+export const fetchWorkOrdersFromSupabase = async (): Promise<WorkOrder[] | null> => {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.from('work_orders').select('*').order('created_at', { ascending: false });
+    if (error || !data) return null;
+
+    return data.map((row: any) => ({
+      id: row.id,
+      saleId: row.sale_id || undefined,
+      folio: row.folio,
+      clientName: row.client_name,
+      clientPhone: row.client_phone || undefined,
+      clientEmail: row.client_email || undefined,
+      schoolName: row.school_name || undefined,
+      date: row.date,
+      deliveryDate: row.delivery_date || undefined,
+      items: row.items || [],
+      total: Number(row.total),
+      amountPaid: Number(row.amount_paid),
+      depositAmount: row.deposit_amount ? Number(row.deposit_amount) : undefined,
+      remainingAmount: Number(row.remaining_amount || 0),
+      paymentMethod: row.payment_method,
+      labStatus: row.lab_status || 'pendiente',
+      urgency: row.urgency || 'normal',
+      notes: row.notes || undefined,
+      photoSpecs: row.photo_specs || undefined,
+      photos: Array.isArray(row.photos) ? row.photos : [],
+      operatorName: row.operator_name || undefined,
+      createdAt: row.created_at || new Date().toISOString(),
+      updatedAt: row.updated_at,
+    }));
+  } catch {
+    return null;
+  }
+};
+
+// ==========================================
+// CLIENT PHOTO UPLOAD & SUPABASE STORAGE
+// ==========================================
+// Converts File/Blob to Base64 string for offline/instant local fallback
+const fileToBase64 = (file: File | Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
+export const uploadClientPhotoToSupabase = async (
+  folio: string,
+  file: File,
+  customName?: string
+): Promise<{ success: boolean; url: string; photoId: string; error?: string }> => {
+  const photoId = `photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const cleanFolio = folio.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const fileName = customName || file.name || `foto_${Date.now()}.jpg`;
+
+  let finalUrl = '';
+
+  try {
+    const base64Data = await fileToBase64(file);
+    finalUrl = base64Data; // default guaranteed persistent fallback
+
+    const supabase = getSupabaseClient();
+
+    // 1. Attempt upload to Supabase Storage Bucket ('client-photos')
+    try {
+      const sanitizedName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `${cleanFolio}/${Date.now()}_${sanitizedName}`;
+
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from('client-photos')
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (!storageError && storageData) {
+        const { data: publicData } = supabase.storage.from('client-photos').getPublicUrl(storagePath);
+        if (publicData?.publicUrl) {
+          finalUrl = publicData.publicUrl;
+        }
+      }
+    } catch (storageEx) {
+      console.warn('Supabase storage bucket upload skipped or not configured, using direct base64 storage:', storageEx);
+    }
+
+    // 2. Save metadata in table client_photos if table exists
+    try {
+      await supabase.from('client_photos').insert({
+        id: photoId,
+        client_folio: folio,
+        url: finalUrl,
+        file_name: fileName,
+        file_size: file.size,
+        notes: `Fotografía cargada para cliente ${folio}`,
+        uploaded_at: new Date().toISOString(),
+      });
+    } catch {}
+
+    return {
+      success: true,
+      url: finalUrl,
+      photoId,
+    };
+  } catch (err: any) {
+    console.error('Error in uploadClientPhotoToSupabase:', err);
+    return {
+      success: false,
+      url: '',
+      photoId: '',
+      error: err.message || 'Error al procesar la imagen',
+    };
+  }
+};
+
+export const deleteClientPhotoFromSupabase = async (photoId: string, photoUrl?: string): Promise<boolean> => {
+  try {
+    const supabase = getSupabaseClient();
+    
+    // Delete record from client_photos table
+    await supabase.from('client_photos').delete().eq('id', photoId);
+
+    // If it was a Supabase Storage URL, remove from bucket
+    if (photoUrl && photoUrl.includes('supabase.co/storage/v1/object/public/client-photos/')) {
+      const parts = photoUrl.split('/client-photos/');
+      if (parts[1]) {
+        await supabase.storage.from('client-photos').remove([decodeURIComponent(parts[1])]);
+      }
+    }
+
+    return true;
+  } catch {
+    return false;
   }
 };

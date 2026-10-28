@@ -13,7 +13,8 @@ import {
   Sale, 
   BrandConfig, 
   PaymentGatewayConfig, 
-  SupabaseConfig 
+  SupabaseConfig,
+  WorkOrder
 } from './types';
 import { 
   getStoredRole, 
@@ -42,7 +43,10 @@ import {
   clearSampleDataSystem,
   restoreSampleDataSystem,
   getStoredCategories,
-  saveStoredCategories
+  saveStoredCategories,
+  getStoredWorkOrders,
+  saveStoredWorkOrders,
+  syncSaleToWorkOrder
 } from './services/storage';
 
 import {
@@ -54,7 +58,9 @@ import {
   fetchStudentsFromSupabase,
   fetchSalesFromSupabase,
   fetchSchoolsFromSupabase,
-  fetchCategoriesFromSupabase
+  fetchCategoriesFromSupabase,
+  fetchWorkOrdersFromSupabase,
+  saveWorkOrderToSupabase
 } from './services/supabaseClient';
 
 import { RoleSelector } from './components/RoleSelector';
@@ -64,6 +70,7 @@ import { BottomBar } from './components/BottomBar';
 import { TicketModal } from './components/TicketModal';
 
 import { CashierPOSView } from './components/views/CashierPOSView';
+import { WorkOrdersLabView } from './components/views/WorkOrdersLabView';
 import { DashboardHomeView } from './components/views/DashboardHomeView';
 import { FieldCollectorView } from './components/views/FieldCollectorView';
 import { PackageDeliveriesView } from './components/views/PackageDeliveriesView';
@@ -84,14 +91,16 @@ export default function App() {
     if (savedTab) return savedTab;
     const role = getStoredRole();
     if (role === 'cashier') return 'pos_cashier';
+    if (role === 'laboratorio') return 'work_orders';
     if (role === 'client') return 'catalogs';
     return 'tablet_pos'; // admin and field default to tablet_pos
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
   const handleSelectTab = (tab: ActiveTab) => {
-    setActiveTab(tab);
-    saveStoredActiveTab(tab);
+    const finalTab = (currentRole === 'laboratorio' && (tab === 'pos_cashier' || tab === 'tablet_pos')) ? 'work_orders' : tab;
+    setActiveTab(finalTab);
+    saveStoredActiveTab(finalTab);
   };
 
   // App data states
@@ -99,6 +108,7 @@ export default function App() {
   const [schools, setSchools] = useState<School[]>([]);
   const [students, setStudents] = useState<GraduationStudent[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [brand, setBrand] = useState<BrandConfig>(getStoredBrandConfig);
   const [gateways, setGateways] = useState<PaymentGatewayConfig[]>(getStoredGateways);
   const [supabaseConfig, setSupabaseConfig] = useState<SupabaseConfig>(getStoredSupabaseConfig);
@@ -121,10 +131,19 @@ export default function App() {
     setSchools(getStoredSchools());
     setStudents(getStoredStudents());
     setSales(getStoredSales());
+    setWorkOrders(getStoredWorkOrders());
     setBrand(getStoredBrandConfig());
     setGateways(getStoredGateways());
     setSupabaseConfig(getStoredSupabaseConfig());
     setIsSampleCleared(isSampleDataCleared());
+
+    // Background sync work orders from Supabase if connected
+    fetchWorkOrdersFromSupabase().then((remoteWo) => {
+      if (remoteWo && remoteWo.length > 0) {
+        setWorkOrders(remoteWo);
+        saveStoredWorkOrders(remoteWo);
+      }
+    });
 
     // Background sync from Supabase if connected
     fetchProductsFromSupabase().then((remoteProds) => {
@@ -184,6 +203,8 @@ export default function App() {
       handleSelectTab(savedTab);
     } else if (role === 'cashier') {
       handleSelectTab('pos_cashier');
+    } else if (role === 'laboratorio') {
+      handleSelectTab('work_orders');
     } else if (role === 'client') {
       handleSelectTab('catalogs');
     } else {
@@ -224,6 +245,10 @@ export default function App() {
     setAutoPrintTicket(options?.autoPrint ?? true);
     // Sync sale to Supabase
     saveSaleToSupabase(newSale);
+    // Sync sale to Work Orders (Laboratorio)
+    const newWo = syncSaleToWorkOrder(newSale);
+    setWorkOrders(getStoredWorkOrders());
+    saveWorkOrderToSupabase(newWo);
   };
 
   const handleAddStudentReceipt = (newStudent: GraduationStudent) => {
@@ -268,6 +293,10 @@ export default function App() {
       setSales(updatedSales);
       // Sync deposit sale to Supabase
       saveSaleToSupabase(depositSale);
+      // Sync to work orders
+      const newWo = syncSaleToWorkOrder(depositSale);
+      setWorkOrders(getStoredWorkOrders());
+      saveWorkOrderToSupabase(newWo);
     }
   };
 
@@ -344,7 +373,7 @@ export default function App() {
   }
 
   // 2. FULLSCREEN KIOSK TOUCH POS (Hide Header, Sidebar, BottomBar completely)
-  if (activeTab === 'pos_cashier') {
+  if (activeTab === 'pos_cashier' && currentRole !== 'laboratorio') {
     return (
       <div className="fixed inset-0 z-50 bg-[#FCF9F2] text-[#202020] overflow-hidden font-sans">
         <SplashScreen minDisplayTimeMs={1200} />
@@ -358,6 +387,7 @@ export default function App() {
           onExitToDashboard={() => handleSelectTab('home')}
           onSwitchRole={handleLogout}
           onNavigateToReports={() => handleSelectTab('reports')}
+          onNavigateToWorkOrders={() => handleSelectTab('work_orders')}
           brandLogo={brand.logoUrl}
         />
 
@@ -408,6 +438,23 @@ export default function App() {
 
         {/* Dynamic Main Workspace without duplicate horizontal tabs */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {activeTab === 'work_orders' && (
+            <WorkOrdersLabView
+              workOrders={workOrders}
+              onUpdateWorkOrders={(newOrders) => {
+                setWorkOrders(newOrders);
+                saveStoredWorkOrders(newOrders);
+              }}
+              onOpenSaleTicket={(sale) => {
+                setActiveSaleTicket(sale);
+                setActiveStudentTicket(null);
+              }}
+              brand={brand}
+              currentRole={currentRole}
+              operatorName={operatorName}
+            />
+          )}
+
           {activeTab === 'home' && (
             <DashboardHomeView
               currentRole={currentRole}

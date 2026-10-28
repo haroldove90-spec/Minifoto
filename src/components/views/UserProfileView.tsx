@@ -15,7 +15,8 @@ import {
   Store, 
   Smartphone, 
   ShoppingBag,
-  Sparkles
+  Sparkles,
+  FlaskConical
 } from 'lucide-react';
 import { getStoredUserProfile, saveStoredUserProfile } from '../../services/storage';
 import { saveUserProfileToSupabase, fetchUserProfileFromSupabase } from '../../services/supabaseClient';
@@ -132,7 +133,18 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
       badge: 'Consulta & Cotizaciones',
       icon: ShoppingBag,
     },
-  }[currentRole];
+    laboratorio: {
+      title: 'Laboratorio (Técnico de Revelado & Fotos)',
+      color: 'bg-[#FFF3BC] text-[#4E2B01] border-[#4E2B01]',
+      badge: 'Laboratorio & Fotos',
+      icon: FlaskConical,
+    },
+  }[currentRole] || {
+    title: 'Usuario Minifoto',
+    color: 'bg-[#FFF3BC] text-[#4E2B01] border-[#ECB769]',
+    badge: 'Minifoto',
+    icon: Sparkles,
+  };
 
   const RoleIcon = roleMeta.icon;
 

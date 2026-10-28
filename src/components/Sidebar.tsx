@@ -14,12 +14,14 @@ import {
   LogOut,
   Users,
   Home,
-  User
+  User,
+  Camera
 } from 'lucide-react';
 
 export type ActiveTab = 
   | 'home'
   | 'pos_cashier'
+  | 'work_orders'
   | 'field_collector'
   | 'tablet_pos'
   | 'deliveries'
@@ -52,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     switch (currentRole) {
       case 'admin':
         return [
+          { id: 'work_orders' as ActiveTab, label: 'Órdenes de Trabajo & Fotos', icon: Camera, color: 'text-[#ECB769]' },
           { id: 'pos_cashier' as ActiveTab, label: 'Punto de Venta Touch (POS)', icon: ShoppingBag, color: 'text-[#ECB769]' },
           { id: 'tablet_pos' as ActiveTab, label: 'Cobranza Escolar (8 Tablets)', icon: Smartphone, color: 'text-[#ECB769]' },
           { id: 'schools' as ActiveTab, label: 'Gestión Escolar & Alumnos', icon: GraduationCap, color: 'text-[#FFF3BC]' },
@@ -65,10 +68,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case 'cashier':
         return [
           { id: 'pos_cashier' as ActiveTab, label: 'POS (Productos & Calculadora)', icon: ShoppingBag, color: 'text-[#ECB769]' },
+          { id: 'work_orders' as ActiveTab, label: 'Órdenes de Trabajo & Fotos', icon: Camera, color: 'text-[#ECB769]' },
           { id: 'tablet_pos' as ActiveTab, label: 'Cobranza Escolar (Oficinas)', icon: Smartphone, color: 'text-[#ECB769]' },
           { id: 'schools' as ActiveTab, label: 'Alumnos y Padrón Escolar', icon: GraduationCap, color: 'text-[#ECB769]' },
           { id: 'deliveries' as ActiveTab, label: 'Entregas & Liquidación', icon: PackageCheck, color: 'text-[#FFF3BC]' },
           { id: 'history' as ActiveTab, label: 'Historial de Cobros', icon: Receipt, color: 'text-slate-300' },
+          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
+        ];
+      case 'laboratorio':
+        return [
+          { id: 'work_orders' as ActiveTab, label: 'Órdenes de Trabajo & Fotos', icon: Camera, color: 'text-[#ECB769]' },
+          { id: 'deliveries' as ActiveTab, label: 'Entregas & Liquidación', icon: PackageCheck, color: 'text-[#FFF3BC]' },
+          { id: 'schools' as ActiveTab, label: 'Alumnos y Padrón', icon: GraduationCap, color: 'text-[#ECB769]' },
+          { id: 'catalogs' as ActiveTab, label: 'Catálogo de Productos', icon: Layers, color: 'text-[#ECB769]' },
           { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
         ];
       case 'field':
