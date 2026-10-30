@@ -15,9 +15,11 @@ import {
   CheckCircle2,
   User,
   FlaskConical,
-  Printer
+  Printer,
+  BookOpen
 } from 'lucide-react';
 import { getStoredUserProfile } from '../services/storage';
+import { UserManualModal } from './UserManualModal';
 
 interface HeaderProps {
   currentRole: Role;
@@ -47,6 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [includeCatalogs, setIncludeCatalogs] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showManualModal, setShowManualModal] = useState(false);
 
   const roleLabels: Record<Role, { title: string; color: string; icon: React.ReactNode }> = {
     admin: {
@@ -167,6 +170,17 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
+            {/* Manual de Usuario Oficial (PDF) */}
+            <button
+              onClick={() => setShowManualModal(true)}
+              type="button"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-[#4E2B01] bg-[#FFF3BC] hover:bg-[#faeab0] active:scale-95 rounded-xl border border-[#ECB769] transition cursor-pointer shadow-2xs"
+              title="Manual de Usuario por Roles (Imprimible y PDF)"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-[#4E2B01]" />
+              <span className="hidden sm:inline">Manual PDF</span>
+            </button>
+
             {/* Quick PWA Install Button */}
             <PWAInstallButton variant="header" />
 
@@ -275,6 +289,13 @@ export const Header: React.FC<HeaderProps> = ({
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* Manual de Usuario Oficial por Roles Modal */}
+      <UserManualModal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        initialRole={currentRole}
+      />
     </>
   );
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Role } from '../types';
 import { 
   ShoppingBag, 
@@ -17,8 +17,10 @@ import {
   User,
   Camera,
   Tag,
-  DollarSign
+  DollarSign,
+  BookOpen
 } from 'lucide-react';
+import { UserManualModal } from './UserManualModal';
 
 export type ActiveTab = 
   | 'home'
@@ -52,6 +54,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   onLogout,
 }) => {
+  const [showManualModal, setShowManualModal] = useState(false);
+
   // Navigation items specific to active role
   const getNavItems = () => {
     switch (currentRole) {
@@ -157,10 +161,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Footer Session Section */}
-      <div className="p-3 border-t border-[#333333] space-y-2">
+      <div className="p-3 border-t border-[#333333] space-y-1.5">
+        <button
+          onClick={() => setShowManualModal(true)}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-sky-300 hover:text-sky-200 hover:bg-[#2c2c2c] transition cursor-pointer border border-sky-500/20 ${
+            collapsed ? 'justify-center' : ''
+          }`}
+          title="Manual de Usuario por Roles (PDF)"
+        >
+          <BookOpen className="w-4 h-4 shrink-0 text-sky-400" />
+          {!collapsed && <span>Manual de Usuario (PDF)</span>}
+        </button>
+
         <button
           onClick={onLogout}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-[#ECB769] hover:bg-[#2c2c2c] transition cursor-pointer ${
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-[#ECB769] hover:bg-[#2c2c2c] transition cursor-pointer ${
             collapsed ? 'justify-center' : ''
           }`}
           title="Cambiar de Rol / Salir"
@@ -169,6 +184,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!collapsed && <span>Cambiar de Rol</span>}
         </button>
       </div>
+
+      <UserManualModal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        initialRole={currentRole}
+      />
     </aside>
   );
 };

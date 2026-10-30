@@ -264,12 +264,31 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.work_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.client_photos ENABLE ROW LEVEL SECURITY;
 
--- POLÍTICAS DE ACCESO TOTAL (ANON) PARA LECTURA Y ESCRITURA
+-- PERMISOS EXPLÍCITOS DE LECTURA, ESCRITURA Y ELIMINACIÓN (DELETE)
+GRANT ALL ON TABLE public.products TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.categories TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.sales TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.folio_config TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.graduation_students TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.schools TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.user_profiles TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.bank_transfers TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.audit_logs TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.work_orders TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.client_photos TO anon, authenticated, service_role;
+
+-- POLÍTICAS DE ACCESO TOTAL (ANON) PARA LECTURA, INSERCIÓN Y EDICIÓN
 DROP POLICY IF EXISTS "Anon full access products" ON public.products;
 CREATE POLICY "Anon full access products" ON public.products FOR ALL USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Anon delete products" ON public.products;
+CREATE POLICY "Anon delete products" ON public.products FOR DELETE USING (true);
+
 DROP POLICY IF EXISTS "Anon full access categories" ON public.categories;
 CREATE POLICY "Anon full access categories" ON public.categories FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon delete categories" ON public.categories;
+CREATE POLICY "Anon delete categories" ON public.categories FOR DELETE USING (true);
 
 DROP POLICY IF EXISTS "Anon full access sales" ON public.sales;
 CREATE POLICY "Anon full access sales" ON public.sales FOR ALL USING (true) WITH CHECK (true);

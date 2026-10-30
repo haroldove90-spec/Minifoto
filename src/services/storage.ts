@@ -98,6 +98,22 @@ export const markCategoryAsDeleted = (categoryIds: string | string[]) => {
   localStorage.setItem('pos_photo_deleted_category_ids_v1', JSON.stringify(updated));
 };
 
+export const removeStoredProduct = (productId: string): Product[] => {
+  markProductAsDeleted(productId);
+  const current = getStoredProducts();
+  const updated = current.filter((p) => p.id !== productId);
+  saveStoredProducts(updated);
+  return updated;
+};
+
+export const removeStoredCategory = (categoryId: string): CategoryItem[] => {
+  markCategoryAsDeleted(categoryId);
+  const current = getStoredCategories();
+  const updated = current.filter((c) => c.id !== categoryId);
+  saveStoredCategories(updated);
+  return updated;
+};
+
 export const getStoredProducts = (): Product[] => {
   const data = localStorage.getItem(KEYS.PRODUCTS);
   const deletedIds = new Set(getDeletedProductIds());

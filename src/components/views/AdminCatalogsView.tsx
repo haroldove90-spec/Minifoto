@@ -244,33 +244,21 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     }
   };
 
-  // Delete category
-  const handleDeleteCategory = async (catId: string, catLabel: string) => {
+  // Delete category (opens in-app modal to prevent iframe blocking)
+  const handleDeleteCategory = (catId: string, catLabel: string) => {
     if (!isAdmin) return;
     const count = products.filter((p) => p.category === catId).length;
-    const confirmMsg = count > 0
-      ? `¿Seguro que deseas eliminar definitivamente la categoría "${catLabel}"?\n\nExisten ${count} producto(s) en esta categoría. Se borrará de Supabase y del navegador.`
-      : `¿Seguro que deseas eliminar la categoría "${catLabel}"? Se borrará de Supabase y del navegador.`;
-
-    if (!confirm(confirmMsg)) return;
-
-    const updated = categoriesList.filter((c) => c.id !== catId);
-    setCategoriesList(updated);
-    saveStoredCategories(updated);
-    const res = await deleteCategoryFromSupabase(catId);
-
-    if (selectedCategory === catId) {
-      setSelectedCategory('all');
-    }
-    if (formCategory === catId) {
-      setFormCategory(updated[0]?.id || 'foto_estudio');
-    }
-
-    if (res.success) {
-      showToast(`Categoría "${catLabel}" eliminada del sistema y Supabase.`);
-    } else {
-      showToast(`Categoría "${catLabel}" eliminada localmente (Aviso Supabase: ${res.error || 'Verificar'})`);
-    }
+    setShowCategoryModal(false);
+    setDeleteModal({
+      isOpen: true,
+      type: 'category',
+      id: catId,
+      name: catLabel,
+      count,
+      extraMessage: count > 0 
+        ? `Existen ${count} producto(s) en esta categoría. Se reasignarán a Foto Estudio y la categoría se borrará permanentemente de Supabase y del sistema.`
+        : 'Esta categoría se eliminará permanentemente de Supabase y del catálogo.',
+    });
   };
 
   // Asignar o cambiar categoría directamente a un producto

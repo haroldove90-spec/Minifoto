@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Product, Category, Role } from '../../types';
 import { 
   DollarSign, 
@@ -31,10 +31,26 @@ import {
   Church,
   PartyPopper,
   Coffee,
-  GraduationCap
+  GraduationCap,
+  FolderPlus,
+  BookOpen,
+  AlertTriangle
 } from 'lucide-react';
-import { saveProductsBatchToSupabase, COMPLETE_SUPABASE_SQL } from '../../services/supabaseClient';
-import { getStoredCategories } from '../../services/storage';
+import { 
+  saveProductsBatchToSupabase, 
+  deleteProductFromSupabase,
+  saveCategoryToSupabase,
+  deleteCategoryFromSupabase,
+  fetchCategoriesFromSupabase,
+  COMPLETE_SUPABASE_SQL 
+} from '../../services/supabaseClient';
+import { 
+  getStoredCategories, 
+  saveStoredCategories, 
+  markProductAsDeleted, 
+  markCategoryAsDeleted 
+} from '../../services/storage';
+import { UserManualModal } from '../UserManualModal';
 
 interface PriceListViewProps {
   products: Product[];
@@ -66,6 +82,9 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
   const [showSqlModal, setShowSqlModal] = useState<boolean>(false);
   const [copiedSql, setCopiedSql] = useState<boolean>(false);
 
+  // Manual Modal state
+  const [showManualModal, setShowManualModal] = useState<boolean>(false);
+
   // New product modal state
   const [showNewModal, setShowNewModal] = useState<boolean>(false);
   const [newName, setNewName] = useState<string>('');
@@ -82,8 +101,8 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
   const [markupPercent, setMarkupPercent] = useState<number>(10);
   const [markupCategory, setMarkupCategory] = useState<string>('all');
 
-  // Categories list
-  const categoriesList = useMemo(() => {
+  // Categories dynamic state
+  const [categoriesList, setCategoriesList] = useState<any[]>(() => {
     const stored = getStoredCategories();
     return stored.length > 0 ? stored : [
       { id: 'foto_estudio', label: 'Foto Estudio', color: 'text-yellow-600' },
@@ -95,12 +114,66 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
       { id: 'fuente_sodas', label: 'Fuente de Sodas', color: 'text-orange-600' },
       { id: 'graduaciones', label: 'Graduaciones 2026', color: 'text-teal-600' },
     ];
-  }, []);
+  });
+
+  // Category Manager Modal state
+  const [showCategoryManager, setShowCategoryManager] = useState<boolean>(false);
+  const [newCatInputName, setNewCatInputName] = useState<string>('');
+  const [isSavingCategory, setIsSavingCategory] = useState<boolean>(false);
+
+  // In-app Delete Confirmation Modal for product
+  const [deleteProductConfirm, setDeleteProductConfirm] = useState<{
+    isOpen: boolean;
+    product: Product | null;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    product: null,
+    isDeleting: false,
+  });
+
+  // In-app Delete Confirmation Modal for category
+  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<{
+    isOpen: boolean;
+    catId: string;
+    catLabel: string;
+    productCount: number;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    catId: '',
+    catLabel: '',
+    productCount: 0,
+    isDeleting: false,
+  });
 
   // Update working products if prop changes and not currently edited
-  React.useEffect(() => {
+  useEffect(() => {
     setWorkingProducts(products);
   }, [products]);
+
+  // Sync categories with Supabase on mount
+  useEffect(() => {
+    fetchCategoriesFromSupabase().then((remote) => {
+      if (remote && remote.length > 0) {
+        setCategoriesList((prev) => {
+          const map = new Map(prev.map((c) => [c.id, c]));
+          remote.forEach((rc) => {
+            if (!map.has(rc.id)) {
+              map.set(rc.id, {
+                id: rc.id,
+                label: rc.label,
+                color: rc.color || 'text-amber-500',
+              });
+            }
+          });
+          const merged = Array.from(map.values());
+          saveStoredCategories(merged);
+          return merged;
+        });
+      }
+    });
+  }, []);
 
   // Statistics
   const totalProducts = workingProducts.length;
@@ -261,12 +334,158 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
     });
   };
 
-  // Delete product
-  const handleDeleteProduct = (id: string, name: string) => {
-    if (!window.confirm(`¿Seguro que deseas eliminar "${name}" de la lista de precios?`)) return;
-    const updated = workingProducts.filter((p) => p.id !== id);
-    setWorkingProducts(updated);
-    onSaveProducts(updated);
+  // Trigger in-app confirmation modal to delete product (never blocked by iframes)
+  const triggerDeleteProduct = (product: Product) => {
+    setDeleteProductConfirm({
+      isOpen: true,
+      product,
+      isDeleting: false,
+    });
+  };
+
+  // Definitively execute product deletion
+  const handleExecuteDeleteProduct = async () => {
+    const prod = deleteProductConfirm.product;
+    if (!prod) return;
+
+    setDeleteProductConfirm((prev) => ({ ...prev, isDeleting: true }));
+    try {
+      // 1. Mark as permanently deleted in localStorage so browser never restores it
+      markProductAsDeleted(prod.id);
+
+      // 2. Remove from local working copy and notify parent
+      const updated = workingProducts.filter((p) => p.id !== prod.id);
+      setWorkingProducts(updated);
+      onSaveProducts(updated);
+
+      // 3. Delete from Supabase
+      const res = await deleteProductFromSupabase(prod.id);
+
+      setSaveStatus({
+        type: 'success',
+        message: res 
+          ? `✓ Producto "${prod.name}" eliminado definitivamente de la lista de precios y Supabase.`
+          : `✓ Producto "${prod.name}" eliminado localmente (sincronizado).`,
+      });
+      setTimeout(() => setSaveStatus({ type: null, message: '' }), 4500);
+    } catch (e: any) {
+      setSaveStatus({
+        type: 'error',
+        message: `Producto eliminado localmente. Detalle Supabase: ${e.message || 'Error de red'}`,
+      });
+    } finally {
+      setDeleteProductConfirm({ isOpen: false, product: null, isDeleting: false });
+    }
+  };
+
+  // Trigger in-app confirmation modal to delete category
+  const triggerDeleteCategory = (catId: string, catLabel: string) => {
+    const count = workingProducts.filter((p) => p.category === catId).length;
+    setDeleteCategoryConfirm({
+      isOpen: true,
+      catId,
+      catLabel,
+      productCount: count,
+      isDeleting: false,
+    });
+  };
+
+  // Definitively execute category deletion
+  const handleExecuteDeleteCategory = async () => {
+    const { catId, catLabel } = deleteCategoryConfirm;
+    if (!catId) return;
+
+    setDeleteCategoryConfirm((prev) => ({ ...prev, isDeleting: true }));
+    try {
+      // 1. Mark category as deleted in localStorage
+      markCategoryAsDeleted(catId);
+
+      // 2. Reassign any existing products to fallback ('foto_estudio' or first remaining)
+      const fallbackCat = categoriesList.find((c) => c.id !== catId)?.id || 'foto_estudio';
+      const updatedProducts = workingProducts.map((p) =>
+        p.category === catId ? { ...p, category: fallbackCat } : p
+      );
+      setWorkingProducts(updatedProducts);
+      onSaveProducts(updatedProducts);
+
+      // Sincronizar en Supabase los productos reasignados
+      const remapped = updatedProducts.filter((p) => p.category === fallbackCat);
+      if (remapped.length > 0) {
+        saveProductsBatchToSupabase(remapped).catch(() => {});
+      }
+
+      // 3. Remove from categories list in state & storage
+      const updatedCats = categoriesList.filter((c) => c.id !== catId);
+      setCategoriesList(updatedCats);
+      saveStoredCategories(updatedCats);
+
+      if (selectedCategory === catId) {
+        setSelectedCategory('all');
+      }
+
+      // 4. Delete from Supabase
+      const res = await deleteCategoryFromSupabase(catId);
+
+      setSaveStatus({
+        type: 'success',
+        message: res.success 
+          ? `✓ Categoría "${catLabel}" eliminada definitivamente del sistema y Supabase.`
+          : `✓ Categoría "${catLabel}" eliminada localmente (Aviso Supabase: ${res.error || 'Verificar'})`,
+      });
+      setTimeout(() => setSaveStatus({ type: null, message: '' }), 4500);
+    } catch (e: any) {
+      setSaveStatus({
+        type: 'error',
+        message: `Categoría eliminada localmente. Detalle Supabase: ${e.message || 'Error'}`,
+      });
+    } finally {
+      setDeleteCategoryConfirm({
+        isOpen: false,
+        catId: '',
+        catLabel: '',
+        productCount: 0,
+        isDeleting: false,
+      });
+    }
+  };
+
+  // Add new category directly from modal
+  const handleAddNewCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newCatInputName.trim();
+    if (!trimmed) return;
+
+    const id = trimmed
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    if (categoriesList.some((c) => c.id === id)) {
+      alert('Ya existe una categoría similar.');
+      return;
+    }
+
+    setIsSavingCategory(true);
+    const newCat = {
+      id,
+      label: trimmed,
+      color: 'text-amber-500',
+    };
+
+    const updated = [...categoriesList, newCat];
+    setCategoriesList(updated);
+    saveStoredCategories(updated);
+
+    await saveCategoryToSupabase(newCat);
+    setIsSavingCategory(false);
+    setNewCatInputName('');
+    setSaveStatus({
+      type: 'success',
+      message: `✓ Categoría "${trimmed}" creada y guardada en Supabase.`,
+    });
+    setTimeout(() => setSaveStatus({ type: null, message: '' }), 4000);
   };
 
   // Copy full SQL script
@@ -358,6 +577,16 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
             >
               <Plus className="w-4 h-4 text-[#ECB769]" />
               <span>Nuevo Producto</span>
+            </button>
+
+            {/* Manual de Usuario PDF */}
+            <button
+              onClick={() => setShowManualModal(true)}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333333] text-sky-300 font-bold text-xs sm:text-sm border border-sky-500/40 transition active:scale-95 cursor-pointer shadow-md"
+              title="Abrir y descargar el Manual de Usuario por Roles en PDF"
+            >
+              <BookOpen className="w-4 h-4 text-sky-400" />
+              <span>Manual PDF</span>
             </button>
 
             {/* Go to POS */}
@@ -497,6 +726,16 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
 
         {/* Category Pill Badges */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 no-scrollbar">
+          {/* Botón Gestionar y Borrar Categorías */}
+          <button
+            onClick={() => setShowCategoryManager(true)}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 bg-[#4E2B01] hover:bg-[#603502] text-[#FFF3BC] border border-[#ECB769] shadow-md shrink-0"
+            title="Administrar o borrar categorías del catálogo y Supabase"
+          >
+            <FolderPlus className="w-3.5 h-3.5 text-[#ECB769]" />
+            <span>Gestionar Categorías ({categoriesList.length})</span>
+          </button>
+
           <button
             onClick={() => setSelectedCategory('all')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
@@ -701,9 +940,9 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
                           </button>
 
                           <button
-                            onClick={() => handleDeleteProduct(prod.id, prod.name)}
+                            onClick={() => triggerDeleteProduct(prod)}
                             className="p-2 rounded-xl bg-[#2a2a2a] hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 transition cursor-pointer"
-                            title="Eliminar de catálogo"
+                            title={`Eliminar "${prod.name}" de la lista y Supabase`}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1037,6 +1276,265 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* =========================================================================
+          MODAL: CONFIRMACIÓN PARA BORRAR PRODUCTO (NUNCA BLOQUEADO POR IFRAME)
+          ========================================================================= */}
+      {deleteProductConfirm.isOpen && deleteProductConfirm.product && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-fadeIn">
+          <div className="bg-[#242424] border-2 border-rose-500/70 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3.5 text-rose-400">
+              <div className="w-12 h-12 rounded-2xl bg-rose-950/70 border border-rose-500/40 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-white">
+                  ¿Eliminar producto de la Lista de Precios?
+                </h3>
+                <p className="text-xs text-rose-300/80">Esta acción es permanente y no se puede deshacer.</p>
+              </div>
+            </div>
+
+            <div className="bg-[#1b1b1b] p-4 rounded-2xl border border-[#383838] space-y-2 text-xs">
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-slate-400">Producto:</span>
+                <span className="font-bold text-white text-sm">{deleteProductConfirm.product.name}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-slate-400">Categoría:</span>
+                <span className="font-bold capitalize text-amber-300">
+                  {deleteProductConfirm.product.category.replace('_', ' ')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-slate-400">Precio actual:</span>
+                <span className="font-black text-[#FFF3BC] font-mono">
+                  ${deleteProductConfirm.product.price.toFixed(2)} MXN
+                </span>
+              </div>
+              <div className="pt-2 border-t border-[#333] text-[11px] text-slate-400 leading-relaxed">
+                Se borrará del catálogo local, del Punto de Venta (POS) y de la base de datos <strong>Supabase</strong>.
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={deleteProductConfirm.isDeleting}
+                onClick={() => setDeleteProductConfirm({ isOpen: false, product: null, isDeleting: false })}
+                className="px-4 py-2.5 rounded-xl bg-[#333] hover:bg-[#444] text-slate-300 text-xs font-bold transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deleteProductConfirm.isDeleting}
+                onClick={handleExecuteDeleteProduct}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-black shadow-lg transition cursor-pointer disabled:opacity-50"
+              >
+                {deleteProductConfirm.isDeleting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Borrando de Supabase...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Sí, Eliminar Definitivamente</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: GESTIONAR Y BORRAR CATEGORÍAS DEL SISTEMA Y SUPABASE
+          ========================================================================= */}
+      {showCategoryManager && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-fadeIn">
+          <div className="bg-[#242424] border border-[#ECB769]/50 rounded-3xl max-w-xl w-full flex flex-col max-h-[90vh] shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="p-4 sm:p-5 bg-[#1f1f1f] border-b border-[#3b3b3b] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#4E2B01] border border-[#ECB769] flex items-center justify-center text-[#FFF3BC] shadow-md">
+                  <FolderPlus className="w-5 h-5 text-[#ECB769]" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-[#FFF3BC]">
+                    Gestionar Categorías del Sistema & Supabase
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Crea nuevas categorías o elimina existentes con sincronización automática.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCategoryManager(false)}
+                className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-[#333] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-5">
+              {/* Add category form */}
+              <form onSubmit={handleAddNewCategory} className="bg-[#1b1b1b] p-4 rounded-2xl border border-[#3b3b3b] space-y-3">
+                <h4 className="text-xs font-black text-[#FFF3BC] uppercase tracking-wide flex items-center gap-1.5">
+                  <Plus className="w-4 h-4 text-[#ECB769]" />
+                  <span>Crear Nueva Categoría</span>
+                </h4>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={newCatInputName}
+                    onChange={(e) => setNewCatInputName(e.target.value)}
+                    placeholder="Ej. Fotolibros, Cuadros Rústicos, Sublimación..."
+                    className="flex-1 px-3.5 py-2.5 bg-[#252525] border border-[#444] rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#ECB769]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSavingCategory || !newCatInputName.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-[#ECB769] hover:bg-[#d99f4d] text-[#202020] font-black text-xs sm:text-sm rounded-xl transition cursor-pointer disabled:opacity-50 shadow-md shrink-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{isSavingCategory ? 'Guardando...' : 'Crear'}</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* List of categories with delete button */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+                  <span>Categorías Registradas ({categoriesList.length})</span>
+                  <span>Acción</span>
+                </div>
+
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {categoriesList.map((cat) => {
+                    const prodCount = workingProducts.filter((p) => p.category === cat.id).length;
+                    return (
+                      <div
+                        key={cat.id}
+                        className="flex items-center justify-between p-3 bg-[#1c1c1c] rounded-2xl border border-[#383838] hover:border-[#4a4a4a] transition"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="p-2 rounded-xl bg-[#292929] shrink-0">
+                            {getCategoryIcon(cat.id)}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-bold text-white text-xs sm:text-sm block truncate">
+                              {cat.label}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-mono block">
+                              ID: {cat.id} • {prodCount} producto(s) asignado(s)
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => triggerDeleteCategory(cat.id, cat.label)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-600/40 text-xs font-bold transition cursor-pointer"
+                            title={`Eliminar categoría "${cat.label}"`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Borrar</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-[#1f1f1f] border-t border-[#3b3b3b] flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setShowCategoryManager(false)}
+                className="px-5 py-2.5 rounded-xl bg-[#333] hover:bg-[#444] text-slate-200 text-xs font-bold cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: CONFIRMACIÓN PARA BORRAR CATEGORÍA
+          ========================================================================= */}
+      {deleteCategoryConfirm.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-fadeIn">
+          <div className="bg-[#242424] border-2 border-rose-500 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3.5 text-rose-400">
+              <div className="w-12 h-12 rounded-2xl bg-rose-950/80 border border-rose-500/40 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-white">
+                  ¿Borrar Categoría "{deleteCategoryConfirm.catLabel}"?
+                </h3>
+                <p className="text-xs text-rose-300/80">Se eliminará de Supabase y del catálogo.</p>
+              </div>
+            </div>
+
+            <div className="bg-[#1b1b1b] p-4 rounded-2xl border border-[#383838] space-y-2 text-xs">
+              <p className="text-slate-300 leading-relaxed">
+                Actualmente existen <strong>{deleteCategoryConfirm.productCount}</strong> producto(s) en esta categoría.
+              </p>
+              <p className="text-amber-300/90 leading-relaxed font-semibold">
+                🛡️ Para proteger tus precios y catálogo, todos los productos asociados se reasignarán automáticamente a la categoría <strong>"Foto Estudio"</strong>.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={deleteCategoryConfirm.isDeleting}
+                onClick={() => setDeleteCategoryConfirm({ isOpen: false, catId: '', catLabel: '', productCount: 0, isDeleting: false })}
+                className="px-4 py-2.5 rounded-xl bg-[#333] hover:bg-[#444] text-slate-300 text-xs font-bold transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deleteCategoryConfirm.isDeleting}
+                onClick={handleExecuteDeleteCategory}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-lg transition cursor-pointer disabled:opacity-50"
+              >
+                {deleteCategoryConfirm.isDeleting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Borrando de Supabase...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Sí, Borrar Categoría</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: MANUAL DE USUARIO OFICIAL POR ROLES (IMPRIMIBLE / PDF)
+          ========================================================================= */}
+      <UserManualModal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        initialRole="admin"
+      />
     </div>
   );
 };
+
