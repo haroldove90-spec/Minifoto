@@ -45,6 +45,11 @@ export const BottomBar: React.FC<BottomBarProps> = ({
           { id: 'deliveries' as ActiveTab, label: 'Entregas', icon: PackageCheck },
           { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
         ];
+      case 'impresor':
+        return [
+          { id: 'work_orders' as ActiveTab, label: 'Órdenes', icon: Camera },
+          { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
+        ];
       case 'laboratorio':
         return [
           { id: 'work_orders' as ActiveTab, label: 'Órdenes', icon: Camera },

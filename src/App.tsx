@@ -88,8 +88,9 @@ export default function App() {
   const [operatorName, setOperatorName] = useState<string>(() => getStoredOperator());
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     const savedTab = getStoredActiveTab() as ActiveTab | null;
-    if (savedTab) return savedTab;
     const role = getStoredRole();
+    if (role === 'impresor') return 'work_orders';
+    if (savedTab) return savedTab;
     if (role === 'cashier') return 'pos_cashier';
     if (role === 'laboratorio') return 'work_orders';
     if (role === 'client') return 'catalogs';
@@ -98,7 +99,13 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
   const handleSelectTab = (tab: ActiveTab) => {
-    const finalTab = (currentRole === 'laboratorio' && (tab === 'pos_cashier' || tab === 'tablet_pos')) ? 'work_orders' : tab;
+    let finalTab = tab;
+    if ((currentRole === 'laboratorio' || currentRole === 'impresor') && (tab === 'pos_cashier' || tab === 'tablet_pos')) {
+      finalTab = 'work_orders';
+    }
+    if (currentRole === 'impresor' && tab !== 'work_orders' && tab !== 'profile') {
+      finalTab = 'work_orders';
+    }
     setActiveTab(finalTab);
     saveStoredActiveTab(finalTab);
   };
@@ -199,7 +206,9 @@ export default function App() {
     saveStoredOperator(opName);
 
     const savedTab = getStoredActiveTab() as ActiveTab | null;
-    if (savedTab) {
+    if (role === 'impresor') {
+      handleSelectTab('work_orders');
+    } else if (savedTab) {
       handleSelectTab(savedTab);
     } else if (role === 'cashier') {
       handleSelectTab('pos_cashier');
@@ -373,7 +382,7 @@ export default function App() {
   }
 
   // 2. FULLSCREEN KIOSK TOUCH POS (Hide Header, Sidebar, BottomBar completely)
-  if (activeTab === 'pos_cashier' && currentRole !== 'laboratorio') {
+  if (activeTab === 'pos_cashier' && currentRole !== 'laboratorio' && currentRole !== 'impresor') {
     return (
       <div className="fixed inset-0 z-50 bg-[#FCF9F2] text-[#202020] overflow-hidden font-sans">
         <SplashScreen minDisplayTimeMs={1200} />

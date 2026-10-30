@@ -14,7 +14,8 @@ import {
   RotateCcw,
   CheckCircle2,
   User,
-  FlaskConical
+  FlaskConical,
+  Printer
 } from 'lucide-react';
 import { getStoredUserProfile } from '../services/storage';
 
@@ -72,6 +73,11 @@ export const Header: React.FC<HeaderProps> = ({
       title: 'Laboratorio (Técnico de Revelado)',
       color: 'bg-[#FFF3BC] text-[#4E2B01] border-[#4E2B01]',
       icon: <FlaskConical className="w-3.5 h-3.5 text-[#4E2B01]" />,
+    },
+    impresor: {
+      title: 'Impresor (Órdenes & Escáner)',
+      color: 'bg-[#FFF3BC] text-[#4E2B01] border-[#4E2B01]',
+      icon: <Printer className="w-3.5 h-3.5 text-[#4E2B01]" />,
     },
   };
 

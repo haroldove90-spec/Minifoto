@@ -1,6 +1,6 @@
 import React from 'react';
 import { Role } from '../types';
-import { ShieldCheck, Store, Smartphone, ShoppingBag, FlaskConical } from 'lucide-react';
+import { ShieldCheck, Store, Smartphone, ShoppingBag, FlaskConical, Printer } from 'lucide-react';
 
 interface RoleSelectorProps {
   onSelectRole: (role: Role, operatorName: string) => void;
@@ -28,6 +28,13 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole, brandL
       operator: 'Cajero Mostrador',
       icon: <Store className="w-10 h-10 sm:w-12 sm:h-12 text-[#ECB769]" />,
       color: 'border-[#ECB769]/50 hover:border-[#ECB769]',
+    },
+    {
+      id: 'impresor',
+      name: 'Impresor (Órdenes & Escáner)',
+      operator: 'Operador Impresor',
+      icon: <Printer className="w-10 h-10 sm:w-12 sm:h-12 text-[#4E2B01]" />,
+      color: 'border-[#4E2B01]/50 hover:border-[#4E2B01]',
     },
     {
       id: 'laboratorio',
@@ -64,9 +71,9 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole, brandL
         <div className="h-1.5 w-24 bg-[#ECB769] rounded-full"></div>
       </div>
 
-      {/* Grid: 2 columns on mobile, 5 columns on desktop */}
+      {/* Grid: 2 columns on mobile, 3 on tablet, 6 on desktop */}
       <div className="w-full max-w-6xl">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
           {rolesList.map((item, idx) => (
             <button
               key={`${item.id}-${idx}`}

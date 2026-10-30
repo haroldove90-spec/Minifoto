@@ -356,6 +356,26 @@ ON CONFLICT (id) DO UPDATE SET
   has_extras = EXCLUDED.has_extras,
   default_retoque_price = EXCLUDED.default_retoque_price,
   default_autoadherible_price = EXCLUDED.default_autoadherible_price;
+
+-- POBLAR PERFILES DE USUARIO INICIALES (INCLUYE ROL IMPRESOR)
+INSERT INTO public.user_profiles (id, role, name, email, phone, notes)
+VALUES
+  ('usr-admin', 'admin', 'Administrador Principal', 'admin@minifoto.com', '+52 55 1234 5678', 'Acceso total y configuración'),
+  ('usr-cashier', 'cashier', 'Cajero Minifoto', 'caja@minifoto.com', '+52 55 8765 4321', 'Cobro POS y registro'),
+  ('usr-field', 'field', 'Fotógrafo en Campo', 'campo@minifoto.com', '+52 55 9999 8888', 'Sesiones escolares'),
+  ('usr-client', 'client', 'Portal Cliente / Alumno', 'cliente@minifoto.com', '', 'Consulta de paquetes'),
+  ('usr-lab', 'laboratorio', 'Técnico de Laboratorio', 'lab@minifoto.com', '+52 55 4444 3333', 'Órdenes de revelado y edición'),
+  ('usr-impresor', 'impresor', 'Operador Impresor', 'impresion@minifoto.com', '+52 55 5555 2222', 'Órdenes de trabajo, escáner e impresión')
+ON CONFLICT (id) DO UPDATE SET
+  role = EXCLUDED.role,
+  name = EXCLUDED.name,
+  email = EXCLUDED.email,
+  notes = EXCLUDED.notes;
+
+-- BUCKET DE SUPABASE STORAGE PARA FOTOGRAFÍAS DE CLIENTES
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('client-photos', 'client-photos', true)
+ON CONFLICT (id) DO NOTHING;
 `;
 
 // Helper to sanitize URL

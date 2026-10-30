@@ -296,7 +296,7 @@ export const getStoredRole = (): Role | null => {
     return null;
   }
   const role = (localStorage.getItem(KEYS.ROLE) as Role) || null;
-  if (role && ['admin', 'cashier', 'field', 'client', 'laboratorio'].includes(role)) {
+  if (role && ['admin', 'cashier', 'field', 'client', 'laboratorio', 'impresor'].includes(role)) {
     return role;
   }
   // Default to admin so browser refresh NEVER accidentally logs out the user
@@ -323,6 +323,7 @@ export const getStoredOperator = (): string => {
   if (role === 'field') return 'Cobrador Móvil';
   if (role === 'client') return 'Cliente Invitado';
   if (role === 'laboratorio') return 'Técnico Laboratorio';
+  if (role === 'impresor') return 'Operador Impresor';
   return 'Uriel';
 };
 

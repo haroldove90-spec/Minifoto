@@ -75,6 +75,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           { id: 'history' as ActiveTab, label: 'Historial de Cobros', icon: Receipt, color: 'text-slate-300' },
           { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
         ];
+      case 'impresor':
+        return [
+          { id: 'work_orders' as ActiveTab, label: 'Órdenes de Trabajo & Escáner', icon: Camera, color: 'text-[#ECB769]' },
+          { id: 'profile' as ActiveTab, label: 'Mi Perfil', icon: User, color: 'text-[#FFF3BC]' },
+        ];
       case 'laboratorio':
         return [
           { id: 'work_orders' as ActiveTab, label: 'Órdenes de Trabajo & Fotos', icon: Camera, color: 'text-[#ECB769]' },

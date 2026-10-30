@@ -115,6 +115,8 @@ export const WorkOrdersLabView: React.FC<WorkOrdersLabViewProps> = ({
   const [uploadProgressText, setUploadProgressText] = useState('');
   const [lightboxPhoto, setLightboxPhoto] = useState<ClientPhoto | null>(null);
   const [photoRotation, setPhotoRotation] = useState(0);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Print States
   const [showTechnicalOrderModal, setShowTechnicalOrderModal] = useState(false);
@@ -246,20 +248,29 @@ export const WorkOrdersLabView: React.FC<WorkOrdersLabViewProps> = ({
     }
   };
 
-  // Upload Client Photos
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  // Universal Process Files (Works reliably on Mac Safari/Chrome, Windows, iOS & Android)
+  const processFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0 || !selectedOrder) return;
+    const fileArray = Array.from(files).filter(
+      (f) =>
+        f.type.startsWith('image/') ||
+        /\.(jpe?g|png|webp|heic|heif|tiff?|bmp|gif)$/i.test(f.name)
+    );
+
+    if (fileArray.length === 0) {
+      alert('Por favor selecciona archivos de imagen válidos (JPG, PNG, HEIC, WebP).');
+      return;
+    }
 
     setIsUploading(true);
-    setUploadProgressText(`Cargando ${files.length} fotografía(s)...`);
+    setUploadProgressText(`Cargando ${fileArray.length} fotografía(s)...`);
 
     try {
       let currentOrderState = selectedOrder;
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        setUploadProgressText(`Guardando fotografía ${i + 1} de ${files.length} en Supabase...`);
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
+        setUploadProgressText(`Guardando fotografía ${i + 1} de ${fileArray.length} en Supabase...`);
 
         const res = await uploadClientPhotoToSupabase(selectedOrder.folio, file);
 
@@ -285,14 +296,16 @@ export const WorkOrdersLabView: React.FC<WorkOrdersLabViewProps> = ({
 
       const freshAll = getStoredWorkOrders();
       onUpdateWorkOrders(freshAll);
-      setScannerNotice(`¡${files.length} fotografía(s) guardadas correctamente!`);
+      setScannerNotice(`¡${fileArray.length} fotografía(s) guardadas correctamente!`);
       setTimeout(() => setScannerNotice(null), 3000);
     } catch (err) {
       console.error('Error cargando fotografías:', err);
     } finally {
       setIsUploading(false);
       setUploadProgressText('');
-      e.target.value = '';
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -452,14 +465,16 @@ export const WorkOrdersLabView: React.FC<WorkOrdersLabViewProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg sm:text-xl font-black text-[#202020] tracking-tight">
-                  Laboratorio & Órdenes de Trabajo
+                  {currentRole === 'impresor' ? 'Impresor & Órdenes de Trabajo' : 'Laboratorio & Órdenes de Trabajo'}
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#4E2B01] text-[#FFF3BC] uppercase tracking-wider">
-                  Rol Laboratorio
+                  {currentRole === 'impresor' ? 'Rol Impresor' : 'Rol Laboratorio'}
                 </span>
               </div>
               <p className="text-xs text-[#4E2B01]/80 font-medium">
-                Control de revelado, tickets POS, retoques fotográficos y fotos por cliente
+                {currentRole === 'impresor'
+                  ? 'Escáner de código de barras/QR, visualización de tickets, fotos e impresión de pedidos'
+                  : 'Control de revelado, tickets POS, retoques fotográficos y fotos por cliente'}
               </p>
             </div>
           </div>
@@ -948,20 +963,41 @@ export const WorkOrdersLabView: React.FC<WorkOrdersLabViewProps> = ({
 
                   {/* Actions: Upload, Download All, Print Sheet */}
                   <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-                    {/* File Upload Input */}
-                    <label className={`px-4 py-2 bg-[#4E2B01] text-[#FFF3BC] hover:bg-[#381f01] rounded-xl text-xs font-black flex items-center gap-2 transition cursor-pointer shadow-xs ${
-                      isUploading ? 'opacity-50 pointer-events-none' : ''
-                    }`}>
+                    {/* Native Offscreen File Input (Mac Safari/Chrome & Windows compatible) */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif,.tif,.tiff,.bmp"
+                      style={{
+                        position: 'fixed',
+                        top: '-9999px',
+                        left: '-9999px',
+                        opacity: 0,
+                        width: '1px',
+                        height: '1px',
+                        pointerEvents: 'none',
+                      }}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          processFiles(e.target.files);
+                        }
+                      }}
+                    />
+
+                    {/* Button Trigger (Works 100% on Mac Finder, Safari, Chrome & Mobile) */}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className={`px-4 py-2 bg-[#4E2B01] text-[#FFF3BC] hover:bg-[#381f01] active:scale-95 rounded-xl text-xs font-black flex items-center gap-2 transition cursor-pointer shadow-xs ${
+                        isUploading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                      }`}
+                      title="Subir fotos desde Mac, PC o celular"
+                    >
                       <Upload className="w-4 h-4 text-[#ECB769]" />
                       <span>{isUploading ? 'Subiendo...' : 'Subir Fotos'}</span>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </label>
+                    </button>
 
                     {/* Print Photos Sheet */}
                     {selectedOrder.photos && selectedOrder.photos.length > 0 && (
@@ -1001,29 +1037,56 @@ export const WorkOrdersLabView: React.FC<WorkOrdersLabViewProps> = ({
                   </div>
                 )}
 
-                {/* Photos Grid */}
+                {/* Photos Grid or Drag & Drop Empty Dropzone */}
                 {!selectedOrder.photos || selectedOrder.photos.length === 0 ? (
-                  <div className="p-8 sm:p-12 border-2 border-dashed border-[#ECB769]/60 rounded-3xl text-center bg-[#FCF9F2]">
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingOver(true);
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingOver(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingOver(false);
+                      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        processFiles(e.dataTransfer.files);
+                      }
+                    }}
+                    className={`p-8 sm:p-12 border-2 border-dashed rounded-3xl text-center transition-all ${
+                      isDraggingOver
+                        ? 'border-[#4E2B01] bg-[#FFF3BC]/50 scale-[1.01]'
+                        : 'border-[#ECB769]/60 bg-[#FCF9F2]'
+                    }`}
+                  >
                     <div className="w-16 h-16 rounded-2xl bg-[#FFF3BC] border border-[#ECB769] flex items-center justify-center mx-auto mb-3 shadow-xs">
-                      <Upload className="w-8 h-8 text-[#4E2B01]" />
+                      <Upload className={`w-8 h-8 text-[#4E2B01] transition-transform ${isDraggingOver ? 'scale-125' : ''}`} />
                     </div>
                     <h4 className="text-sm font-black text-[#4E2B01]">
-                      No hay fotografías cargadas para este cliente
+                      {isDraggingOver ? '¡Suelta las fotos aquí!' : 'No hay fotografías cargadas para este cliente'}
                     </h4>
                     <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
-                      Sube las fotografías capturadas para que el técnico de laboratorio pueda retocarlas, verlas, descargarlas e imprimirlas.
+                      Sube o arrastra las fotos desde tu Mac (Finder), PC o celular. Soporta JPG, PNG, HEIC, WebP.
                     </p>
-                    <label className="px-5 py-2.5 bg-[#4E2B01] text-[#FFF3BC] hover:bg-[#381f01] rounded-xl text-xs font-black inline-flex items-center gap-2 cursor-pointer shadow-md">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="px-5 py-2.5 bg-[#4E2B01] text-[#FFF3BC] hover:bg-[#381f01] active:scale-95 rounded-xl text-xs font-black inline-flex items-center gap-2 cursor-pointer shadow-md transition"
+                    >
                       <FolderPlus className="w-4 h-4 text-[#ECB769]" />
-                      <span>Seleccionar Fotos del Dispositivo</span>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </label>
+                      <span>{isUploading ? 'Procesando...' : 'Seleccionar Fotos del Dispositivo'}</span>
+                    </button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">

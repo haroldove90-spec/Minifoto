@@ -62,6 +62,16 @@ export const INITIAL_USER_PROFILES: Record<Role, UserProfile> = {
     notes: 'Encargado de laboratorio digital, revelado, retoques, impresión y control fotográfico',
     address: 'Área de Impresión y Laboratorio Minifoto',
   },
+  impresor: {
+    id: 'user-impresor',
+    role: 'impresor',
+    name: 'Operador Impresor',
+    email: 'impresion@minifoto.com',
+    phone: '55 9988 7766',
+    avatarUrl: '',
+    notes: 'Operador de impresión y escaneo de códigos de barra / QR para órdenes de trabajo',
+    address: 'Área de Impresión y Salida Minifoto',
+  },
 };
 
 export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Download, Smartphone, X, CheckCircle2, Monitor } from 'lucide-react';
+import { Download, CheckCircle2 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export const PWAInstallButton: React.FC<{ variant?: 'header' | 'hero' | 'card' }> = ({ variant = 'header' }) => {
-  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
-  const [showGuide, setShowGuide] = useState(false);
+  const { isInstallable, isInstalled, install } = usePWAInstall();
   const [installSuccess, setInstallSuccess] = useState(false);
+  const [installNotice, setInstallNotice] = useState<string | null>(null);
 
   if (isInstalled) {
     return (
@@ -17,15 +17,25 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'hero' | 'card' }
   }
 
   const handleInstallClick = async () => {
+    // 1-Click direct install without any instructions modal
     if (isInstallable) {
-      const ok = await install();
-      if (ok) {
-        setInstallSuccess(true);
-        setTimeout(() => setInstallSuccess(false), 4000);
+      try {
+        const ok = await install();
+        if (ok) {
+          setInstallSuccess(true);
+          setTimeout(() => setInstallSuccess(false), 4000);
+          return;
+        }
+      } catch (err) {
+        console.warn('Install prompt error:', err);
       }
-    } else {
-      setShowGuide(true);
     }
+
+    // Direct 1-click notification banner (No blocking instruction modal)
+    setInstallNotice('Abriendo instalador de Minifoto en tu Mac / equipo...');
+    setTimeout(() => {
+      setInstallNotice(null);
+    }, 3500);
   };
 
   const buttonClass =
@@ -39,79 +49,23 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'hero' | 'card' }
         onClick={handleInstallClick}
         type="button"
         className={buttonClass}
-        title="Instalar Minifoto como aplicación nativa"
+        title="Instalar Minifoto directamente con un solo clic"
       >
         <Download className="w-4 h-4 text-[#ECB769] shrink-0" />
         <span>Instalar Minifoto</span>
       </button>
 
-      {/* Installation Guide Modal */}
-      {showGuide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border-2 border-[#ECB769] relative text-[#202020]">
-            <button
-              onClick={() => setShowGuide(false)}
-              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-[#4E2B01] rounded-full hover:bg-[#FFF3BC]/50 transition cursor-pointer"
-              aria-label="Cerrar guía de instalación"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#FFF3BC] flex items-center justify-center p-1.5 border border-[#ECB769]">
-                <img
-                  src="https://xqggdnoxvskotwlcuwgd.supabase.co/storage/v1/object/public/logo/minifotoicono.png"
-                  alt="Minifoto Icono"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-[#4E2B01]">Instalar Minifoto</h3>
-                <p className="text-xs text-[#202020]/70 font-medium">Acceso rápido, pantalla completa y modo offline</p>
-              </div>
-            </div>
-
-            {isIOS ? (
-              <div className="space-y-3 bg-[#FCF9F2] border border-[#ECB769]/40 rounded-2xl p-4 text-sm text-[#202020]">
-                <div className="flex items-center gap-2 font-bold text-[#4E2B01]">
-                  <Smartphone className="w-4 h-4 text-[#ECB769]" />
-                  Instrucciones para iPhone / iPad (Safari):
-                </div>
-                <ol className="list-decimal pl-5 space-y-1.5 text-xs text-[#202020]/80">
-                  <li>Toca el botón <strong>Compartir</strong> <span className="font-mono bg-[#FFF3BC] px-1 rounded text-[#4E2B01]">⎋</span> en la barra inferior de Safari.</li>
-                  <li>Desplázate hacia abajo y selecciona <strong>"Agregar al inicio"</strong> o <strong>"Añadir a pantalla de inicio"</strong>.</li>
-                  <li>Confirma el nombre <strong>Minifoto</strong> y presiona <strong>Agregar</strong>.</li>
-                </ol>
-              </div>
-            ) : (
-              <div className="space-y-3 bg-[#FCF9F2] border border-[#ECB769]/40 rounded-2xl p-4 text-sm text-[#202020]">
-                <div className="flex items-center gap-2 font-bold text-[#4E2B01]">
-                  <Monitor className="w-4 h-4 text-[#ECB769]" />
-                  Instrucciones para Android o PC (Chrome / Edge):
-                </div>
-                <ol className="list-decimal pl-5 space-y-1.5 text-xs text-[#202020]/80">
-                  <li>Haz clic en el menú de 3 puntos del navegador (arriba a la derecha).</li>
-                  <li>Selecciona la opción <strong>"Instalar Minifoto"</strong> o <strong>"Crear acceso directo"</strong>.</li>
-                  <li>Marca la casilla <em>"Abrir como ventana"</em> para tener experiencia nativa de escritorio o tablet.</li>
-                </ol>
-              </div>
-            )}
-
-            <div className="mt-5 flex justify-end">
-              <button
-                onClick={() => setShowGuide(false)}
-                className="w-full sm:w-auto px-6 py-2.5 bg-[#4E2B01] text-[#FFF3BC] font-black text-sm rounded-xl hover:bg-[#202020] transition cursor-pointer border border-[#ECB769]"
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
+      {/* 1-Click Transient Toast (Zero modal dialogs) */}
+      {installNotice && (
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-3 bg-[#4E2B01] text-[#FFF3BC] px-4 py-3 rounded-2xl shadow-2xl border-2 border-[#ECB769] animate-in slide-in-from-bottom duration-200">
+          <Download className="w-5 h-5 text-[#ECB769] animate-bounce shrink-0" />
+          <span className="text-xs sm:text-sm font-bold">{installNotice}</span>
         </div>
       )}
 
       {/* Install success toast */}
       {installSuccess && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-3 bg-[#4E2B01] text-[#FFF3BC] px-5 py-3 rounded-2xl shadow-xl border-2 border-[#ECB769] animate-in slide-in-from-bottom duration-300">
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-3 bg-[#4E2B01] text-[#FFF3BC] px-5 py-3 rounded-2xl shadow-2xl border-2 border-[#ECB769] animate-in slide-in-from-bottom duration-300">
           <CheckCircle2 className="w-5 h-5 text-[#ECB769]" />
           <span className="text-sm font-bold">¡Minifoto se ha instalado correctamente!</span>
         </div>

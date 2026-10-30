@@ -16,7 +16,8 @@ import {
   Smartphone, 
   ShoppingBag,
   Sparkles,
-  FlaskConical
+  FlaskConical,
+  Printer
 } from 'lucide-react';
 import { getStoredUserProfile, saveStoredUserProfile } from '../../services/storage';
 import { saveUserProfileToSupabase, fetchUserProfileFromSupabase } from '../../services/supabaseClient';
@@ -138,6 +139,12 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
       color: 'bg-[#FFF3BC] text-[#4E2B01] border-[#4E2B01]',
       badge: 'Laboratorio & Fotos',
       icon: FlaskConical,
+    },
+    impresor: {
+      title: 'Impresor (Órdenes & Escáner)',
+      color: 'bg-[#FFF3BC] text-[#4E2B01] border-[#4E2B01]',
+      badge: 'Impresión & Escáner',
+      icon: Printer,
     },
   }[currentRole] || {
     title: 'Usuario Minifoto',

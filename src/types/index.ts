@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'cashier' | 'field' | 'client' | 'laboratorio';
+export type Role = 'admin' | 'cashier' | 'field' | 'client' | 'laboratorio' | 'impresor';
 
 export type Category = string;
 
