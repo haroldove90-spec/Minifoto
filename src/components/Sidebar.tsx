@@ -15,12 +15,15 @@ import {
   Users,
   Home,
   User,
-  Camera
+  Camera,
+  Tag,
+  DollarSign
 } from 'lucide-react';
 
 export type ActiveTab = 
   | 'home'
   | 'pos_cashier'
+  | 'price_list'
   | 'work_orders'
   | 'field_collector'
   | 'tablet_pos'
@@ -56,6 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         return [
           { id: 'work_orders' as ActiveTab, label: 'Órdenes de Trabajo & Fotos', icon: Camera, color: 'text-[#ECB769]' },
           { id: 'pos_cashier' as ActiveTab, label: 'Punto de Venta Touch (POS)', icon: ShoppingBag, color: 'text-[#ECB769]' },
+          { id: 'price_list' as ActiveTab, label: 'Lista de Precios Oficial', icon: Tag, color: 'text-[#ECB769]' },
           { id: 'tablet_pos' as ActiveTab, label: 'Cobranza Escolar (8 Tablets)', icon: Smartphone, color: 'text-[#ECB769]' },
           { id: 'schools' as ActiveTab, label: 'Gestión Escolar & Alumnos', icon: GraduationCap, color: 'text-[#FFF3BC]' },
           { id: 'catalogs' as ActiveTab, label: 'Catálogo & Fotos', icon: Layers, color: 'text-[#ECB769]' },

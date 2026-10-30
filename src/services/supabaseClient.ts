@@ -333,25 +333,87 @@ INSERT INTO public.folio_config (id, prefix, next_number, padding, suffix)
 VALUES ('default', 'TK-', 1001, 6, '')
 ON CONFLICT (id) DO NOTHING;
 
--- POBLAR O ACTUALIZAR PRODUCTOS PRINCIPALES CON FORMULARIOS ACTIVOS (CARITAS, FOTO ESTUDIO, AMPLIACIONES, CAMBIOS DE FONDO)
+-- POBLAR O ACTUALIZAR LOS 42+ PRODUCTOS Y SERVICIOS CON TARIFAS OFICIALES
 INSERT INTO public.products (id, name, category, price, description, unit, is_active, has_extras, default_retoque_price, default_autoadherible_price, display_order)
 VALUES
+  -- 1. FOTO ESTUDIO & ESPECIALES
   ('car-1', 'Caritas', 'foto_estudio', 100.00, 'Fotografía Caritas Tamaño: 16 x 20. Opciones y ticket', 'pza', true, true, 30.00, 20.00, 1),
   ('cf-1', 'Cambios de Fondo', 'foto_estudio', 120.00, 'Servicio de cambio de fondo, vestimenta y texto personalizado (8x10 a 16x24)', 'pza', true, true, 30.00, 20.00, 2),
-  ('amp-selector', 'Ampliaciones', 'ampliaciones', 85.00, 'Seleccionar formato del menor al mayor (8x10 a 16x24)', 'pza', true, true, 30.00, 20.00, 3),
-  ('amp-11x16', 'Ampliación 11x16"', 'ampliaciones', 210.00, 'Formato oficial de ampliación fotográfica 11x16 pulgadas', 'pza', true, true, 30.00, 20.00, 4),
-  ('fe-1', 'Foto Infantil (x6 pzas)', 'foto_estudio', 110.00, 'Fotografía infantil b/n o color con papel mate', 'pza', true, true, 30.00, 20.00, 5),
-  ('fe-2', 'Foto Óvalos (x4 pzas)', 'foto_estudio', 140.00, 'Tamaño mignon u óvalo institucional', 'pza', true, true, 30.00, 20.00, 6),
-  ('fe-3', 'Foto Diploma (x4 pzas)', 'foto_estudio', 150.00, 'Formato oficial para certificado o diploma', 'pza', true, true, 30.00, 20.00, 7),
-  ('fe-4', 'Foto Título Profesional (x6 pzas)', 'foto_estudio', 220.00, 'Papel mate 6x9cm, retoque digital fino', 'pza', true, true, 30.00, 20.00, 8),
-  ('fe-5', 'Foto Cartilla Militar (x4 pzas)', 'foto_estudio', 120.00, 'Fondo blanco mate sin brillo reglamentaria', 'pza', true, true, 30.00, 20.00, 9),
-  ('fe-6', 'Foto Pasaporte Mexicano (x4 pzas)', 'foto_estudio', 130.00, 'Medidas oficiales Secretaría de Relaciones Exteriores', 'pza', true, true, 30.00, 20.00, 10),
-  ('fe-7', 'Foto Visa Americana / Internacional (x2 pzas)', 'foto_estudio', 140.00, 'Fondo 100% blanco 2x2 pulgadas 5x5cm', 'pza', true, true, 30.00, 20.00, 11)
+  ('fe-1', 'Foto Infantil (x6 pzas)', 'foto_estudio', 110.00, 'Fotografía infantil b/n o color con papel mate', 'pza', true, true, 30.00, 20.00, 3),
+  ('fe-2', 'Foto Óvalos (x4 pzas)', 'foto_estudio', 140.00, 'Tamaño mignon u óvalo institucional', 'pza', true, true, 30.00, 20.00, 4),
+  ('fe-3', 'Foto Diploma (x4 pzas)', 'foto_estudio', 150.00, 'Formato oficial para certificado o diploma', 'pza', true, true, 30.00, 20.00, 5),
+  ('fe-4', 'Foto Título Profesional (x6 pzas)', 'foto_estudio', 220.00, 'Papel mate 6x9cm, retoque digital fino', 'pza', true, true, 30.00, 20.00, 6),
+  ('fe-5', 'Foto Cartilla Militar (x4 pzas)', 'foto_estudio', 120.00, 'Fondo blanco mate sin brillo reglamentaria', 'pza', true, true, 30.00, 20.00, 7),
+  ('fe-6', 'Foto Pasaporte Mexicano (x4 pzas)', 'foto_estudio', 130.00, 'Medidas oficiales Secretaría de Relaciones Exteriores', 'pza', true, true, 30.00, 20.00, 8),
+  ('fe-7', 'Foto Visa Americana / Internacional (x2 pzas)', 'foto_estudio', 140.00, 'Fondo 100% blanco 2x2 pulgadas 5x5cm', 'pza', true, true, 30.00, 20.00, 9),
+
+  -- 2. AMPLIACIONES
+  ('amp-selector', 'Ampliaciones', 'ampliaciones', 85.00, 'Seleccionar formato del menor al mayor (8x10 a 16x24)', 'pza', true, true, 30.00, 20.00, 10),
+  ('amp-1', 'Ampliación 4x6"', 'ampliaciones', 25.00, 'Ampliación fotográfica profesional 4x6 pulgadas', 'pza', true, false, 0.00, 0.00, 11),
+  ('amp-2', 'Ampliación 6x8.5"', 'ampliaciones', 55.00, 'Ampliación fotográfica profesional 6x8.5 pulgadas', 'pza', true, false, 0.00, 0.00, 12),
+  ('amp-3', 'Ampliación 8x10"', 'ampliaciones', 85.00, 'Ampliación fotográfica profesional 8x10 pulgadas', 'pza', true, true, 30.00, 20.00, 13),
+  ('amp-4', 'Ampliación 8x12"', 'ampliaciones', 110.00, 'Ampliación fotográfica profesional 8x12 pulgadas', 'pza', true, true, 30.00, 20.00, 14),
+  ('amp-5', 'Ampliación 11x14"', 'ampliaciones', 180.00, 'Ampliación fotográfica profesional 11x14 pulgadas', 'pza', true, true, 30.00, 20.00, 15),
+  ('amp-11x16', 'Ampliación 11x16"', 'ampliaciones', 210.00, 'Formato oficial de ampliación fotográfica 11x16 pulgadas', 'pza', true, true, 30.00, 20.00, 16),
+  ('amp-6', 'Ampliación 12x18"', 'ampliaciones', 260.00, 'Ampliación fotográfica profesional 12x18 pulgadas', 'pza', true, true, 30.00, 20.00, 17),
+  ('amp-7', 'Ampliación 16x20"', 'ampliaciones', 390.00, 'Ampliación fotográfica profesional 16x20 pulgadas', 'pza', true, true, 30.00, 20.00, 18),
+  ('amp-8', 'Ampliación 16x24"', 'ampliaciones', 480.00, 'Ampliación fotográfica profesional 16x24 pulgadas', 'pza', true, true, 30.00, 20.00, 19),
+
+  -- 3. MINILAB
+  ('mini-1', 'Minilab 4x6" Estándar', 'minilab', 15.00, 'Impresión fotográfica en papel químico brillante o mate 4x6"', 'pza', true, false, 0.00, 0.00, 20),
+  ('mini-2', 'Minilab 6x8"', 'minilab', 35.00, 'Impresión minilab tamaño 6x8"', 'pza', true, false, 0.00, 0.00, 21),
+  ('mini-3', 'Minilab 6x8.5"', 'minilab', 40.00, 'Impresión minilab tamaño 6x8.5"', 'pza', true, false, 0.00, 0.00, 22),
+  ('mini-4', 'Minilab 6x9"', 'minilab', 45.00, 'Impresión minilab tamaño 6x9"', 'pza', true, false, 0.00, 0.00, 23),
+  ('mini-5', 'Minilab 6x12" Panorámica', 'minilab', 65.00, 'Impresión fotográfica formato panorámico 6x12"', 'pza', true, false, 0.00, 0.00, 24),
+  ('mini-6', 'Minilab 8x10"', 'minilab', 75.00, 'Impresión minilab tamaño 8x10"', 'pza', true, false, 0.00, 0.00, 25),
+  ('mini-7', 'Minilab 8x12"', 'minilab', 95.00, 'Impresión minilab tamaño 8x12"', 'pza', true, false, 0.00, 0.00, 26),
+  ('mini-8', 'Minilab 11x14"', 'minilab', 150.00, 'Impresión minilab tamaño 11x14"', 'pza', true, false, 0.00, 0.00, 27),
+  ('mini-9', 'Minilab 12x18"', 'minilab', 220.00, 'Impresión minilab tamaño 12x18"', 'pza', true, false, 0.00, 0.00, 28),
+
+  -- 4. FOTOACABADO
+  ('fac-1', 'Acabado Autoadherible', 'fotoacabado', 25.00, 'Película adhesiva para fácil montaje en cualquier superficie', 'pza', true, false, 0.00, 0.00, 29),
+  ('fac-2', 'Acabado Textura Lino/Mate', 'fotoacabado', 45.00, 'Laminado texturizado mate o lino anti-reflejo', 'pza', true, false, 0.00, 0.00, 30),
+  ('fac-3', 'Montado en Macocel', 'fotoacabado', 95.00, 'Montaje rígido sobre madera macocel con sellador', 'pza', true, false, 0.00, 0.00, 31),
+  ('fac-4', 'Cuadros Poliestireno / Madera', 'fotoacabado', 250.00, 'Enmarcado elegante en moldura ligera poliestireno o madera', 'pza', true, false, 0.00, 0.00, 32),
+  ('fac-5', 'Llaveros Acrílico Personalizado', 'fotoacabado', 35.00, 'Llavero acrílico transparente doble vista con fotografía', 'pza', true, false, 0.00, 0.00, 33),
+
+  -- 5. IGLESIAS / EVENTOS
+  ('ig-1', 'Cobertura Bautizo', 'iglesias', 1200.00, 'Templo + fotos familiares + sesión previa', 'evento', true, false, 0.00, 0.00, 34),
+  ('ig-2', 'Paquete Bodas Religioso', 'iglesias', 4500.00, 'Misa completa, sesión nupcial y entregables impresos', 'evento', true, false, 0.00, 0.00, 35),
+  ('ig-3', 'Sesión XV Años Templo', 'iglesias', 2800.00, 'Ceremonia de acción de gracias + fotos familiares', 'evento', true, false, 0.00, 0.00, 36),
+  ('ig-4', 'Primera Comunión', 'iglesias', 950.00, 'Fotos en altar, vela, biblia y entrega digital e impresa', 'evento', true, false, 0.00, 0.00, 37),
+  ('ig-5', 'Confirmación', 'iglesias', 850.00, 'Cobertura solemne individual y con padrinos', 'evento', true, false, 0.00, 0.00, 38),
+  ('ig-6', 'Presentación al Templo (3 Años)', 'iglesias', 900.00, 'Sesión de bendición y fotos familiares', 'evento', true, false, 0.00, 0.00, 39),
+
+  -- 6. GRADUACIONES 2026
+  ('grad-1', 'Paquete Graduación Básico 2026 (6 Fotos + Carpeta)', 'graduaciones', 450.00, 'Foto panorámica de grupo + 4 fotos individuales + carpeta conmemorativa', 'paquete', true, false, 0.00, 0.00, 40),
+  ('grad-2', 'Paquete Graduación Deluxe 2026 (10 Fotos + Cuadro)', 'graduaciones', 750.00, 'Foto grupal, fotos de diploma, fotos con toga, medalla y cuadro montado', 'paquete', true, false, 0.00, 0.00, 41),
+  ('grad-3', 'Foto Grupal Panorámica Escolar 2026', 'graduaciones', 200.00, 'Ampliación 8x12 con nombres impresos de generación', 'pza', true, false, 0.00, 0.00, 42),
+
+  -- 7. SALÓN SIX PARTY
+  ('six-1', 'Renta de Mesas (10 comensales)', 'salon_seis_party', 120.00, 'Mesa redonda o rectangular para 10 personas con mantel', 'pza', true, false, 0.00, 0.00, 43),
+  ('six-2', 'Renta de Sillas Acojinadas', 'salon_seis_party', 15.00, 'Silla plegable o tiffany acojinada', 'pza', true, false, 0.00, 0.00, 44),
+  ('six-3', 'Sistema de Sonido & DJ', 'salon_seis_party', 1800.00, 'Audio profesional, micrófonos y DJ amenizador 5 horas', 'evento', true, false, 0.00, 0.00, 45),
+  ('six-4', 'Pista de Baile Iluminada', 'salon_seis_party', 2200.00, 'Módulos LED de cristal templado multicolor', 'evento', true, false, 0.00, 0.00, 46),
+  ('six-5', 'Pantalla Gigante & Proyector', 'salon_seis_party', 800.00, 'Pantalla de proyección para video semblanza', 'evento', true, false, 0.00, 0.00, 47),
+  ('six-6', 'Decoración Temática', 'salon_seis_party', 1500.00, 'Arco de globos, backdrops y telas temáticas', 'servicio', true, false, 0.00, 0.00, 48),
+  ('six-7', 'Arreglos Florales / Centros de Mesa', 'salon_seis_party', 180.00, 'Arreglos con flores naturales de temporada', 'pza', true, false, 0.00, 0.00, 49),
+  ('six-8', 'Vajilla y Cristalería (Juego)', 'salon_seis_party', 25.00, 'Plato base, plato extendido, cubiertos y copa', 'juego', true, false, 0.00, 0.00, 50),
+  ('six-9', 'Paquete de Fotos Especial Salón', 'salon_seis_party', 3200.00, 'Cobertura completa de fiesta de 5 horas + photobook digital', 'paquete', true, false, 0.00, 0.00, 51),
+
+  -- 8. FUENTE DE SODAS
+  ('sod-1', 'Aguas Frescas Naturales', 'fuente_sodas', 25.00, 'Horchata, jamaica, limón o frutas frescas 500ml', 'pza', true, false, 0.00, 0.00, 52),
+  ('sod-2', 'Refresco Embotellado 600ml', 'fuente_sodas', 22.00, 'Variedad de sabores y marcas en presentación 600ml', 'pza', true, false, 0.00, 0.00, 53),
+  ('sod-3', 'Palomitas de Maíz (Bolsa)', 'fuente_sodas', 30.00, 'Palomitas calientes con mantequilla o sal natural', 'pza', true, false, 0.00, 0.00, 54),
+  ('sod-4', 'Sandwich Especial', 'fuente_sodas', 45.00, 'Jamón, queso, verduras frescas y aderezos', 'pza', true, false, 0.00, 0.00, 55),
+  ('sod-5', 'Pambazos Caseros', 'fuente_sodas', 50.00, 'Rellenos de papa con chorizo, lechuga, queso y crema', 'pza', true, false, 0.00, 0.00, 56),
+  ('sod-6', 'Dulces, Botanas y Snacks', 'fuente_sodas', 18.00, 'Papas, cacahuates, chocolates y golosinas surtidas', 'pza', true, false, 0.00, 0.00, 57)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   category = EXCLUDED.category,
   price = EXCLUDED.price,
   description = EXCLUDED.description,
+  unit = EXCLUDED.unit,
   is_active = EXCLUDED.is_active,
   has_extras = EXCLUDED.has_extras,
   default_retoque_price = EXCLUDED.default_retoque_price,
@@ -376,6 +438,7 @@ ON CONFLICT (id) DO UPDATE SET
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('client-photos', 'client-photos', true)
 ON CONFLICT (id) DO NOTHING;
+
 `;
 
 // Helper to sanitize URL

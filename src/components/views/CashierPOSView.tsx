@@ -414,16 +414,27 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
     setCheckoutError(null);
   };
 
-  // Studio Formats table for Ampliaciones and Cambios de Fondo (exact from images 63151215.png and 8f803678.png)
-  const STUDIO_FORMATS = [
-    { label: '8 x 10', price: 85 },
-    { label: '8 x 12', price: 110 },
-    { label: '11 x 14', price: 180 },
-    { label: '11 x 16', price: 210 },
-    { label: '12 x 18', price: 260 },
-    { label: '16 x 20', price: 390 },
-    { label: '16 x 24', price: 480 },
-  ];
+  // Studio Formats table for Ampliaciones and Cambios de Fondo - dynamically pulls prices configured by Admin
+  const STUDIO_FORMATS = useMemo(() => {
+    const defaultFormats = [
+      { label: '8 x 10', price: 85, idMatch: 'amp-3' },
+      { label: '8 x 12', price: 110, idMatch: 'amp-4' },
+      { label: '11 x 14', price: 180, idMatch: 'amp-5' },
+      { label: '11 x 16', price: 210, idMatch: 'amp-11x16' },
+      { label: '12 x 18', price: 260, idMatch: 'amp-6' },
+      { label: '16 x 20', price: 390, idMatch: 'amp-7' },
+      { label: '16 x 24', price: 480, idMatch: 'amp-8' },
+    ];
+    return defaultFormats.map((fmt) => {
+      const matched = products.find(
+        (p) => p.id === fmt.idMatch || (p.category === 'ampliaciones' && p.name.includes(fmt.label))
+      );
+      return {
+        label: fmt.label,
+        price: matched ? matched.price : fmt.price,
+      };
+    });
+  }, [products]);
 
   // Detect studio photo products requested by client: Caritas, Ampliaciones, Cambios de Fondo, Titulo, diploma, pasaporte, etc.
   const getProductStudioFormType = (product: Product): 'estudio' | 'caritas' | 'ampliaciones' | 'cambios_fondo' | null => {

@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS public.categories (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.3 VENTAS Y TICKETS DE CAJA (CON FOTO ESTUDIO Y ESCÁNER)
+-- 1.3 VENTAS Y TICKETS DE CAJA
 CREATE TABLE IF NOT EXISTS public.sales (
   id TEXT PRIMARY KEY,
   folio TEXT NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS public.folio_config (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.5 ALUMNOS Y PAQUETES DE GRADUACIÓN (CON CONCILIACIÓN SANTANDER)
+-- 1.5 ALUMNOS Y PAQUETES DE GRADUACIÓN
 CREATE TABLE IF NOT EXISTS public.graduation_students (
   id TEXT PRIMARY KEY,
   folio TEXT NOT NULL,
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS public.schools (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.7 PERFILES DE USUARIO (MULTI-ROL)
+-- 1.7 PERFILES DE USUARIO
 CREATE TABLE IF NOT EXISTS public.user_profiles (
   id TEXT PRIMARY KEY,
   role TEXT NOT NULL,
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.8 REGISTROS DE TRANSFERENCIAS BANCARIAS SANTANDER
+-- 1.8 TRANSFERENCIAS BANCARIAS SANTANDER
 CREATE TABLE IF NOT EXISTS public.bank_transfers (
   id TEXT PRIMARY KEY,
   date TEXT NOT NULL,
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS public.bank_transfers (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.9 LOGS DE AUDITORÍA
+-- 1.9 AUDITORÍA
 CREATE TABLE IF NOT EXISTS public.audit_logs (
   id TEXT PRIMARY KEY,
   timestamp TIMESTAMPTZ DEFAULT NOW(),
@@ -160,46 +160,47 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
   student_folio TEXT
 );
 
+-- 1.10 ÓRDENES DE TRABAJO (LABORATORIO & IMPRESIÓN)
+CREATE TABLE IF NOT EXISTS public.work_orders (
+  id TEXT PRIMARY KEY,
+  sale_id TEXT,
+  folio TEXT NOT NULL,
+  client_name TEXT NOT NULL,
+  client_phone TEXT,
+  client_email TEXT,
+  school_name TEXT,
+  date TEXT NOT NULL,
+  delivery_date TEXT,
+  items JSONB NOT NULL DEFAULT '[]'::jsonb,
+  total NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  amount_paid NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  deposit_amount NUMERIC(10,2) DEFAULT 0.00,
+  remaining_amount NUMERIC(10,2) DEFAULT 0.00,
+  payment_method TEXT NOT NULL DEFAULT 'efectivo',
+  lab_status TEXT NOT NULL DEFAULT 'pendiente',
+  urgency TEXT DEFAULT 'normal',
+  notes TEXT,
+  photo_specs JSONB DEFAULT '{}'::jsonb,
+  photos JSONB DEFAULT '[]'::jsonb,
+  operator_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 1.11 FOTOGRAFÍAS DE CLIENTES
+CREATE TABLE IF NOT EXISTS public.client_photos (
+  id TEXT PRIMARY KEY,
+  client_folio TEXT NOT NULL,
+  url TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  file_size BIGINT,
+  notes TEXT,
+  uploaded_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- =========================================================================
--- PASO 2: MIGRACIÓN AUTOMÁTICA DE COLUMNAS (AGREGA CAMPOS A TABLAS PREVIAS)
--- Evita el error "column does not exist" si la tabla ya existía anteriormente
+-- PASO 2: MIGRACIÓN AUTOMÁTICA DE COLUMNAS (TABLAS EXISTENTES)
 -- =========================================================================
-
--- Columnas en graduation_students (¡Soluciona santander_reference y anexos!)
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS santander_reference TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS package_name TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS total_photos TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS matricula TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS grade TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS group_name TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS grade_group TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS tutor_name TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS tutor_whatsapp TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS tutor_phone TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS consent_whatsapp BOOLEAN DEFAULT TRUE;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS next_due_date TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS next_due_amount NUMERIC(10,2) DEFAULT 0.00;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS payment_history JSONB DEFAULT '[]'::jsonb;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS whatsapp_logs JSONB DEFAULT '[]'::jsonb;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS avatar_url TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS contact_phone TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS delivery_status TEXT DEFAULT 'pendiente';
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS delivery_date TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS notes TEXT;
-ALTER TABLE public.graduation_students ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-
--- Columnas en sales (Datos de cliente, foto estudio y escáner)
-ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS client_name TEXT;
-ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS client_phone TEXT;
-ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS client_email TEXT;
-ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS school_name TEXT;
-ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS deposit_amount NUMERIC(10,2) DEFAULT 0.00;
-ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS remaining_amount NUMERIC(10,2) DEFAULT 0.00;
-ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS photo_specs JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS notes TEXT;
-ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completado';
-
--- Columnas en products (Extras, precios y orden)
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS has_extras BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS default_retoque_price NUMERIC(10,2) DEFAULT 30.00;
@@ -210,8 +211,18 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS image_url TEXT;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS client_name TEXT;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS client_phone TEXT;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS client_email TEXT;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS school_name TEXT;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS deposit_amount NUMERIC(10,2) DEFAULT 0.00;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS remaining_amount NUMERIC(10,2) DEFAULT 0.00;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS photo_specs JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completado';
+
 -- =========================================================================
--- PASO 3: HABILITAR SEGURIDAD A NIVEL DE FILA (RLS)
+-- PASO 3: POLÍTICAS DE ACCESO TOTAL (RLS ANÓNIMO)
 -- =========================================================================
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
@@ -222,10 +233,9 @@ ALTER TABLE public.schools ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bank_transfers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.work_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.client_photos ENABLE ROW LEVEL SECURITY;
 
--- =========================================================================
--- PASO 4: POLÍTICAS DE ACCESO TOTAL (ANON) PARA LECTURA Y ESCRITURA
--- =========================================================================
 DROP POLICY IF EXISTS "Anon full access products" ON public.products;
 CREATE POLICY "Anon full access products" ON public.products FOR ALL USING (true) WITH CHECK (true);
 
@@ -253,26 +263,24 @@ CREATE POLICY "Anon full access bank_transfers" ON public.bank_transfers FOR ALL
 DROP POLICY IF EXISTS "Anon full access audit_logs" ON public.audit_logs;
 CREATE POLICY "Anon full access audit_logs" ON public.audit_logs FOR ALL USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Anon full access work_orders" ON public.work_orders;
+CREATE POLICY "Anon full access work_orders" ON public.work_orders FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access client_photos" ON public.client_photos;
+CREATE POLICY "Anon full access client_photos" ON public.client_photos FOR ALL USING (true) WITH CHECK (true);
+
 -- =========================================================================
--- PASO 5: ÍNDICES DE ALTO RENDIMIENTO (AHORA CON COLUMNAS ASEGURADAS)
+-- PASO 4: ÍNDICES DE RENDIMIENTO
 -- =========================================================================
 CREATE INDEX IF NOT EXISTS idx_products_category ON public.products (category);
 CREATE INDEX IF NOT EXISTS idx_products_active ON public.products (is_active);
-CREATE INDEX IF NOT EXISTS idx_products_order ON public.products (display_order);
-
 CREATE INDEX IF NOT EXISTS idx_sales_folio ON public.sales (folio);
-CREATE INDEX IF NOT EXISTS idx_sales_date ON public.sales (date);
 CREATE INDEX IF NOT EXISTS idx_sales_created_at ON public.sales (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_sales_client_phone ON public.sales (client_phone);
-
-CREATE INDEX IF NOT EXISTS idx_students_folio ON public.graduation_students (folio);
-CREATE INDEX IF NOT EXISTS idx_students_santander ON public.graduation_students (santander_reference);
-CREATE INDEX IF NOT EXISTS idx_students_school ON public.graduation_students (school_id, delivery_status);
-
-CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON public.user_profiles (role);
+CREATE INDEX IF NOT EXISTS idx_work_orders_folio ON public.work_orders (folio);
+CREATE INDEX IF NOT EXISTS idx_client_photos_folio ON public.client_photos (client_folio);
 
 -- =========================================================================
--- PASO 6: POBLAR CATEGORÍAS INICIALES Y CONFIGURACIÓN DE FOLIO
+-- PASO 5: POBLAR CATEGORÍAS Y FOLIOS
 -- =========================================================================
 INSERT INTO public.categories (id, label, icon, color) VALUES
   ('foto_estudio', 'Foto Estudio', 'Camera', 'text-yellow-600'),
@@ -292,32 +300,96 @@ INSERT INTO public.folio_config (id, prefix, next_number, padding, suffix)
 VALUES ('default', 'TK-', 1001, 6, '')
 ON CONFLICT (id) DO NOTHING;
 
--- POBLAR O ACTUALIZAR PRODUCTOS PRINCIPALES CON FORMULARIOS ACTIVOS (CARITAS, FOTO ESTUDIO, AMPLIACIONES, CAMBIOS DE FONDO)
+-- =========================================================================
+-- PASO 6: POBLAR O ACTUALIZAR LOS 42 PRODUCTOS Y SERVICIOS
+-- =========================================================================
 INSERT INTO public.products (id, name, category, price, description, unit, is_active, has_extras, default_retoque_price, default_autoadherible_price, display_order)
 VALUES
+  -- 1. FOTO ESTUDIO & ESPECIALES
   ('car-1', 'Caritas', 'foto_estudio', 100.00, 'Fotografía Caritas Tamaño: 16 x 20. Opciones y ticket', 'pza', true, true, 30.00, 20.00, 1),
   ('cf-1', 'Cambios de Fondo', 'foto_estudio', 120.00, 'Servicio de cambio de fondo, vestimenta y texto personalizado (8x10 a 16x24)', 'pza', true, true, 30.00, 20.00, 2),
-  ('amp-selector', 'Ampliaciones', 'ampliaciones', 85.00, 'Seleccionar formato del menor al mayor (8x10 a 16x24)', 'pza', true, true, 30.00, 20.00, 3),
-  ('amp-11x16', 'Ampliación 11x16"', 'ampliaciones', 210.00, 'Formato oficial de ampliación fotográfica 11x16 pulgadas', 'pza', true, true, 30.00, 20.00, 4),
-  ('fe-1', 'Foto Infantil (x6 pzas)', 'foto_estudio', 110.00, 'Fotografía infantil b/n o color con papel mate', 'pza', true, true, 30.00, 20.00, 5),
-  ('fe-2', 'Foto Óvalos (x4 pzas)', 'foto_estudio', 140.00, 'Tamaño mignon u óvalo institucional', 'pza', true, true, 30.00, 20.00, 6),
-  ('fe-3', 'Foto Diploma (x4 pzas)', 'foto_estudio', 150.00, 'Formato oficial para certificado o diploma', 'pza', true, true, 30.00, 20.00, 7),
-  ('fe-4', 'Foto Título Profesional (x6 pzas)', 'foto_estudio', 220.00, 'Papel mate 6x9cm, retoque digital fino', 'pza', true, true, 30.00, 20.00, 8),
-  ('fe-5', 'Foto Cartilla Militar (x4 pzas)', 'foto_estudio', 120.00, 'Fondo blanco mate sin brillo reglamentaria', 'pza', true, true, 30.00, 20.00, 9),
-  ('fe-6', 'Foto Pasaporte Mexicano (x4 pzas)', 'foto_estudio', 130.00, 'Medidas oficiales Secretaría de Relaciones Exteriores', 'pza', true, true, 30.00, 20.00, 10),
-  ('fe-7', 'Foto Visa Americana / Internacional (x2 pzas)', 'foto_estudio', 140.00, 'Fondo 100% blanco 2x2 pulgadas 5x5cm', 'pza', true, true, 30.00, 20.00, 11)
+  ('fe-1', 'Foto Infantil (x6 pzas)', 'foto_estudio', 110.00, 'Fotografía infantil b/n o color con papel mate', 'pza', true, true, 30.00, 20.00, 3),
+  ('fe-2', 'Foto Óvalos (x4 pzas)', 'foto_estudio', 140.00, 'Tamaño mignon u óvalo institucional', 'pza', true, true, 30.00, 20.00, 4),
+  ('fe-3', 'Foto Diploma (x4 pzas)', 'foto_estudio', 150.00, 'Formato oficial para certificado o diploma', 'pza', true, true, 30.00, 20.00, 5),
+  ('fe-4', 'Foto Título Profesional (x6 pzas)', 'foto_estudio', 220.00, 'Papel mate 6x9cm, retoque digital fino', 'pza', true, true, 30.00, 20.00, 6),
+  ('fe-5', 'Foto Cartilla Militar (x4 pzas)', 'foto_estudio', 120.00, 'Fondo blanco mate sin brillo reglamentaria', 'pza', true, true, 30.00, 20.00, 7),
+  ('fe-6', 'Foto Pasaporte Mexicano (x4 pzas)', 'foto_estudio', 130.00, 'Medidas oficiales Secretaría de Relaciones Exteriores', 'pza', true, true, 30.00, 20.00, 8),
+  ('fe-7', 'Foto Visa Americana / Internacional (x2 pzas)', 'foto_estudio', 140.00, 'Fondo 100% blanco 2x2 pulgadas 5x5cm', 'pza', true, true, 30.00, 20.00, 9),
+
+  -- 2. AMPLIACIONES
+  ('amp-selector', 'Ampliaciones', 'ampliaciones', 85.00, 'Seleccionar formato del menor al mayor (8x10 a 16x24)', 'pza', true, true, 30.00, 20.00, 10),
+  ('amp-1', 'Ampliación 4x6"', 'ampliaciones', 25.00, 'Ampliación fotográfica profesional 4x6 pulgadas', 'pza', true, false, 0.00, 0.00, 11),
+  ('amp-2', 'Ampliación 6x8.5"', 'ampliaciones', 55.00, 'Ampliación fotográfica profesional 6x8.5 pulgadas', 'pza', true, false, 0.00, 0.00, 12),
+  ('amp-3', 'Ampliación 8x10"', 'ampliaciones', 85.00, 'Ampliación fotográfica profesional 8x10 pulgadas', 'pza', true, true, 30.00, 20.00, 13),
+  ('amp-4', 'Ampliación 8x12"', 'ampliaciones', 110.00, 'Ampliación fotográfica profesional 8x12 pulgadas', 'pza', true, true, 30.00, 20.00, 14),
+  ('amp-5', 'Ampliación 11x14"', 'ampliaciones', 180.00, 'Ampliación fotográfica profesional 11x14 pulgadas', 'pza', true, true, 30.00, 20.00, 15),
+  ('amp-11x16', 'Ampliación 11x16"', 'ampliaciones', 210.00, 'Formato oficial de ampliación fotográfica 11x16 pulgadas', 'pza', true, true, 30.00, 20.00, 16),
+  ('amp-6', 'Ampliación 12x18"', 'ampliaciones', 260.00, 'Ampliación fotográfica profesional 12x18 pulgadas', 'pza', true, true, 30.00, 20.00, 17),
+  ('amp-7', 'Ampliación 16x20"', 'ampliaciones', 390.00, 'Ampliación fotográfica profesional 16x20 pulgadas', 'pza', true, true, 30.00, 20.00, 18),
+  ('amp-8', 'Ampliación 16x24"', 'ampliaciones', 480.00, 'Ampliación fotográfica profesional 16x24 pulgadas', 'pza', true, true, 30.00, 20.00, 19),
+
+  -- 3. MINILAB
+  ('mini-1', 'Minilab 4x6" Estándar', 'minilab', 15.00, 'Impresión fotográfica en papel químico brillante o mate 4x6"', 'pza', true, false, 0.00, 0.00, 20),
+  ('mini-2', 'Minilab 6x8"', 'minilab', 35.00, 'Impresión minilab tamaño 6x8"', 'pza', true, false, 0.00, 0.00, 21),
+  ('mini-3', 'Minilab 6x8.5"', 'minilab', 40.00, 'Impresión minilab tamaño 6x8.5"', 'pza', true, false, 0.00, 0.00, 22),
+  ('mini-4', 'Minilab 6x9"', 'minilab', 45.00, 'Impresión minilab tamaño 6x9"', 'pza', true, false, 0.00, 0.00, 23),
+  ('mini-5', 'Minilab 6x12" Panorámica', 'minilab', 65.00, 'Impresión fotográfica formato panorámico 6x12"', 'pza', true, false, 0.00, 0.00, 24),
+  ('mini-6', 'Minilab 8x10"', 'minilab', 75.00, 'Impresión minilab tamaño 8x10"', 'pza', true, false, 0.00, 0.00, 25),
+  ('mini-7', 'Minilab 8x12"', 'minilab', 95.00, 'Impresión minilab tamaño 8x12"', 'pza', true, false, 0.00, 0.00, 26),
+  ('mini-8', 'Minilab 11x14"', 'minilab', 150.00, 'Impresión minilab tamaño 11x14"', 'pza', true, false, 0.00, 0.00, 27),
+  ('mini-9', 'Minilab 12x18"', 'minilab', 220.00, 'Impresión minilab tamaño 12x18"', 'pza', true, false, 0.00, 0.00, 28),
+
+  -- 4. FOTOACABADO
+  ('fac-1', 'Acabado Autoadherible', 'fotoacabado', 25.00, 'Película adhesiva para fácil montaje en cualquier superficie', 'pza', true, false, 0.00, 0.00, 29),
+  ('fac-2', 'Acabado Textura Lino/Mate', 'fotoacabado', 45.00, 'Laminado texturizado mate o lino anti-reflejo', 'pza', true, false, 0.00, 0.00, 30),
+  ('fac-3', 'Montado en Macocel', 'fotoacabado', 95.00, 'Montaje rígido sobre madera macocel con sellador', 'pza', true, false, 0.00, 0.00, 31),
+  ('fac-4', 'Cuadros Poliestireno / Madera', 'fotoacabado', 250.00, 'Enmarcado elegante en moldura ligera poliestireno o madera', 'pza', true, false, 0.00, 0.00, 32),
+  ('fac-5', 'Llaveros Acrílico Personalizado', 'fotoacabado', 35.00, 'Llavero acrílico transparente doble vista con fotografía', 'pza', true, false, 0.00, 0.00, 33),
+
+  -- 5. IGLESIAS / EVENTOS
+  ('ig-1', 'Cobertura Bautizo', 'iglesias', 1200.00, 'Templo + fotos familiares + sesión previa', 'evento', true, false, 0.00, 0.00, 34),
+  ('ig-2', 'Paquete Bodas Religioso', 'iglesias', 4500.00, 'Misa completa, sesión nupcial y entregables impresos', 'evento', true, false, 0.00, 0.00, 35),
+  ('ig-3', 'Sesión XV Años Templo', 'iglesias', 2800.00, 'Ceremonia de acción de gracias + fotos familiares', 'evento', true, false, 0.00, 0.00, 36),
+  ('ig-4', 'Primera Comunión', 'iglesias', 950.00, 'Fotos en altar, vela, biblia y entrega digital e impresa', 'evento', true, false, 0.00, 0.00, 37),
+  ('ig-5', 'Confirmación', 'iglesias', 850.00, 'Cobertura solemne individual y con padrinos', 'evento', true, false, 0.00, 0.00, 38),
+  ('ig-6', 'Presentación al Templo (3 Años)', 'iglesias', 900.00, 'Sesión de bendición y fotos familiares', 'evento', true, false, 0.00, 0.00, 39),
+
+  -- 6. GRADUACIONES 2026
+  ('grad-1', 'Paquete Graduación Básico 2026 (6 Fotos + Carpeta)', 'graduaciones', 450.00, 'Foto panorámica de grupo + 4 fotos individuales + carpeta conmemorativa', 'paquete', true, false, 0.00, 0.00, 40),
+  ('grad-2', 'Paquete Graduación Deluxe 2026 (10 Fotos + Cuadro)', 'graduaciones', 750.00, 'Foto grupal, fotos de diploma, fotos con toga, medalla y cuadro montado', 'paquete', true, false, 0.00, 0.00, 41),
+  ('grad-3', 'Foto Grupal Panorámica Escolar 2026', 'graduaciones', 200.00, 'Ampliación 8x12 con nombres impresos de generación', 'pza', true, false, 0.00, 0.00, 42),
+
+  -- 7. SALÓN SIX PARTY
+  ('six-1', 'Renta de Mesas (10 comensales)', 'salon_seis_party', 120.00, 'Mesa redonda o rectangular para 10 personas con mantel', 'pza', true, false, 0.00, 0.00, 43),
+  ('six-2', 'Renta de Sillas Acojinadas', 'salon_seis_party', 15.00, 'Silla plegable o tiffany acojinada', 'pza', true, false, 0.00, 0.00, 44),
+  ('six-3', 'Sistema de Sonido & DJ', 'salon_seis_party', 1800.00, 'Audio profesional, micrófonos y DJ amenizador 5 horas', 'evento', true, false, 0.00, 0.00, 45),
+  ('six-4', 'Pista de Baile Iluminada', 'salon_seis_party', 2200.00, 'Módulos LED de cristal templado multicolor', 'evento', true, false, 0.00, 0.00, 46),
+  ('six-5', 'Pantalla Gigante & Proyector', 'salon_seis_party', 800.00, 'Pantalla de proyección para video semblanza', 'evento', true, false, 0.00, 0.00, 47),
+  ('six-6', 'Decoración Temática', 'salon_seis_party', 1500.00, 'Arco de globos, backdrops y telas temáticas', 'servicio', true, false, 0.00, 0.00, 48),
+  ('six-7', 'Arreglos Florales / Centros de Mesa', 'salon_seis_party', 180.00, 'Arreglos con flores naturales de temporada', 'pza', true, false, 0.00, 0.00, 49),
+  ('six-8', 'Vajilla y Cristalería (Juego)', 'salon_seis_party', 25.00, 'Plato base, plato extendido, cubiertos y copa', 'juego', true, false, 0.00, 0.00, 50),
+  ('six-9', 'Paquete de Fotos Especial Salón', 'salon_seis_party', 3200.00, 'Cobertura completa de fiesta de 5 horas + photobook digital', 'paquete', true, false, 0.00, 0.00, 51),
+
+  -- 8. FUENTE DE SODAS
+  ('sod-1', 'Aguas Frescas Naturales', 'fuente_sodas', 25.00, 'Horchata, jamaica, limón o frutas frescas 500ml', 'pza', true, false, 0.00, 0.00, 52),
+  ('sod-2', 'Refresco Embotellado 600ml', 'fuente_sodas', 22.00, 'Variedad de sabores y marcas en presentación 600ml', 'pza', true, false, 0.00, 0.00, 53),
+  ('sod-3', 'Palomitas de Maíz (Bolsa)', 'fuente_sodas', 30.00, 'Palomitas calientes con mantequilla o sal natural', 'pza', true, false, 0.00, 0.00, 54),
+  ('sod-4', 'Sandwich Especial', 'fuente_sodas', 45.00, 'Jamón, queso, verduras frescas y aderezos', 'pza', true, false, 0.00, 0.00, 55),
+  ('sod-5', 'Pambazos Caseros', 'fuente_sodas', 50.00, 'Rellenos de papa con chorizo, lechuga, queso y crema', 'pza', true, false, 0.00, 0.00, 56),
+  ('sod-6', 'Dulces, Botanas y Snacks', 'fuente_sodas', 18.00, 'Papas, cacahuates, chocolates y golosinas surtidas', 'pza', true, false, 0.00, 0.00, 57)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   category = EXCLUDED.category,
   price = EXCLUDED.price,
   description = EXCLUDED.description,
+  unit = EXCLUDED.unit,
   is_active = EXCLUDED.is_active,
   has_extras = EXCLUDED.has_extras,
   default_retoque_price = EXCLUDED.default_retoque_price,
   default_autoadherible_price = EXCLUDED.default_autoadherible_price;
 
 -- =========================================================================
--- PASO 7: POBLAR PERFILES DE USUARIO INICIALES (MULTI-ROL CON IMPRESOR)
+-- PASO 7: POBLAR USUARIOS INICIALES (MULTI-ROL CON IMPRESOR)
 -- =========================================================================
 INSERT INTO public.user_profiles (id, role, name, email, phone, notes)
 VALUES
@@ -334,33 +406,8 @@ ON CONFLICT (id) DO UPDATE SET
   notes = EXCLUDED.notes;
 
 -- =========================================================================
--- PASO 8: BUCKET DE SUPABASE STORAGE PARA FOTOGRAFÍAS DE CLIENTES
+-- PASO 8: STORAGE BUCKETS
 -- =========================================================================
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('client-photos', 'client-photos', true)
 ON CONFLICT (id) DO NOTHING;
-
--- Políticas de acceso para el bucket client-photos
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'objects' AND policyname = 'Public Access to client-photos'
-  ) THEN
-    CREATE POLICY "Public Access to client-photos" ON storage.objects
-    FOR SELECT USING (bucket_id = 'client-photos');
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'objects' AND policyname = 'Allow Upload to client-photos'
-  ) THEN
-    CREATE POLICY "Allow Upload to client-photos" ON storage.objects
-    FOR INSERT WITH CHECK (bucket_id = 'client-photos');
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'objects' AND policyname = 'Allow Delete to client-photos'
-  ) THEN
-    CREATE POLICY "Allow Delete to client-photos" ON storage.objects
-    FOR DELETE USING (bucket_id = 'client-photos');
-  END IF;
-END $$;

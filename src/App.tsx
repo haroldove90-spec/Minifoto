@@ -80,6 +80,7 @@ import { AdminReportsView } from './components/views/AdminReportsView';
 import { AdminConfigView } from './components/views/AdminConfigView';
 import { UserProfileView } from './components/views/UserProfileView';
 import { TabletPOSCobroView } from './components/views/TabletPOSCobroView';
+import { PriceListView } from './components/views/PriceListView';
 import { SplashScreen } from './components/SplashScreen';
 
 export default function App() {
@@ -499,6 +500,15 @@ export default function App() {
             <TabletPOSCobroView
               currentRole={currentRole}
               operatorName={operatorName}
+            />
+          )}
+
+          {activeTab === 'price_list' && (
+            <PriceListView
+              products={products}
+              onSaveProducts={handleSaveProducts}
+              currentRole={currentRole || 'admin'}
+              onNavigateToPOS={() => handleSelectTab('pos_cashier')}
             />
           )}
 

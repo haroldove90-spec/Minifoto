@@ -11,7 +11,8 @@ import {
   Smartphone, 
   Receipt,
   User,
-  Camera
+  Camera,
+  Tag
 } from 'lucide-react';
 
 interface BottomBarProps {
@@ -30,9 +31,10 @@ export const BottomBar: React.FC<BottomBarProps> = ({
       case 'admin':
         return [
           { id: 'work_orders' as ActiveTab, label: 'Órdenes', icon: Camera },
+          { id: 'pos_cashier' as ActiveTab, label: 'POS', icon: ShoppingBag },
+          { id: 'price_list' as ActiveTab, label: 'Precios', icon: Tag },
           { id: 'tablet_pos' as ActiveTab, label: 'Cobranza', icon: Smartphone },
           { id: 'schools' as ActiveTab, label: 'Escuelas', icon: GraduationCap },
-          { id: 'catalogs' as ActiveTab, label: 'Catálogo', icon: Layers },
           { id: 'reports' as ActiveTab, label: 'Reportes', icon: BarChart3 },
           { id: 'profile' as ActiveTab, label: 'Perfil', icon: User },
         ];
