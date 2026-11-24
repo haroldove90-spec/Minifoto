@@ -150,27 +150,21 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
     setWorkingProducts(products);
   }, [products]);
 
-  // Sync categories with Supabase on mount (never resurrect deleted categories)
+  // Sync categories with Supabase on mount (Supabase is source of truth, never resurrect deleted categories)
   useEffect(() => {
     fetchCategoriesFromSupabase().then((remote) => {
       if (remote && remote.length > 0) {
         const deletedCatIds = new Set(getDeletedCategoryIds());
-        setCategoriesList((prev) => {
-          const filteredPrev = prev.filter((c) => !deletedCatIds.has(c.id));
-          const map = new Map(filteredPrev.map((c) => [c.id, c]));
-          remote.forEach((rc) => {
-            if (!deletedCatIds.has(rc.id) && !map.has(rc.id)) {
-              map.set(rc.id, {
-                id: rc.id,
-                label: rc.label,
-                color: rc.color || 'text-amber-500',
-              });
-            }
-          });
-          const merged = Array.from(map.values());
-          saveStoredCategories(merged);
-          return merged;
-        });
+        const synced = remote
+          .filter((rc) => !deletedCatIds.has(rc.id))
+          .map((rc) => ({
+            id: rc.id,
+            label: rc.label,
+            icon: rc.icon,
+            color: rc.color || 'text-amber-500',
+          }));
+        saveStoredCategories(synced);
+        setCategoriesList(synced);
       }
     });
   }, []);

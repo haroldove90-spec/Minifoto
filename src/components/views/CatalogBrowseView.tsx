@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Product, Category, CartItem, Sale, Role } from '../../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Product, Category, CategoryItem, CartItem, Sale, Role } from '../../types';
 import { 
   Camera, 
   Church, 
@@ -9,6 +9,7 @@ import {
   PartyPopper, 
   Coffee, 
   GraduationCap, 
+  Tag,
   Search, 
   ShoppingBag, 
   Plus, 
@@ -25,6 +26,8 @@ import {
   Receipt
 } from 'lucide-react';
 import { CATEGORY_FALLBACK_IMAGES } from '../../services/initialData';
+import { getStoredCategories, saveStoredCategories, getDeletedCategoryIds } from '../../services/storage';
+import { fetchCategoriesFromSupabase } from '../../services/supabaseClient';
 import confetti from 'canvas-confetti';
 
 interface CatalogBrowseViewProps {
@@ -63,19 +66,64 @@ export const CatalogBrowseView: React.FC<CatalogBrowseViewProps> = ({
   const [extraAutoAdherible, setExtraAutoAdherible] = useState(false);
   const [modalQuantity, setModalQuantity] = useState(1);
 
-  const categories: { id: Category; label: string; icon: any; color: string }[] = [
-    { id: 'foto_estudio', label: 'Foto Estudio', icon: Camera, color: 'text-yellow-600' },
-    { id: 'ampliaciones', label: 'Ampliaciones', icon: Maximize2, color: 'text-lime-600' },
-    { id: 'minilab', label: 'Minilab', icon: Film, color: 'text-yellow-500' },
-    { id: 'iglesias', label: 'Iglesias / Eventos', icon: Church, color: 'text-amber-600' },
-    { id: 'fotoacabado', label: 'Fotoacabado', icon: Sparkles, color: 'text-lime-500' },
-    { id: 'salon_seis_party', label: 'Salón Six Party', icon: PartyPopper, color: 'text-emerald-600' },
-    { id: 'fuente_sodas', label: 'Fuente de Sodas', icon: Coffee, color: 'text-orange-600' },
-    { id: 'graduaciones', label: 'Graduaciones 2026', icon: GraduationCap, color: 'text-teal-600' },
-  ];
+  const [storedCategories, setStoredCategories] = useState<CategoryItem[]>(() => getStoredCategories());
+
+  useEffect(() => {
+    const refreshFromStorage = () => setStoredCategories(getStoredCategories());
+    window.addEventListener('minifoto_categories_updated', refreshFromStorage);
+    window.addEventListener('storage', refreshFromStorage);
+
+    fetchCategoriesFromSupabase().then((remoteCats) => {
+      if (remoteCats && remoteCats.length > 0) {
+        const deletedCatIds = new Set(getDeletedCategoryIds());
+        const synced = remoteCats
+          .filter((rc) => !deletedCatIds.has(rc.id))
+          .map((rc) => ({
+            id: rc.id,
+            label: rc.label,
+            icon: rc.icon,
+            color: rc.color || 'text-amber-600',
+          }));
+        saveStoredCategories(synced);
+        setStoredCategories(synced);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('minifoto_categories_updated', refreshFromStorage);
+      window.removeEventListener('storage', refreshFromStorage);
+    };
+  }, []);
+
+  const KNOWN_ICON_MAP: Record<string, { icon: any; color: string }> = {
+    foto_estudio: { icon: Camera, color: 'text-yellow-600' },
+    ampliaciones: { icon: Maximize2, color: 'text-lime-600' },
+    minilab: { icon: Film, color: 'text-yellow-500' },
+    iglesias: { icon: Church, color: 'text-amber-600' },
+    fotoacabado: { icon: Sparkles, color: 'text-lime-500' },
+    salon_seis_party: { icon: PartyPopper, color: 'text-emerald-600' },
+    fuente_sodas: { icon: Coffee, color: 'text-orange-600' },
+    graduaciones: { icon: GraduationCap, color: 'text-teal-600' },
+  };
 
   // Only active products are shown to clients and vendors
-  const activeProducts = products.filter((p) => p.isActive !== false);
+  const activeProducts = useMemo(() => products.filter((p) => p.isActive !== false), [products]);
+
+  const categories = useMemo(() => {
+    const activeCatIds = new Set(activeProducts.map((p) => p.category));
+    const withActiveProducts = storedCategories.filter((c) => activeCatIds.has(c.id));
+    const listToShow = withActiveProducts.length > 0 ? withActiveProducts : storedCategories;
+
+    return listToShow.map((c) => {
+      const meta = KNOWN_ICON_MAP[c.id] || { icon: Tag, color: c.color || 'text-amber-600' };
+      return {
+        id: c.id as Category,
+        label: c.label,
+        icon: meta.icon,
+        color: meta.color,
+      };
+    });
+  }, [storedCategories, activeProducts]);
 
   const filteredProducts = activeProducts.filter((p) => {
     const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;

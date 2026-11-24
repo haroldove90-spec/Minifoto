@@ -469,6 +469,9 @@ export const getStoredCategories = (): CategoryItem[] => {
 
 export const saveStoredCategories = (categories: CategoryItem[]) => {
   localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(categories));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('minifoto_categories_updated'));
+  }
 };
 
 // ==========================================

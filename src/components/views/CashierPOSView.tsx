@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Product, CartItem, Category, PaymentMethod, Sale, PhotoStudioSpecs } from '../../types';
+import { Product, CartItem, Category, CategoryItem, PaymentMethod, Sale, PhotoStudioSpecs } from '../../types';
 import { 
   Camera, 
   Church, 
@@ -49,6 +49,8 @@ import {
 import confetti from 'canvas-confetti';
 import { 
   getStoredCategories, 
+  saveStoredCategories,
+  getDeletedCategoryIds,
   generateNextSaleFolio, 
   getStoredProductsOrder, 
   saveStoredProductsOrder,
@@ -60,6 +62,7 @@ import {
   saveStoredPOSCategory,
   syncSaleToWorkOrder
 } from '../../services/storage';
+import { fetchCategoriesFromSupabase } from '../../services/supabaseClient';
 import { printTicketElement } from '../../services/printService';
 
 interface CashierPOSViewProps {
@@ -271,8 +274,38 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
     setDragOverProductId(null);
   };
 
-  // Dynamic categories list from storage
-  const storedCategories = getStoredCategories();
+  // Reactive categories list synced from localStorage and Supabase
+  const [storedCategories, setStoredCategories] = useState<CategoryItem[]>(() => getStoredCategories());
+
+  useEffect(() => {
+    const refreshFromStorage = () => {
+      setStoredCategories(getStoredCategories());
+    };
+    window.addEventListener('minifoto_categories_updated', refreshFromStorage);
+    window.addEventListener('storage', refreshFromStorage);
+
+    // Sync directly with Supabase so deleted categories never linger in POS
+    fetchCategoriesFromSupabase().then((remoteCats) => {
+      if (remoteCats && remoteCats.length > 0) {
+        const deletedCatIds = new Set(getDeletedCategoryIds());
+        const synced = remoteCats
+          .filter((rc) => !deletedCatIds.has(rc.id))
+          .map((rc) => ({
+            id: rc.id,
+            label: rc.label,
+            icon: rc.icon,
+            color: rc.color || 'text-amber-500',
+          }));
+        saveStoredCategories(synced);
+        setStoredCategories(synced);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('minifoto_categories_updated', refreshFromStorage);
+      window.removeEventListener('storage', refreshFromStorage);
+    };
+  }, []);
 
   // Known categories meta with Minifoto official palette (#4E2B01, #ECB769, #FFF3BC, #202020, #000000)
   const KNOWN_CATEGORIES_META: Record<string, { icon: React.ReactNode; color: string; border: string }> = {
@@ -318,20 +351,38 @@ export const CashierPOSView: React.FC<CashierPOSViewProps> = ({
     },
   };
 
-  const categoriesConfig = storedCategories.map((c) => {
-    const meta = KNOWN_CATEGORIES_META[c.id] || {
-      icon: <Tag className="w-6 h-6 sm:w-7 sm:h-7 text-[#4E2B01]" />,
-      color: 'bg-[#FFF3BC] hover:bg-[#f6e59b] text-[#4E2B01]',
-      border: 'border-[#ECB769]',
-    };
-    return {
-      id: c.id,
-      label: c.label.toUpperCase(),
-      icon: meta.icon,
-      color: meta.color,
-      border: meta.border,
-    };
-  });
+  // Only show active categories: categories that exist AND have at least 1 active product
+  const activeCategoryIds = useMemo(
+    () => new Set(activeProducts.map((p) => p.category)),
+    [activeProducts]
+  );
+
+  const categoriesConfig = useMemo(() => {
+    const withActiveProducts = storedCategories.filter((c) => activeCategoryIds.has(c.id));
+    const listToShow = withActiveProducts.length > 0 ? withActiveProducts : storedCategories;
+
+    return listToShow.map((c) => {
+      const meta = KNOWN_CATEGORIES_META[c.id] || {
+        icon: <Tag className="w-6 h-6 sm:w-7 sm:h-7 text-[#4E2B01]" />,
+        color: 'bg-[#FFF3BC] hover:bg-[#f6e59b] text-[#4E2B01]',
+        border: 'border-[#ECB769]',
+      };
+      return {
+        id: c.id,
+        label: c.label.toUpperCase(),
+        icon: meta.icon,
+        color: meta.color,
+        border: meta.border,
+      };
+    });
+  }, [storedCategories, activeCategoryIds]);
+
+  // If the stored activeCategory was deleted or has no active products, switch to the first active category
+  useEffect(() => {
+    if (categoriesConfig.length > 0 && !categoriesConfig.some((c) => c.id === activeCategory)) {
+      setActiveCategory(categoriesConfig[0].id);
+    }
+  }, [categoriesConfig, activeCategory]);
 
   // Calculations
   const subtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0);

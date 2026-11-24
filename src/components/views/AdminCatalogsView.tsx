@@ -312,29 +312,23 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     showToast(`✓ Se asignaron ${count} productos a la categoría "${catLabel}" y se sincronizó con Supabase.`);
   };
 
-  // Test Supabase on mount and load categories from Supabase (never resurrect deleted categories)
+  // Test Supabase on mount and load categories from Supabase (Supabase is source of truth, never resurrect deleted categories)
   useEffect(() => {
     checkSupabase();
     fetchCategoriesFromSupabase().then((remoteCats) => {
       if (remoteCats && remoteCats.length > 0) {
         const deletedCatIds = new Set(getDeletedCategoryIds());
-        setCategoriesList((prev) => {
-          const filteredPrev = prev.filter((c) => !deletedCatIds.has(c.id));
-          const map = new Map(filteredPrev.map((c) => [c.id, c]));
-          remoteCats.forEach((rc) => {
-            if (!deletedCatIds.has(rc.id) && !map.has(rc.id)) {
-              map.set(rc.id, {
-                id: rc.id,
-                label: rc.label,
-                color: rc.color || 'text-teal-600',
-                createdAt: new Date().toISOString(),
-              });
-            }
-          });
-          const merged = Array.from(map.values());
-          saveStoredCategories(merged);
-          return merged;
-        });
+        const synced = remoteCats
+          .filter((rc) => !deletedCatIds.has(rc.id))
+          .map((rc) => ({
+            id: rc.id,
+            label: rc.label,
+            icon: rc.icon,
+            color: rc.color || 'text-teal-600',
+            createdAt: new Date().toISOString(),
+          }));
+        saveStoredCategories(synced);
+        setCategoriesList(synced);
       }
     });
   }, []);

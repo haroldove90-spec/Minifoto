@@ -184,19 +184,16 @@ export default function App() {
     fetchCategoriesFromSupabase().then((remoteCats) => {
       if (remoteCats && remoteCats.length > 0) {
         const deletedCatIds = new Set(getDeletedCategoryIds());
-        const localCats = getStoredCategories().filter((c) => !deletedCatIds.has(c.id));
-        const map = new Map(localCats.map((c) => [c.id, c]));
-        remoteCats.forEach((rc) => {
-          if (!deletedCatIds.has(rc.id) && !map.has(rc.id)) {
-            map.set(rc.id, {
-              id: rc.id,
-              label: rc.label,
-              color: rc.color || 'text-teal-600',
-              createdAt: new Date().toISOString(),
-            });
-          }
-        });
-        saveStoredCategories(Array.from(map.values()));
+        const syncedCats = remoteCats
+          .filter((rc) => !deletedCatIds.has(rc.id))
+          .map((rc) => ({
+            id: rc.id,
+            label: rc.label,
+            icon: rc.icon,
+            color: rc.color || 'text-teal-600',
+            createdAt: new Date().toISOString(),
+          }));
+        saveStoredCategories(syncedCats);
       }
     });
   }, []);
