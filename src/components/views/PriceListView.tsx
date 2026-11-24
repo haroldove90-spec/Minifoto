@@ -34,11 +34,14 @@ import {
   GraduationCap,
   FolderPlus,
   BookOpen,
-  AlertTriangle
+  AlertTriangle,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { 
   saveProductsBatchToSupabase, 
   deleteProductFromSupabase,
+  deleteProductsBatchFromSupabase,
   saveCategoryToSupabase,
   deleteCategoryFromSupabase,
   fetchCategoriesFromSupabase,
@@ -47,14 +50,16 @@ import {
 import { 
   getStoredCategories, 
   saveStoredCategories, 
+  getDeletedCategoryIds,
   markProductAsDeleted, 
-  markCategoryAsDeleted 
+  markCategoryAsDeleted,
+  unmarkCategoryAsDeleted
 } from '../../services/storage';
 import { UserManualModal } from '../UserManualModal';
 
 interface PriceListViewProps {
   products: Product[];
-  onSaveProducts: (products: Product[]) => void;
+  onSaveProducts: (products: Product[], options?: { skipSupabaseUpsert?: boolean }) => void;
   currentRole: Role;
   onNavigateToPOS?: () => void;
 }
@@ -101,20 +106,8 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
   const [markupPercent, setMarkupPercent] = useState<number>(10);
   const [markupCategory, setMarkupCategory] = useState<string>('all');
 
-  // Categories dynamic state
-  const [categoriesList, setCategoriesList] = useState<any[]>(() => {
-    const stored = getStoredCategories();
-    return stored.length > 0 ? stored : [
-      { id: 'foto_estudio', label: 'Foto Estudio', color: 'text-yellow-600' },
-      { id: 'ampliaciones', label: 'Ampliaciones', color: 'text-lime-600' },
-      { id: 'minilab', label: 'Minilab', color: 'text-yellow-500' },
-      { id: 'iglesias', label: 'Iglesias / Eventos', color: 'text-amber-600' },
-      { id: 'fotoacabado', label: 'Fotoacabado', color: 'text-lime-500' },
-      { id: 'salon_seis_party', label: 'Salón Six Party', color: 'text-emerald-600' },
-      { id: 'fuente_sodas', label: 'Fuente de Sodas', color: 'text-orange-600' },
-      { id: 'graduaciones', label: 'Graduaciones 2026', color: 'text-teal-600' },
-    ];
-  });
+  // Categories dynamic state (respects stored categories even if user deleted them)
+  const [categoriesList, setCategoriesList] = useState<any[]>(() => getStoredCategories());
 
   // Category Manager Modal state
   const [showCategoryManager, setShowCategoryManager] = useState<boolean>(false);
@@ -147,19 +140,26 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
     isDeleting: false,
   });
 
+  // Bulk selection state for deleting one or multiple products
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState<boolean>(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState<boolean>(false);
+
   // Update working products if prop changes and not currently edited
   useEffect(() => {
     setWorkingProducts(products);
   }, [products]);
 
-  // Sync categories with Supabase on mount
+  // Sync categories with Supabase on mount (never resurrect deleted categories)
   useEffect(() => {
     fetchCategoriesFromSupabase().then((remote) => {
       if (remote && remote.length > 0) {
+        const deletedCatIds = new Set(getDeletedCategoryIds());
         setCategoriesList((prev) => {
-          const map = new Map(prev.map((c) => [c.id, c]));
+          const filteredPrev = prev.filter((c) => !deletedCatIds.has(c.id));
+          const map = new Map(filteredPrev.map((c) => [c.id, c]));
           remote.forEach((rc) => {
-            if (!map.has(rc.id)) {
+            if (!deletedCatIds.has(rc.id) && !map.has(rc.id)) {
               map.set(rc.id, {
                 id: rc.id,
                 label: rc.label,
@@ -350,28 +350,34 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
 
     setDeleteProductConfirm((prev) => ({ ...prev, isDeleting: true }));
     try {
-      // 1. Mark as permanently deleted in localStorage so browser never restores it
-      markProductAsDeleted(prod.id);
-
-      // 2. Remove from local working copy and notify parent
-      const updated = workingProducts.filter((p) => p.id !== prod.id);
-      setWorkingProducts(updated);
-      onSaveProducts(updated);
-
-      // 3. Delete from Supabase
+      // 1. Delete from Supabase first and verify real row removal
       const res = await deleteProductFromSupabase(prod.id);
 
-      setSaveStatus({
-        type: 'success',
-        message: res 
-          ? `✓ Producto "${prod.name}" eliminado definitivamente de la lista de precios y Supabase.`
-          : `✓ Producto "${prod.name}" eliminado localmente (sincronizado).`,
-      });
-      setTimeout(() => setSaveStatus({ type: null, message: '' }), 4500);
+      // 2. Mark as permanently deleted in localStorage so browser never restores it
+      markProductAsDeleted(prod.id);
+
+      // 3. Remove from local working copy and notify parent WITHOUT triggering batch upsert
+      const updated = workingProducts.filter((p) => p.id !== prod.id);
+      setWorkingProducts(updated);
+      onSaveProducts(updated, { skipSupabaseUpsert: true });
+      setSelectedProductIds((prev) => prev.filter((id) => id !== prod.id));
+
+      if (res.success) {
+        setSaveStatus({
+          type: 'success',
+          message: `✓ Producto "${prod.name}" eliminado definitivamente de la lista de precios y Supabase.`,
+        });
+        setTimeout(() => setSaveStatus({ type: null, message: '' }), 4500);
+      } else {
+        setSaveStatus({
+          type: 'error',
+          message: `⚠️ Borrado en este equipo, pero Supabase rechazó la eliminación: ${res.error || 'Verifica permisos DELETE (RLS)'}`,
+        });
+      }
     } catch (e: any) {
       setSaveStatus({
         type: 'error',
-        message: `Producto eliminado localmente. Detalle Supabase: ${e.message || 'Error de red'}`,
+        message: `Error al eliminar en Supabase: ${e.message || 'Error de red'}`,
       });
     } finally {
       setDeleteProductConfirm({ isOpen: false, product: null, isDeleting: false });
@@ -400,18 +406,19 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
       // 1. Mark category as deleted in localStorage
       markCategoryAsDeleted(catId);
 
-      // 2. Reassign any existing products to fallback ('foto_estudio' or first remaining)
+      // 2. Reassign only affected products in this category to fallback ('foto_estudio' or first remaining)
       const fallbackCat = categoriesList.find((c) => c.id !== catId)?.id || 'foto_estudio';
+      const affectedIds = new Set(workingProducts.filter((p) => p.category === catId).map((p) => p.id));
       const updatedProducts = workingProducts.map((p) =>
         p.category === catId ? { ...p, category: fallbackCat } : p
       );
       setWorkingProducts(updatedProducts);
-      onSaveProducts(updatedProducts);
+      onSaveProducts(updatedProducts, { skipSupabaseUpsert: true });
 
-      // Sincronizar en Supabase los productos reasignados
-      const remapped = updatedProducts.filter((p) => p.category === fallbackCat);
-      if (remapped.length > 0) {
-        saveProductsBatchToSupabase(remapped).catch(() => {});
+      // Sincronizar en Supabase solo los productos que cambiaron de categoría
+      const remappedAffected = updatedProducts.filter((p) => affectedIds.has(p.id));
+      if (remappedAffected.length > 0) {
+        await saveProductsBatchToSupabase(remappedAffected);
       }
 
       // 3. Remove from categories list in state & storage
@@ -423,16 +430,21 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
         setSelectedCategory('all');
       }
 
-      // 4. Delete from Supabase
+      // 4. Delete from Supabase and verify real deletion
       const res = await deleteCategoryFromSupabase(catId);
 
-      setSaveStatus({
-        type: 'success',
-        message: res.success 
-          ? `✓ Categoría "${catLabel}" eliminada definitivamente del sistema y Supabase.`
-          : `✓ Categoría "${catLabel}" eliminada localmente (Aviso Supabase: ${res.error || 'Verificar'})`,
-      });
-      setTimeout(() => setSaveStatus({ type: null, message: '' }), 4500);
+      if (res.success) {
+        setSaveStatus({
+          type: 'success',
+          message: `✓ Categoría "${catLabel}" eliminada definitivamente del sistema y Supabase.`,
+        });
+        setTimeout(() => setSaveStatus({ type: null, message: '' }), 4500);
+      } else {
+        setSaveStatus({
+          type: 'error',
+          message: `⚠️ Categoría ocultada localmente, pero Supabase rechazó el borrado: ${res.error || 'Verifica permisos DELETE (RLS)'}`,
+        });
+      }
     } catch (e: any) {
       setSaveStatus({
         type: 'error',
@@ -468,6 +480,7 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
     }
 
     setIsSavingCategory(true);
+    unmarkCategoryAsDeleted(id);
     const newCat = {
       id,
       label: trimmed,
@@ -478,14 +491,83 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
     setCategoriesList(updated);
     saveStoredCategories(updated);
 
-    await saveCategoryToSupabase(newCat);
+    const res = await saveCategoryToSupabase(newCat);
     setIsSavingCategory(false);
     setNewCatInputName('');
     setSaveStatus({
-      type: 'success',
-      message: `✓ Categoría "${trimmed}" creada y guardada en Supabase.`,
+      type: res.success ? 'success' : 'error',
+      message: res.success
+        ? `✓ Categoría "${trimmed}" creada y guardada en Supabase.`
+        : `Categoría guardada localmente. Aviso Supabase: ${res.error || 'Verifica conexión'}`,
     });
     setTimeout(() => setSaveStatus({ type: null, message: '' }), 4000);
+  };
+
+  // Toggle selection for bulk deletion
+  const toggleSelectProduct = (id: string) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(id) ? prev.filter((pId) => pId !== id) : [...prev, id]
+    );
+  };
+
+  // Select or deselect all visible filtered products
+  const handleSelectAllVisible = () => {
+    const visibleIds = filteredProducts.map((p) => p.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedProductIds.includes(id));
+    if (allSelected) {
+      setSelectedProductIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setSelectedProductIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedProductIds([]);
+  };
+
+  // Execute bulk deletion of selected products
+  const handleExecuteBulkDelete = async () => {
+    if (selectedProductIds.length === 0) return;
+    setIsDeletingBulk(true);
+    const count = selectedProductIds.length;
+    const toDelete = [...selectedProductIds];
+
+    try {
+      // 1. Batch delete from Supabase first and verify real row removal
+      const res = await deleteProductsBatchFromSupabase(toDelete);
+
+      // 2. Mark in permanent deletion list in localStorage
+      markProductAsDeleted(toDelete);
+
+      // 3. Remove from local working copy and notify parent WITHOUT batch upsert
+      const updated = workingProducts.filter((p) => !toDelete.includes(p.id));
+      setWorkingProducts(updated);
+      onSaveProducts(updated, { skipSupabaseUpsert: true });
+
+      setSelectedProductIds([]);
+      setShowBulkDeleteModal(false);
+
+      if (res.success) {
+        setSaveStatus({
+          type: 'success',
+          message: `✓ Se eliminaron ${count} producto(s) definitivamente de la lista de precios y Supabase.`,
+        });
+        setTimeout(() => setSaveStatus({ type: null, message: '' }), 4500);
+      } else {
+        setSaveStatus({
+          type: 'error',
+          message: `⚠️ Borrados en este equipo, pero Supabase rechazó el borrado: ${res.error || 'Verifica permisos DELETE (RLS)'}`,
+        });
+      }
+    } catch (e: any) {
+      setSaveStatus({
+        type: 'error',
+        message: `Error al borrar en Supabase: ${e.message || 'Error de red'}`,
+      });
+    } finally {
+      setIsDeletingBulk(false);
+      setShowBulkDeleteModal(false);
+    }
   };
 
   // Copy full SQL script
@@ -577,6 +659,30 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
             >
               <Plus className="w-4 h-4 text-[#ECB769]" />
               <span>Nuevo Producto</span>
+            </button>
+
+            {/* Borrar Varios / Selección */}
+            <button
+              onClick={() => {
+                if (selectedProductIds.length > 0) {
+                  setShowBulkDeleteModal(true);
+                } else {
+                  handleSelectAllVisible();
+                }
+              }}
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-black border transition active:scale-95 cursor-pointer shadow-md ${
+                selectedProductIds.length > 0
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-400'
+                  : 'bg-[#2a2a2a] hover:bg-rose-950/70 text-rose-300 hover:text-white border-rose-600/40'
+              }`}
+              title="Seleccionar y eliminar productos de la lista de precios"
+            >
+              <Trash2 className="w-4 h-4 text-rose-400" />
+              <span>
+                {selectedProductIds.length > 0
+                  ? `Borrar Seleccionados (${selectedProductIds.length})`
+                  : 'Borrar Varios'}
+              </span>
             </button>
 
             {/* Manual de Usuario PDF */}
@@ -772,25 +878,81 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
         </div>
       </div>
 
+      {/* Barra de Gestión / Eliminación en Lote cuando hay selección */}
+      {selectedProductIds.length > 0 && (
+        <div className="bg-gradient-to-r from-rose-950/95 via-[#301414] to-[#242424] border-2 border-rose-500 rounded-2xl p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in slide-in-from-top">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-md">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-white font-black text-sm block">
+                {selectedProductIds.length} producto(s) seleccionado(s)
+              </span>
+              <span className="text-rose-200/80 text-xs">
+                Puedes eliminar todos los productos seleccionados permanentemente de la lista y de Supabase.
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="px-3.5 py-2 bg-[#2d2d2d] hover:bg-[#3d3d3d] text-slate-200 text-xs font-bold rounded-xl border border-slate-600 transition cursor-pointer"
+            >
+              Deseleccionar
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBulkDeleteModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-lg transition active:scale-95 cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Borrar Seleccionados ({selectedProductIds.length})</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Interactive Table of Prices */}
       <div className="bg-[#242424] border border-[#3b3b3b] rounded-2xl shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#1b1b1b] text-[#ECB769] text-xs font-black uppercase tracking-wider border-b border-[#383838]">
+                {/* Master Checkbox Header */}
+                <th className="py-3 px-3 text-center w-12">
+                  <button
+                    type="button"
+                    onClick={handleSelectAllVisible}
+                    className="p-1 rounded hover:bg-[#333] transition cursor-pointer text-slate-300 hover:text-white"
+                    title={
+                      filteredProducts.length > 0 && filteredProducts.every((p) => selectedProductIds.includes(p.id))
+                        ? 'Deseleccionar todos'
+                        : 'Seleccionar todos'
+                    }
+                  >
+                    {filteredProducts.length > 0 && filteredProducts.every((p) => selectedProductIds.includes(p.id)) ? (
+                      <CheckSquare className="w-4 h-4 text-[#ECB769]" />
+                    ) : (
+                      <Square className="w-4 h-4 text-slate-400" />
+                    )}
+                  </button>
+                </th>
                 <th className="py-3 px-3 sm:px-4">Servicio / Producto</th>
                 <th className="py-3 px-3 sm:px-4">Categoría</th>
                 <th className="py-3 px-3 sm:px-4 min-w-[140px]">Precio Base ($ MXN)</th>
                 <th className="py-3 px-3 sm:px-4 min-w-[130px]">Retoque Digital ($)</th>
                 <th className="py-3 px-3 sm:px-4 min-w-[130px]">Autoadherible ($)</th>
                 <th className="py-3 px-3 sm:px-4 text-center">Estado POS</th>
-                <th className="py-3 px-3 sm:px-4 text-right">Acción</th>
+                <th className="py-3 px-3 sm:px-4 text-right min-w-[150px]">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#333333] text-xs sm:text-sm">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400 font-bold">
+                  <td colSpan={8} className="text-center py-12 text-slate-400 font-bold">
                     No se encontraron productos o servicios con los filtros actuales.
                   </td>
                 </tr>
@@ -799,13 +961,30 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
                   const isSavedJustNow = savedRowIds[prod.id];
                   const hasRetoqueField = prod.hasExtras || prod.category === 'foto_estudio';
 
+                  const isSelected = selectedProductIds.includes(prod.id);
+
                   return (
                     <tr
                       key={prod.id}
-                      className={`hover:bg-[#2b2b2b]/80 transition ${
+                      className={`transition ${
+                        isSelected 
+                          ? 'bg-[#4E2B01]/40 hover:bg-[#4E2B01]/50 border-l-4 border-l-rose-500' 
+                          : 'hover:bg-[#2b2b2b]/80'
+                      } ${
                         prod.isActive === false ? 'opacity-60 bg-[#1e1e1e]/50' : ''
                       }`}
                     >
+                      {/* Row Checkbox */}
+                      <td className="py-3 px-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectProduct(prod.id)}
+                          className="w-4 h-4 rounded border-slate-600 text-[#ECB769] focus:ring-[#ECB769] cursor-pointer accent-[#ECB769]"
+                          aria-label={`Seleccionar ${prod.name}`}
+                        />
+                      </td>
+
                       {/* Product Name & Details */}
                       <td className="py-3 px-3 sm:px-4">
                         <div className="flex items-center gap-3">
@@ -920,9 +1099,9 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
                         </button>
                       </td>
 
-                      {/* Row Action (Save button with feedback) */}
-                      <td className="py-3 px-3 sm:px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
+                      {/* Row Action (Save button with feedback + Clear Visible Red Delete Button) */}
+                      <td className="py-3 px-3 sm:px-4 text-right whitespace-nowrap min-w-[150px]">
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleSaveSingleRow(prod.id)}
                             className={`p-2 rounded-xl transition cursor-pointer ${
@@ -940,11 +1119,13 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
                           </button>
 
                           <button
+                            type="button"
                             onClick={() => triggerDeleteProduct(prod)}
-                            className="p-2 rounded-xl bg-[#2a2a2a] hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 transition cursor-pointer"
-                            title={`Eliminar "${prod.name}" de la lista y Supabase`}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-700 text-rose-300 hover:text-white border border-rose-500/60 text-xs font-black transition cursor-pointer shadow-md active:scale-95"
+                            title={`Eliminar permanentemente "${prod.name}" de la lista y Supabase`}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Borrar</span>
                           </button>
                         </div>
                       </td>
@@ -1518,6 +1699,75 @@ export const PriceListView: React.FC<PriceListViewProps> = ({
                   <>
                     <Trash2 className="w-4 h-4" />
                     <span>Sí, Borrar Categoría</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: CONFIRMACIÓN PARA BORRAR PRODUCTOS EN LOTE (UNO O VARIOS)
+          ========================================================================= */}
+      {showBulkDeleteModal && selectedProductIds.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-fadeIn">
+          <div className="bg-[#242424] border-2 border-rose-500 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3.5 text-rose-400">
+              <div className="w-12 h-12 rounded-2xl bg-rose-950/80 border border-rose-500/40 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-white">
+                  ¿Eliminar {selectedProductIds.length} producto(s) seleccionados?
+                </h3>
+                <p className="text-xs text-rose-300/80">Esta acción borrará los productos de la lista de precios y de Supabase.</p>
+              </div>
+            </div>
+
+            <div className="bg-[#1b1b1b] p-4 rounded-2xl border border-[#383838] space-y-2 text-xs max-h-52 overflow-y-auto pr-1">
+              <span className="font-bold text-slate-300 block mb-1">
+                Productos seleccionados para borrado definitivo ({selectedProductIds.length}):
+              </span>
+              {workingProducts
+                .filter((p) => selectedProductIds.includes(p.id))
+                .map((p) => (
+                  <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-[#2d2d2d] last:border-0">
+                    <div className="flex items-center gap-2 truncate pr-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                      <span className="text-white truncate font-medium">{p.name}</span>
+                    </div>
+                    <span className="text-[#ECB769] font-mono font-bold shrink-0">
+                      ${p.price.toFixed(2)} MXN
+                    </span>
+                  </div>
+                ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingBulk}
+                onClick={() => setShowBulkDeleteModal(false)}
+                className="px-4 py-2.5 rounded-xl bg-[#333] hover:bg-[#444] text-slate-300 text-xs font-bold transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingBulk}
+                onClick={handleExecuteBulkDelete}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-lg transition cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingBulk ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Borrando de Supabase...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Sí, Borrar {selectedProductIds.length} Producto(s)</span>
                   </>
                 )}
               </button>

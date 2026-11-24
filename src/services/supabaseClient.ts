@@ -550,6 +550,7 @@ export const saveProductToSupabase = async (product: Product): Promise<boolean> 
 // Batch save products to Supabase
 export const saveProductsBatchToSupabase = async (products: Product[]): Promise<{ savedCount: number; error?: string }> => {
   try {
+    if (!products || products.length === 0) return { savedCount: 0 };
     const supabase = getSupabaseClient();
     const rows = products.map((product) => ({
       id: product.id,
@@ -849,34 +850,63 @@ export const fetchSchoolsFromSupabase = async (): Promise<School[] | null> => {
   }
 };
 
-// Delete single product from Supabase
-export const deleteProductFromSupabase = async (id: string): Promise<boolean> => {
+// Delete single product from Supabase (verifies actual deletion to detect silent RLS blocks)
+export const deleteProductFromSupabase = async (id: string): Promise<{ success: boolean; deletedCount: number; rlsBlocked?: boolean; error?: string }> => {
   try {
     const supabase = getSupabaseClient();
-    const { error } = await supabase.from('products').delete().eq('id', id);
+    const { data, error } = await supabase.from('products').delete().eq('id', id).select('id');
     if (error) {
       console.warn('Supabase product delete warning:', error.message);
-      return false;
+      return { success: false, deletedCount: 0, error: error.message };
     }
-    return true;
-  } catch (e) {
+
+    const deletedCount = Array.isArray(data) ? data.length : 0;
+    if (deletedCount === 0) {
+      // Verify if row still exists in Supabase (means RLS/permissions silently blocked DELETE)
+      const { data: stillThere } = await supabase.from('products').select('id').eq('id', id).limit(1);
+      if (stillThere && stillThere.length > 0) {
+        return {
+          success: false,
+          deletedCount: 0,
+          rlsBlocked: true,
+          error: 'Supabase bloqueó el borrado (falta política RLS de DELETE en la tabla products). Ejecuta el SQL de permisos DELETE.',
+        };
+      }
+    }
+
+    return { success: true, deletedCount };
+  } catch (e: any) {
     console.warn('Error deleting product from Supabase:', e);
-    return false;
+    return { success: false, deletedCount: 0, error: e?.message || 'Error de red' };
   }
 };
 
-// Batch delete products from Supabase
-export const deleteProductsBatchFromSupabase = async (ids: string[]): Promise<{ count: number; error?: string }> => {
+// Batch delete products from Supabase (verifies actual deletion to detect silent RLS blocks)
+export const deleteProductsBatchFromSupabase = async (ids: string[]): Promise<{ success: boolean; count: number; rlsBlocked?: boolean; error?: string }> => {
   try {
-    if (!ids || ids.length === 0) return { count: 0 };
+    if (!ids || ids.length === 0) return { success: true, count: 0 };
     const supabase = getSupabaseClient();
-    const { error } = await supabase.from('products').delete().in('id', ids);
+    const { data, error } = await supabase.from('products').delete().in('id', ids).select('id');
     if (error) {
-      return { count: 0, error: error.message };
+      return { success: false, count: 0, error: error.message };
     }
-    return { count: ids.length };
+
+    const deletedCount = Array.isArray(data) ? data.length : 0;
+    if (deletedCount < ids.length) {
+      const { data: remaining } = await supabase.from('products').select('id').in('id', ids);
+      if (remaining && remaining.length > 0) {
+        return {
+          success: false,
+          count: deletedCount,
+          rlsBlocked: true,
+          error: `Supabase bloqueó el borrado de ${remaining.length} producto(s) por permisos RLS de DELETE. Ejecuta el SQL de permisos DELETE.`,
+        };
+      }
+    }
+
+    return { success: true, count: deletedCount };
   } catch (e: any) {
-    return { count: 0, error: e.message || 'Error de red' };
+    return { success: false, count: 0, error: e.message || 'Error de red' };
   }
 };
 
@@ -922,18 +952,32 @@ export const saveCategoriesBatchToSupabase = async (cats: { id: string; label: s
   }
 };
 
-// Delete category from Supabase
-export const deleteCategoryFromSupabase = async (id: string): Promise<{ success: boolean; error?: string }> => {
+// Delete category from Supabase (verifies actual deletion to detect silent RLS blocks)
+export const deleteCategoryFromSupabase = async (id: string): Promise<{ success: boolean; deletedCount?: number; rlsBlocked?: boolean; error?: string }> => {
   try {
     const supabase = getSupabaseClient();
-    const { error } = await supabase.from('categories').delete().eq('id', id);
+    const { data, error } = await supabase.from('categories').delete().eq('id', id).select('id');
     if (error) {
       console.warn('Supabase category delete error:', error.message);
-      return { success: false, error: error.message };
+      return { success: false, deletedCount: 0, error: error.message };
     }
-    return { success: true };
+
+    const deletedCount = Array.isArray(data) ? data.length : 0;
+    if (deletedCount === 0) {
+      const { data: stillThere } = await supabase.from('categories').select('id').eq('id', id).limit(1);
+      if (stillThere && stillThere.length > 0) {
+        return {
+          success: false,
+          deletedCount: 0,
+          rlsBlocked: true,
+          error: 'Supabase bloqueó el borrado (falta política RLS de DELETE en la tabla categories). Ejecuta el SQL de permisos DELETE.',
+        };
+      }
+    }
+
+    return { success: true, deletedCount };
   } catch (e: any) {
-    return { success: false, error: e.message || 'Error de red' };
+    return { success: false, deletedCount: 0, error: e.message || 'Error de red' };
   }
 };
 

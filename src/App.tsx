@@ -26,6 +26,7 @@ import {
   getStoredProducts, 
   saveStoredProducts,
   getDeletedProductIds,
+  getDeletedCategoryIds,
   getStoredSchools, 
   saveStoredSchools,
   getStoredStudents, 
@@ -182,10 +183,11 @@ export default function App() {
     });
     fetchCategoriesFromSupabase().then((remoteCats) => {
       if (remoteCats && remoteCats.length > 0) {
-        const localCats = getStoredCategories();
+        const deletedCatIds = new Set(getDeletedCategoryIds());
+        const localCats = getStoredCategories().filter((c) => !deletedCatIds.has(c.id));
         const map = new Map(localCats.map((c) => [c.id, c]));
         remoteCats.forEach((rc) => {
-          if (!map.has(rc.id)) {
+          if (!deletedCatIds.has(rc.id) && !map.has(rc.id)) {
             map.set(rc.id, {
               id: rc.id,
               label: rc.label,
@@ -228,11 +230,13 @@ export default function App() {
   };
 
   // Data mutations with dual-sync: LocalStorage + Supabase
-  const handleSaveProducts = (newProducts: Product[]) => {
+  const handleSaveProducts = (newProducts: Product[], options?: { skipSupabaseUpsert?: boolean }) => {
     setProducts(newProducts);
     saveStoredProducts(newProducts);
-    // Sync to Supabase
-    saveProductsBatchToSupabase(newProducts);
+    // Sync to Supabase only when not handling a deletion
+    if (!options?.skipSupabaseUpsert) {
+      saveProductsBatchToSupabase(newProducts);
+    }
   };
 
   const handleSaveSchools = (newSchools: School[]) => {

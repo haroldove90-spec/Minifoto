@@ -81,6 +81,12 @@ export const markProductAsDeleted = (productIds: string | string[]) => {
   localStorage.setItem(KEYS.DELETED_PRODUCT_IDS, JSON.stringify(updated));
 };
 
+export const unmarkProductAsDeleted = (productIds: string | string[]) => {
+  const toRemove = new Set(Array.isArray(productIds) ? productIds : [productIds]);
+  const updated = getDeletedProductIds().filter((id) => !toRemove.has(id));
+  localStorage.setItem(KEYS.DELETED_PRODUCT_IDS, JSON.stringify(updated));
+};
+
 export const getDeletedCategoryIds = (): string[] => {
   const data = localStorage.getItem('pos_photo_deleted_category_ids_v1');
   if (!data) return [];
@@ -95,6 +101,12 @@ export const markCategoryAsDeleted = (categoryIds: string | string[]) => {
   const current = getDeletedCategoryIds();
   const toAdd = Array.isArray(categoryIds) ? categoryIds : [categoryIds];
   const updated = Array.from(new Set([...current, ...toAdd]));
+  localStorage.setItem('pos_photo_deleted_category_ids_v1', JSON.stringify(updated));
+};
+
+export const unmarkCategoryAsDeleted = (categoryIds: string | string[]) => {
+  const toRemove = new Set(Array.isArray(categoryIds) ? categoryIds : [categoryIds]);
+  const updated = getDeletedCategoryIds().filter((id) => !toRemove.has(id));
   localStorage.setItem('pos_photo_deleted_category_ids_v1', JSON.stringify(updated));
 };
 
@@ -122,17 +134,11 @@ export const getStoredProducts = (): Product[] => {
     try {
       const parsed: Product[] = JSON.parse(data);
       if (Array.isArray(parsed)) {
-        // Exclude any product ID marked as deleted
-        const existingIds = new Set(parsed.map((p) => p.id));
+        // Exclude any product ID marked as deleted and NEVER re-inject deleted initial products
         const filtered = parsed.filter((p) => !deletedIds.has(p.id));
         const initialMap = new Map(INITIAL_PRODUCTS.map((p) => [p.id, p]));
-        
-        // Auto-merge newly added core studio products (e.g. Caritas, Cambios de Fondo)
-        const missingInitial = INITIAL_PRODUCTS.filter(
-          (p) => !existingIds.has(p.id) && !deletedIds.has(p.id)
-        );
 
-        return [...filtered, ...missingInitial].map((p) => ({
+        return filtered.map((p) => ({
           ...p,
           imageUrl: p.imageUrl || initialMap.get(p.id)?.imageUrl || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
           isActive: p.isActive !== false,

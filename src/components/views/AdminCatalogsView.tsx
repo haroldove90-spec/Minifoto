@@ -55,12 +55,12 @@ import {
   deleteCategoryFromSupabase,
   fetchCategoriesFromSupabase
 } from '../../services/supabaseClient';
-import { markProductAsDeleted, markCategoryAsDeleted, getStoredCategories, saveStoredCategories } from '../../services/storage';
+import { markProductAsDeleted, markCategoryAsDeleted, unmarkCategoryAsDeleted, getDeletedCategoryIds, getStoredCategories, saveStoredCategories } from '../../services/storage';
 import { CategoryItem } from '../../types';
 
 interface AdminCatalogsViewProps {
   products: Product[];
-  onSaveProducts: (products: Product[]) => void;
+  onSaveProducts: (products: Product[], options?: { skipSupabaseUpsert?: boolean }) => void;
   currentRole?: Role | null;
   operatorName?: string;
   onGoToPOSWithItems?: (items: CartItem[]) => void;
@@ -200,6 +200,7 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     }
 
     setIsAddingCategory(true);
+    unmarkCategoryAsDeleted(id);
     const newCat: CategoryItem = {
       id,
       label: trimmed,
@@ -311,15 +312,17 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
     showToast(`✓ Se asignaron ${count} productos a la categoría "${catLabel}" y se sincronizó con Supabase.`);
   };
 
-  // Test Supabase on mount and load categories from Supabase
+  // Test Supabase on mount and load categories from Supabase (never resurrect deleted categories)
   useEffect(() => {
     checkSupabase();
     fetchCategoriesFromSupabase().then((remoteCats) => {
       if (remoteCats && remoteCats.length > 0) {
+        const deletedCatIds = new Set(getDeletedCategoryIds());
         setCategoriesList((prev) => {
-          const map = new Map(prev.map((c) => [c.id, c]));
+          const filteredPrev = prev.filter((c) => !deletedCatIds.has(c.id));
+          const map = new Map(filteredPrev.map((c) => [c.id, c]));
           remoteCats.forEach((rc) => {
-            if (!map.has(rc.id)) {
+            if (!deletedCatIds.has(rc.id) && !map.has(rc.id)) {
               map.set(rc.id, {
                 id: rc.id,
                 label: rc.label,
@@ -531,36 +534,44 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
         const prodId = deleteModal.id;
         const prodName = deleteModal.name || 'Producto';
 
-        // 1. Mark as permanently deleted in localStorage so browser never restores it
+        // 1. Delete from Supabase first and verify real removal
+        const res = await deleteProductFromSupabase(prodId);
+
+        // 2. Mark as permanently deleted in localStorage so browser never restores it
         markProductAsDeleted(prodId);
 
-        // 2. Remove from local state
+        // 3. Remove from local state without triggering batch upsert
         const updated = products.filter((p) => p.id !== prodId);
-        onSaveProducts(updated);
+        onSaveProducts(updated, { skipSupabaseUpsert: true });
         setSelectedForDelete((prev) => prev.filter((id) => id !== prodId));
 
-        // 3. Delete from Supabase
-        await deleteProductFromSupabase(prodId);
-
-        showToast(`✓ Producto "${prodName}" eliminado permanentemente del catálogo y Supabase.`);
+        if (res.success) {
+          showToast(`✓ Producto "${prodName}" eliminado permanentemente del catálogo y Supabase.`);
+        } else {
+          showToast(`⚠️ Borrado localmente, pero Supabase rechazó el borrado: ${res.error || 'Verifica permisos DELETE'}`);
+        }
       } else if (deleteModal.type === 'bulk_products' && selectedForDelete.length > 0) {
         const count = selectedForDelete.length;
         const toDelete = [...selectedForDelete];
 
-        // 1. Register in permanent deleted list in localStorage
+        // 1. Delete all from Supabase and verify real removal
+        const res = await deleteProductsBatchFromSupabase(toDelete);
+
+        // 2. Register in permanent deleted list in localStorage
         markProductAsDeleted(toDelete);
 
-        // 2. Delete all from Supabase
-        await deleteProductsBatchFromSupabase(toDelete);
-
-        // 3. Remove from local state
+        // 3. Remove from local state without triggering batch upsert
         const remaining = products.filter((p) => !toDelete.includes(p.id));
-        onSaveProducts(remaining);
+        onSaveProducts(remaining, { skipSupabaseUpsert: true });
 
         setSelectedForDelete([]);
         setIsBulkDeleteMode(false);
 
-        showToast(`✓ ${count} producto(s) borrados definitivamente del catálogo y Supabase.`);
+        if (res.success) {
+          showToast(`✓ ${count} producto(s) borrados definitivamente del catálogo y Supabase.`);
+        } else {
+          showToast(`⚠️ Borrados localmente, pero Supabase rechazó el borrado: ${res.error || 'Verifica permisos DELETE'}`);
+        }
       } else if (deleteModal.type === 'category' && deleteModal.id) {
         const catId = deleteModal.id;
         const catLabel = deleteModal.name || 'Categoría';
@@ -568,13 +579,14 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
         // 1. Mark category as deleted in localStorage
         markCategoryAsDeleted(catId);
 
-        // 2. Reassign any existing products in this category to avoid orphans
+        // 2. Reassign only products in this category to avoid orphans
         const fallbackCat = categoriesList.find((c) => c.id !== catId)?.id || 'foto_estudio';
+        const affectedIds = new Set(products.filter((p) => p.category === catId).map((p) => p.id));
         const updatedProducts = products.map((p) => (p.category === catId ? { ...p, category: fallbackCat } : p));
-        onSaveProducts(updatedProducts);
+        onSaveProducts(updatedProducts, { skipSupabaseUpsert: true });
 
-        // Sync remapped products to Supabase
-        const remapped = updatedProducts.filter((p) => p.category === fallbackCat);
+        // Sync only remapped products to Supabase
+        const remapped = updatedProducts.filter((p) => affectedIds.has(p.id));
         if (remapped.length > 0) {
           await saveProductsBatchToSupabase(remapped);
         }
@@ -587,10 +599,14 @@ export const AdminCatalogsView: React.FC<AdminCatalogsViewProps> = ({
         if (selectedCategory === catId) setSelectedCategory('all');
         if (formCategory === catId) setFormCategory(fallbackCat);
 
-        // 4. Delete category from Supabase
-        await deleteCategoryFromSupabase(catId);
+        // 4. Delete category from Supabase and verify real removal
+        const res = await deleteCategoryFromSupabase(catId);
 
-        showToast(`✓ Categoría "${catLabel}" eliminada definitivamente del sistema y Supabase.`);
+        if (res.success) {
+          showToast(`✓ Categoría "${catLabel}" eliminada definitivamente del sistema y Supabase.`);
+        } else {
+          showToast(`⚠️ Categoría borrada localmente, pero Supabase rechazó el borrado: ${res.error || 'Verifica permisos DELETE'}`);
+        }
       }
     } catch (err) {
       console.error('Error during deletion:', err);
