@@ -92,20 +92,21 @@ export default function App() {
     const savedTab = getStoredActiveTab() as ActiveTab | null;
     const role = getStoredRole();
     if (role === 'impresor') return 'work_orders';
-    if (savedTab) return savedTab;
     if (role === 'cashier') return 'pos_cashier';
+    if (savedTab) return savedTab;
     if (role === 'laboratorio') return 'work_orders';
     if (role === 'client') return 'catalogs';
     return 'tablet_pos'; // admin and field default to tablet_pos
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
-  const handleSelectTab = (tab: ActiveTab) => {
+  const handleSelectTab = (tab: ActiveTab, roleOverride?: Role) => {
+    const effectiveRole = roleOverride ?? currentRole;
     let finalTab = tab;
-    if ((currentRole === 'laboratorio' || currentRole === 'impresor') && (tab === 'pos_cashier' || tab === 'tablet_pos')) {
+    if ((effectiveRole === 'laboratorio' || effectiveRole === 'impresor') && (tab === 'pos_cashier' || tab === 'tablet_pos')) {
       finalTab = 'work_orders';
     }
-    if (currentRole === 'impresor' && tab !== 'work_orders' && tab !== 'profile') {
+    if (effectiveRole === 'impresor' && tab !== 'work_orders' && tab !== 'profile') {
       finalTab = 'work_orders';
     }
     setActiveTab(finalTab);
@@ -205,19 +206,17 @@ export default function App() {
     saveStoredRole(role);
     saveStoredOperator(opName);
 
-    const savedTab = getStoredActiveTab() as ActiveTab | null;
-    if (role === 'impresor') {
-      handleSelectTab('work_orders');
-    } else if (savedTab) {
-      handleSelectTab(savedTab);
-    } else if (role === 'cashier') {
-      handleSelectTab('pos_cashier');
-    } else if (role === 'laboratorio') {
-      handleSelectTab('work_orders');
+    if (role === 'cashier') {
+      handleSelectTab('pos_cashier', role);
+    } else if (role === 'impresor' || role === 'laboratorio') {
+      handleSelectTab('work_orders', role);
     } else if (role === 'client') {
-      handleSelectTab('catalogs');
+      handleSelectTab('catalogs', role);
+    } else if (role === 'field') {
+      handleSelectTab('tablet_pos', role);
     } else {
-      handleSelectTab('tablet_pos');
+      const savedTab = getStoredActiveTab() as ActiveTab | null;
+      handleSelectTab(savedTab || 'tablet_pos', role);
     }
   };
 
